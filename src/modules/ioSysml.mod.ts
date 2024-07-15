@@ -18,9 +18,9 @@ moduleManager.construct({
 		zipped: boolean,
 		mime: string,
 	//	iOpts: any,  // import options
-	//	errNoOptions = new xhrMessage(896, 'No options or no mediaTypes defined.'),
-		errNoXMIFile = new xhrMessage(897, 'No XMI file found in the container.'),
-		errInvalidXML = new xhrMessage(898, 'XMI data is not valid XML.');
+	//	errNoOptions = new resultMsg(896, 'No options or no mediaTypes defined.'),
+		errNoXMIFile = new resultMsg(897, 'No XMI file found in the container.'),
+		errInvalidXML = new resultMsg(898, 'XMI data is not valid XML.');
 	self.init = function (options: any):boolean {
 		mime = undefined;
 	//	iOpts = options;
@@ -115,7 +115,7 @@ moduleManager.construct({
 		}
 		else {
 			// Selected file is not zipped
-			sDO.reject(new xhrMessage(899, 'SysML Import: Input file is not supported'));
+			sDO.reject(new resultMsg(899, 'SysML Import: Input file is not supported'));
 
 			// ToDo: Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
 
@@ -124,7 +124,7 @@ moduleManager.construct({
 				// @ts-ignore - sysml2Specif() is loaded at runtime
 				var result = sysml2specif( str, xOpts );
 				if (result.status == 0)
-					sDO.resolve(result.responseText)
+					sDO.resolve(result.response)
 				else
 					sDO.reject(result);
 			}
@@ -155,8 +155,7 @@ moduleManager.construct({
 				return;
 			};
 			// SysML data is valid:
-			// @ts-ignore - 
-			resL.push(result.responseText);
+			resL.push(result.response);
 
 			if (--pend < 1)
 				sDO.resolve(resL);

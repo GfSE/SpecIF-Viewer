@@ -12,36 +12,42 @@
 	[1] S.Friedenthal et al: A Practical Guide to SysML, The MK/OMG Press, Third Edition
 */
 
-function sysml2specif( xmi:string, options: any ):SpecIF|null {
+function sysml2specif( xmi:string, options: any ):resultMsg {
 	"use strict";
 
-	var xhr: xhrMessage;
+//	var xhr: resultMsg;
 
 	const
 		idResourceClassDiagram = app.ontology.getClassId("resourceClass", "SpecIF:View"),
-		idResourceClassActor = app.ontology.getClassId("resourceClass", "FMC:Actor"),
-	//	idResourceClassState = "RC-State",
-	//	idResourceClassEvent = "RC-Event",
+	//	idResourceClassActor = app.ontology.getClassId("resourceClass", "FMC:Actor"),
+		idResourceClassState = app.ontology.getClassId("resourceClass", "FMC:State"),
+	//	idResourceClassEvent = app.ontology.getClassId("resourceClass", "FMC:Event"),
 	//	idResourceClassCollection = "RC-Collection",
 		idResourceClassPackage = app.ontology.getClassId("resourceClass", "uml:Package"),
 	//	idResourceClassFolder = "RC-Folder",
 		idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
-	//	idStatementClassAccesses = "SC-accesses",
+
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
 		idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
 		idStatementClassAggregates = app.ontology.getClassId("statementClass", "uml:Aggregation"),
 		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "uml:Specialization"),
 		idStatementClassRealizes = app.ontology.getClassId("statementClass", "uml:Realization"),
+		idStatementClassServes = app.ontology.getClassId("statementClass", "SpecIF:serves"),
 		idStatementClassAssociatedWith = app.ontology.getClassId("statementClass", "uml:Association"),
+		idStatementClassCommunicatesWith = app.ontology.getClassId("statementClass", "FMC:communicatesWith"),
+		idStatementClassHandles = app.ontology.getClassId("statementClass", "SpecIF:handles"),
+		idStatementClassProvides = app.ontology.getClassId("statementClass", "SpecIF:provides"),
+		idStatementClassConsumes = app.ontology.getClassId("statementClass", "SpecIF:consumes"),
 		idStatementClassShows = app.ontology.getClassId("statementClass", "SpecIF:shows"),
 		idStatementClassDefault = app.ontology.getClassId("statementClass", "SpecIF:relates");
 
-	if (typeof (options) != 'object' || !options.fileName) return null;
+	if (typeof (options) != 'object' || !options.fileName)
+		throw Error("Programming Error: Cameo import gets no parameter options");
 
 	let opts = Object.assign(
 		{
-		//	titleLength: 96,
+		//	titleLength: 256,
 		//	textLength: 8192,
 		//	strNamespace: "sysml:",
 		//	modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
@@ -61,11 +67,10 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 //	console.debug('xmi', xmiDoc);
 
-	if (xmiDoc.getElementsByTagName('xmi:exporter')[0].innerHTML.includes("MagicDraw")
-		&& xmiDoc.getElementsByTagName('xmi:exporterVersion')[0].innerHTML.includes("19.0"))
-		return new xhrMessage(0, '', 'text', cameo2specif(xmiDoc, opts));
+	if ( validateCameo(xmiDoc) )
+		return new resultMsg(0, '', 'object', cameo2specif(xmiDoc, opts));
 
-	return new xhrMessage(899, 'Cameo Import: Input file is not supported');
+	return new resultMsg(899, 'Cameo Import: Input file is not supported');
 
 	
 // =======================================
@@ -78,7 +83,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			nodes: SpecifNodes;
 		}
 
-		// ----- Preprocessing -----
+		// ====== Preprocessing ======
 		// 1. Create maps with stereotypes for classes und abstractions:
 		function makeMap(att: any) {
 			let top = xmi.getElementsByTagName('xmi:XMI')[0],
@@ -88,7 +93,11 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				(ch: any) => {
 					let base = ch.getAttribute(att);
 					if (base) {
-						map.set(base, ch.tagName);
+						if(att=="base_Property")
+							// the direction is defined only in case of a flowProperty
+							map.set(base, { tag: ch.tagName, dir: ch.getAttribute("direction") });
+						else
+							map.set(base, ch.tagName);
 					};
 				}
 			);
@@ -96,19 +105,23 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		}
 		let classStereotypes = makeMap("base_Class"),
 			abstractionStereotypes = makeMap("base_Abstraction"),
+			propertyStereotypes = makeMap("base_Property"),
+			flowProperties = new Map(),  // interfaceBlock and its direction
 
-			// ----- Processing -----
+			// ====== Processing ======
 			// 2. Create project:
 			models = xmi.getElementsByTagName('uml:Model'), // in case of a model
 			packgs = xmi.getElementsByTagName('uml:Package'), // in case of a shared model
 			modDoc = models.length>0? models[0] : packgs[0],
 			spD: CSpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] }),
 
-			// Intermediate storage for statements:
+			// Memorized for postprocessing:
 			usedElements: SpecifStatement[] = [],     // --> shows
 			specializations: SpecifStatement[] = [],
 			associationEnds: any[] = [],
-			abstractions: SpecifStatement[] = [];
+			abstractions: SpecifStatement[] = [],
+			portL: any[] = [],
+			connectors: any[] = [];
 
 		spD.id = modDoc.getAttribute("xmi:id");
 		spD.title = [{ text: modDoc.getAttribute("name") }];
@@ -116,7 +129,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		// 3. Analyse the package structure and create a hierarchy of folders:
 		parseElements(modDoc, { package: '', nodes: spD.hierarchies });
 
-		// ----- Postprocessing -----
+		// ====== Postprocessing ======
 		// 4. Find stereotypes and specialized classes for the model elements:
 		//    - traverse the tree of specialization to the top to find a class as derived from the ontology
 		//    - assign the class to the model element
@@ -129,11 +142,17 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						// --- Case 1: Look for	a stereotype ---
 						let sTy = classStereotypes.get(me.id);
 						if (sTy) {
-							// Find or create a typeproperty:
+							// In SpecIF, an InterfaceBlock is the transferred state (data object in case of information):
+							if (sTy == "sysml:InterfaceBlock") {
+								me["class"] = LIB.makeKey(idResourceClassState);
+								console.info("Cameo Import: Reassigning class '" + idResourceClassState + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
+							};
+
+							// Find or create a type property:
 							let prp = LIB.propByTitle(me, CONFIG.propClassType, spD);
 							if (prp) {
 								prp.values = [[{ text: sTy }]];
-								console.info("Cameo Import: Assigning stereotype '" + sTy + "' to  model-element " + me.id + " with title " + me.properties[0].values[0][0].text);
+								console.info("Cameo Import: Assigning stereotype '" + sTy + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle,spD));
 							};
 						};
 
@@ -141,7 +160,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						let rC = generalizingResourceClassOf(me);
 						if (rC && rC.id != idResourceClassDefault ) {
 							me["class"] = LIB.makeKey(rC.id);
-							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + me.properties[0].values[0][0].text);
+							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
 							return;
 						};
 
@@ -200,14 +219,145 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					return a;
 				}
 			);
+		// 6. Find all InterfaceBlocks to assign a flowProperty (in/out/inout) to each port:
+		//    - Primarily the flow direction is defined by the InterfaceBlock's data property.
+		//      If a port is 'conjugated', the opposite of the InterfaceBlock's direction is assumed.
+		//    - The port collects all flow directions of attributed InterfaceBlocks. Says an explanation in Cameo's port dialog:
+		//      "A combined direction of all owned and inherited flow properties and directed features.
+		//      If all features have direction 'out' or 'provided', the combined direction is 'out'. "
+		//      If all features have direction 'in' or 'required', the combined direction is 'in'.
+		//      Otherwise the direction is 'inout'."
+		portL.forEach(
+			(p: any) => {
+				let ibId = p.interfaceBlock,
+					dir = flowProperties.get(ibId),
+					acc: string;
+			//	console.debug('port', p, ibId, dir);
+				switch (dir) {
+					case 'in':
+						// Add the flow direction to the port:
+						p.resource.properties.push({
+							class: "PC-UmlFlowdirection",
+							values: [[{ text: p.isConjugated? 'out' : 'in' }]]
+						});
+						// Relate the port to its 'type', which is an interface Block:
+						acc = p.isConjugated ? idStatementClassProvides : idStatementClassConsumes;
+						spD.statements.push({
+							id: CONFIG.prefixS + simpleHash(p.resource.id + acc + ibId),
+							class: LIB.makeKey(acc),
+							subject: LIB.makeKey(p.resource),
+							object: LIB.makeKey(ibId),
+							changedAt: opts.fileDate
+						});
+						break
+					case 'out':
+						// Add the flow direction to the port:
+						p.resource.properties.push({
+							class: "PC-UmlFlowdirection",
+							values: [[{ text: p.isConjugated ? 'in' : 'out' }]]
+						});
+						// Relate the port to its 'type', which is an interface Block:
+						acc = p.isConjugated ? idStatementClassConsumes : idStatementClassProvides;
+						spD.statements.push({
+							id: CONFIG.prefixS + simpleHash(p.resource.id + acc + ibId),
+							class: LIB.makeKey(acc),
+							subject: LIB.makeKey(p.resource),
+							object: LIB.makeKey(ibId),
+							changedAt: opts.fileDate
+						});
+						break
+					case 'inout':
+						// Add the flow direction to the port:
+						p.resource.properties.push({
+							class: "PC-UmlFlowdirection",
+							values: [[{ text: 'inout' }]]
+						});
+						// Relate the port to its 'type', which is an interface Block:
+						spD.statements.push({
+							id: CONFIG.prefixS + simpleHash(p.resource.id + idStatementClassHandles + ibId),
+							class: LIB.makeKey(idStatementClassHandles),
+							subject: LIB.makeKey(p.resource),
+							object: LIB.makeKey(ibId),
+							changedAt: opts.fileDate
+						});
+				};
+			}
+		);
 
-		// 6. Add all statements:
+		// 7. Add a serves relationship per connector:
+		//    ToDo: Use this also for BDD item flows?
+		connectors.forEach(
+			(co) => {
+				// In SpecIF, the connectors are represented by 'serves' relationhips.
+				let port0 = LIB.itemById(portL, co.ends[0]),
+					port1 = LIB.itemById(portL, co.ends[1]),
+					p0serves = LIB.valueByTitle(port0.resource, 'uml:is_Service', spD) == 'true',
+					p1serves = LIB.valueByTitle(port1.resource, 'uml:is_Service', spD) == 'true';
+				console.debug('connector', co, port0, port1, p0serves, p1serves);
+
+				// a. If one port is a server and the other is not, the direction is obvious.
+				if (p0serves && !p1serves) {
+					spD.statements.push({
+						id: co.id,
+						class: LIB.makeKey(idStatementClassServes),
+						subject: LIB.makeKey(port0.id),
+						object: LIB.makeKey(port1.id),
+						changedAt: opts.fileDate
+					});
+					return;
+				};
+				if (!p0serves && p1serves) {
+					spD.statements.push({
+						id: co.id,
+						class: LIB.makeKey(idStatementClassServes),
+						subject: LIB.makeKey(port1.id),
+						object: LIB.makeKey(port0.id),
+						changedAt: opts.fileDate
+					});
+					return;
+				};
+
+				// For the other cases, we need to find out which port belongs to the nested class/block:
+				spD.statements.forEach(
+					(st) => {
+						if (st['class'].id == idStatementClassComprises) {
+							console.debug('comprises', st, port0.parent, port1.parent);
+							if (st.subject.id == port0.parent.id && st.object.id == port1.parent.id) {
+								spD.statements.push({
+									id: co.id,
+									class: LIB.makeKey(idStatementClassServes),
+									subject: LIB.makeKey(p0serves && p1serves? port1.id : port0.id),
+									object: LIB.makeKey(p0serves && p1serves? port0.id : port1.id),
+									changedAt: opts.fileDate
+								});
+								return;
+							};
+							if (st.subject.id == port1.parent.id && st.object.id == port0.parent.id) {
+								spD.statements.push({
+									id: co.id,
+									class: LIB.makeKey(idStatementClassServes),
+									subject: LIB.makeKey(p0serves && p1serves ? port0.id : port1.id),
+									object: LIB.makeKey(p0serves && p1serves ? port1.id : port0.id),
+									changedAt: opts.fileDate
+								});
+								return;
+							};
+						};
+					}
+				);
+
+				// b. If both are servers, the contained ("nested") class is the origin of the serves relationship
+				// c. If both are no servers thus clients, the contained ("nested") class is the destination of the serves relationship
+			}
+		);
+
+		// 8. Add all statements:
 		spD.statements = spD.statements
 			.concat(abstractions)
 			.concat(specializations)
 			.concat(usedElements);
 
-		// 7. Keep only the valid statements:
+		// 9. Keep only the valid statements:
 		//    Repeat until no more invalid statements are suppressed:
 		let prevLength: number;
 		do {
@@ -218,39 +368,59 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 		console.debug('SysML', spD, opts);
 		return spD;
-		// ----- End -----
+		// ====== End ======
 
 		function parseElements(parent: Element, params: IParams): void {
-			// 1. pass: The graph nodes:
+			// 1. pass: The data types:
 			Array.from(
 				parent.children,
 				(ch) => {
+					let r: SpecifResource, nd: SpecifNode;
+					switch (ch.tagName) {
+						case "packagedElement":
+							switch (ch.getAttribute("xmi:type")) {
+								case "uml:DataType":
+									// Add a resource representing the data type:
+									r = makeResource(ch);
+									r["class"] = LIB.makeKey(idResourceClassDefault);
+									spD.resources.push(r);
+									// Add the hierarchy node referencing the resource:
+									nd = makeNode(r, params.package);
+									params.nodes.push(nd);
+							};
+					};
+				}
+			);
+			// 2. pass: The graph nodes:
+			Array.from(
+				parent.children,
+				(ch) => {
+					let r: SpecifResource, nd: SpecifNode;
 					switch (ch.tagName) {
 						case "xmi:Extension":
 							// One or more 'owned' diagrams:
 							makeDiagrams(ch, params);
 							break;
 						case "packagedElement":
-							let ty = ch.getAttribute("xmi:type");
-
-							switch (ty) {
+							switch (ch.getAttribute("xmi:type")) {
 								case 'uml:Package':
-									let r1: SpecifResource = makeResource(ch);
-									r1["class"] = LIB.makeKey(idResourceClassPackage);
-									spD.resources.push(r1);
+									// Add a resource representing the package:
+									r = makeResource(ch);
+									r["class"] = LIB.makeKey(idResourceClassPackage);
+									spD.resources.push(r);
 
 									// Add the hierarchy node referencing the resource:
-									let nd1: SpecifNode = makeNode(r1, params.package);
-									params.nodes.push(nd1);
+									nd = makeNode(r, params.package);
+									params.nodes.push(nd);
 
 									// Recursively parse the tree:
-									parseElements(ch, { package: r1.id, nodes: nd1.nodes });
+									parseElements(ch, { package: r.id, nodes: nd.nodes });
 									break;
 								case 'uml:Class':
 									parseClass(ch, params);
 									break;
 								case "uml:DataType":
-									// ToDo
+									// previous pass
 									break;
 								case "uml:Association":
 								case "uml:Abstraction":
@@ -268,7 +438,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					};
 				}
 			);
-			// 2. pass: The graph edges referencing the nodes:
+			// 3. pass: The graph edges referencing the nodes:
 			Array.from(
 				parent.children,
 				(ch) => {
@@ -278,60 +448,57 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							break;
 						case "packagedElement":
 							let ty = ch.getAttribute("xmi:type");
-							if(ty)
-								switch (ty) {
-									case 'uml:Package':
-									case 'uml:Class':
-										// previous pass
-										break;
-									case "uml:Association":
-										parseAssociation(ch);
-										break;
-									case "uml:Abstraction":
-										// Used for sysml:refine, for example, where the type of abstraction (refinement in this case) is specified further down in an element <sysml:Refine ... />
-										let sbj = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
-											obj = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref");
-										//	console.debug('ö',sbj,obj);
+							switch (ty) {
+								case 'uml:Package':
+								case 'uml:Class':
+								case "uml:DataType":
+									// earlier pass
+									break;
+								case "uml:Association":
+									parseAssociation(ch);
+									break;
+								case "uml:Abstraction":
+									// Used for sysml:refine, for example, where the type of abstraction (refinement in this case) is specified further down in an element <sysml:Refine ... />
+									let sbj = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
+										obj = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref");
+									//	console.debug('ö',sbj,obj);
 
-										abstractions.push({
+									abstractions.push({
+										id: ch.getAttribute("xmi:id"),
+										class: LIB.makeKey(idStatementClassDefault),
+										subject: LIB.makeKey(sbj),
+										object: LIB.makeKey(obj),
+										changedAt: opts.fileDate
+									});
+									break;
+								case "uml:Realization":
+									let sbjR = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
+										objR = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref"),
+										staR = {
 											id: ch.getAttribute("xmi:id"),
-											class: LIB.makeKey(idStatementClassDefault),
-											subject: LIB.makeKey(sbj),
-											object: LIB.makeKey(obj),
+											class: LIB.makeKey(idStatementClassRealizes || idStatementClassAssociatedWith),
+											subject: LIB.makeKey(sbjR),
+											object: LIB.makeKey(objR),
 											changedAt: opts.fileDate
-										});
-										break;
-									case "uml:Realization":
-										let sbjR = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
-											objR = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref"),
-											staR = {
-												id: ch.getAttribute("xmi:id"),
-												class: LIB.makeKey(idStatementClassRealizes || idStatementClassAssociatedWith),
-												subject: LIB.makeKey(sbjR),
-												object: LIB.makeKey(objR),
-												changedAt: opts.fileDate
-											};
-										/*	if (!idStatementClassRealizes) {
-												LIB.addProperty(staR, {
-													class: LIB.makeKey("PC-Type"),
-													values: [[{ text: ty }]]
-												} as SpecifProperty);
-											}; */
-										spD.statements.push(staR);
-										break;
-									case "uml:Profile":
-										// So far, no additional info to extract ..
-										break;
-									case "uml:ProfileApplication":
-									case "uml:Usage":
-										// No idea what this is good for in terms of semantics ...
-										break;
-									case "uml:DataType":
-									default:
-										console.info("Cameo Import: Skipping the packagedElement", ch, "with name", ch.getAttribute("name"), "and type", ty, ".");
-								};
-						/*	else
-								// A packagedElement in a model as pointer to a shared model has no type  */
+										} as SpecifStatement;
+									/*	if (!idStatementClassRealizes) {
+											LIB.addProperty(staR, {
+												class: LIB.makeKey("PC-Type"),
+												values: [[{ text: ty }]]
+											} as SpecifProperty);
+										}; */
+									spD.statements.push(staR);
+									break;
+								case "uml:Profile":
+									// So far, no additional info to extract ..
+									break;
+								case "uml:ProfileApplication":
+								case "uml:Usage":
+									// No idea what this is good for in terms of semantics ...
+									break;
+								default:
+									console.info("Cameo Import: Skipping the packagedElement", ch, "with name", ch.getAttribute("name"), "and type", ty, ".");
+							};
 					};
 				}
 			);
@@ -380,7 +547,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						switch (ch2.tagName) {
 							case "xmi:Extension":
 								// One or more model diagrams:
-								makeDiagrams(ch2,nextLevel);
+								makeDiagrams(ch2, nextLevel);
 								break;
 							case 'generalization':
 								// Add the generalizations as specializations:
@@ -394,51 +561,93 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								break;
 							case 'ownedAttribute':
 								// Add the properties=associationEnds and ports:
-								parseOwnedAttribute(ch2, {parent: r2})
+								parseOwnedAttribute(ch2, { parent: r2 })
+								break;
+							case 'ownedConnector':
+								// A connector between ports on an IBD (or other?);
+								// - the ports are stored as role="port-id" in the children tagged 'end'.
+
+								/*	// Case 1: Both ports have a different client/server role:
+									// 1a. Inspired from SpecIF, a connector is transformed to a state of the information, energy- or material (data) type:
+									let cId = ch2.getAttribute("role");
+									spD.resources.push(ch2, { name="Connector " + cId });
+									// 1b. Finally a 'serves' relation if possible  */
+
+								//  Case 2: Both ports have the same client/server role, so the outer is a proxy of the inner port (in general terms, not UML/SysML terms)
+								// 2a. A 'communicates with' relation:
+								let cId = ch2.getAttribute("xmi:id"),
+									ports = Array.from(
+										// assuming there are exactly 2 children with tag 'end':
+									//	ch2.children,
+										ch2.getElementsByTagName("end"),
+										(ch3) => {
+											return ch3.getAttribute("role")
+										}
+									);
+								if (ports.length < 2) {
+									console.error("uml:Connector " + cId + " has too few ends");
+									return;
+								};
+								if (ports.length > 2) {
+									console.error("uml:Connector " + cId + " has too many ends");
+									return;
+								};
+							/*	spD.statements.push({
+									id: cId,
+									class: LIB.makeKey(idStatementClassCommunicatesWith),
+									subject: LIB.makeKey(ports[0]),
+									object: LIB.makeKey(ports[1]),
+									changedAt: opts.fileDate
+								});  */
+								// Memorize for postprocessing, where a serves relationship will be created based on the port's flow properties:
+								connectors.push({ id: cId, ends: [ports[0], ports[1]] })
 								break;
 							case 'nestedClassifier':
 								parseClass(ch2, nextLevel);
 						}
 					}
 				);
-			//	return { resource: r2, node: nd2 };
+			//	return;
 
 				function parseOwnedAttribute(oA: Element, params:any): void {
-					let pId: string, ty: string, ti: string, nm: string, cl: string, ob: string;
+					let pId: string, ac: string, ty: string, ag: string, ti: string, nm: string, cl: string;
 					switch (oA.getAttribute("xmi:type")) {
 						case "uml:Property":
-/*	
-	------ Case 1: Undirected association without name and role name ----
-	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
-		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_532960_42745' visibility='public' type='_19_0_3_e40094_1719151285180_119765_42662' association='_19_0_3_e40094_1719151383717_97517_42744'/>
-	</packagedElement>
-	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151285180_119765_42662' name='Class_B1'>
-		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_260588_42746' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151383717_97517_42744'/>
-	</packagedElement>
-	<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151383717_97517_42744'>
-		<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_532960_42745'/>
-		<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_260588_42746'/>
-	</packagedElement>
-	------ Case 2: Directed association without name and role name ----
-	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
-		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_963899_42758' visibility='public' type='_19_0_3_e40094_1719151326789_405745_42689' association='_19_0_3_e40094_1719151408550_923366_42757'/>
-	</packagedElement>
-	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151326789_405745_42689' name='Class_B2'/>
-	<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151408550_923366_42757'>
-		<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_963899_42758'/>
-		<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_828739_42759'/>
-		<ownedEnd xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_828739_42759' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151408550_923366_42757'/>
-	</packagedElement>
-	------ Case 3: Directed association with name and without role name ----
-	------ Case 4: Directed association without name and with role name ----
-*/
+							/*	
+								------ Case 1: Undirected association without name and role name ----
+								<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
+									<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_532960_42745' visibility='public' type='_19_0_3_e40094_1719151285180_119765_42662' association='_19_0_3_e40094_1719151383717_97517_42744'/>
+								</packagedElement>
+								<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151285180_119765_42662' name='Class_B1'>
+									<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_260588_42746' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151383717_97517_42744'/>
+								</packagedElement>
+								<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151383717_97517_42744'>
+									<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_532960_42745'/>
+									<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_260588_42746'/>
+								</packagedElement>
+								------ Case 2: Directed association without name and role name ----
+								<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
+									<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_963899_42758' visibility='public' type='_19_0_3_e40094_1719151326789_405745_42689' association='_19_0_3_e40094_1719151408550_923366_42757'/>
+								</packagedElement>
+								<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151326789_405745_42689' name='Class_B2'/>
+								<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151408550_923366_42757'>
+									<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_963899_42758'/>
+									<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_828739_42759'/>
+									<ownedEnd xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_828739_42759' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151408550_923366_42757'/>
+								</packagedElement>
+								------ Case 3: Directed association with name and without role name ----
+								------ Case 4: Directed association without name and with role name ----
+							*/
 							pId = oA.getAttribute("xmi:id");
-							ob = oA.getAttribute("type");
+							ac = oA.getAttribute("association");
+							ty = oA.getAttribute("type");
+							ag = oA.getAttribute("aggregation");
 
-							// ty and ob are defined, if it is about composition, aggregation and association:
-							if (ob) {
-								ty = oA.getAttribute("aggregation");
-								cl = ty == "composite" ? idStatementClassComprises : (ty == "shared" ? idStatementClassAggregates : undefined);
+							if (ac && ty) {
+								// It is about composition, aggregation and association;
+								// the elements use vary depending on the 'navigable' flag on either end:
+								// ToDo: For example associations without arrow-heads (indicating a navigable end) are not yet properly interpreted
+								cl = ag == "composite" ? idStatementClassComprises : (ag == "shared" ? idStatementClassAggregates : undefined);
 								// Class references on an IBD (see [1] p.122) or association ends can have a name or not:
 								nm = oA.getAttribute("name");
 								if (nm) {
@@ -456,25 +665,25 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 										changedAt: opts.fileDate
 									});
 									specializations.push({
-										id: CONFIG.prefixS + simpleHash(pId + idStatementClassSpecializes + ob),
+										id: CONFIG.prefixS + simpleHash(pId + idStatementClassSpecializes + ty),
 										class: LIB.makeKey(idStatementClassSpecializes),
 										subject: LIB.makeKey(pId),
-										object: LIB.makeKey(ob),
+										object: LIB.makeKey(ty),
 										changedAt: opts.fileDate
 									});
 									// ... and use it as other end:
-									ob = pId;
+									ty = pId;
 								};
 								// The class' property
 								// - has a name: use the newly created subclass as object
 								// - has no name: use its type as object
 								associationEnds.push({
-									//	id: CONFIG.prefixS + simpleHash(params.parent.id + cl + ob),
+									//	id: CONFIG.prefixS + simpleHash(params.parent.id + cl + ty),
 									id: pId,
 									associationId: oA.getAttribute("association"),
 									associationType: LIB.makeKey(cl), // composition, aggregation or association
 									thisEnd: LIB.makeKey(params.parent.id),
-									otherEnd: LIB.makeKey(ob)
+									otherEnd: LIB.makeKey(ty)
 								});
 								//	console.debug('associationEnds', simpleClone(associationEnds));
 
@@ -493,11 +702,40 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 									.forEach(
 										(e) => {
 											// For every shown property there shall be a shown class: 
-										//	let l = usedElements.length;
-											makeStatementShows(e.subject.id, ob)
-										//	if (l < usedElements.length) console.debug('#2', e.subject.id, ob, simpleClone(usedElements));
+											//	let l = usedElements.length;
+											makeStatementShows(e.subject.id, ty)
+											//	if (l < usedElements.length) console.debug('#2', e.subject.id, ty, simpleClone(usedElements));
 										}
 									);
+							}
+							else if (classStereotypes.get(params.parent.id) == "sysml:InterfaceBlock") {
+								// This is a flowProperty of an InterfaceBlock:
+
+								// Relate to the data type:
+								if (ty) {
+									// a. The 'type' attribute points to a self-defined (local) uml:DataType:
+									spD.statements.push({
+									//	id: CONFIG.prefixS + simpleHash(params.parent.id + idStatementClassDefault + ty),
+										id: pId,
+										class: LIB.makeKey(idStatementClassDefault),
+										subject: LIB.makeKey(params.parent.id),
+										object: LIB.makeKey(ty),
+										properties: [{
+											class: LIB.makeKey("PC-Type"),
+											values: [[{ text: "has data type" }]]
+										}],
+										changedAt: opts.fileDate
+									});
+								}
+								else {
+									// b. Otherwise a child with tag <type ../> provides a linkt to a standard data type:
+
+								};
+
+								// Store flowProperty direction to add it to the port when postprocessing:
+								let stT = propertyStereotypes.get(pId);
+								if(stT && stT.dir)
+									flowProperties.set(params.parent.id, stT.dir ); // interfaceBlock and its direction
 							}
 							else {
 								console.info("Cameo Import: Skipping the " + oA.getAttribute("xmi:type") + " with id " + pId + ".");
@@ -505,23 +743,28 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							break;
 						case "uml:Port":
 							pId = oA.getAttribute("xmi:id");
-							ty = oA.getAttribute("type");  // the id of the interface block
+							ty = oA.getAttribute("type");  // id of the interface block
 							nm = oA.getAttribute("name");
 							ti = LIB.titleFromProperties(params.parent.properties, spD.propertyClasses, { targetLanguage: "default" });
 
-							// Store the port as FMC:Actor:
-							spD.resources.push({
-								id: pId,
-								class: LIB.makeKey(idResourceClassActor),
-								properties: [{
-									class: LIB.makeKey("PC-Name"),
-									values: [[{ text: (ti? ti + " Port " + nm : nm )}]]
-								}, {
-									class: LIB.makeKey("PC-Type"),
-									values: [[{ text: "uml:Port" }]]
-								}],
-								changedAt: opts.fileDate
-							});
+							// Store the port:
+							let prt: SpecifResource = {
+									id: pId,
+									class: LIB.makeKey("RC-UmlPort"),
+									properties: [{
+										class: LIB.makeKey("PC-Name"),
+										values: [[{ text: (ti ? ti + " Port " + nm : nm) }]]
+									}, {
+										class: LIB.makeKey("PC-Type"),
+										values: [[{ text: "uml:Port" }]]
+									}, {
+										class: LIB.makeKey("PC-UmlIsservice"),  // a boolean property
+										values: [oA.getAttribute("isService") || "true"]  // apparently Cameo default is 'true'
+										// property "PC-UmlFlowdirection" will be assigned in the postprocessing, because the interfaceblock may be defined later in the xmi file
+									}],
+									changedAt: opts.fileDate
+								};
+							spD.resources.push( prt );
 
 							// Relate the port to the containing element:
 							spD.statements.push({
@@ -532,14 +775,27 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								changedAt: opts.fileDate
 							});
 
+						/*	... replaced by reads/writes/accesses relation created when postprocessing:
+							// Relate the port to its 'type', which is an interface Block:
+							// see also: https://mbse4u.com/2017/09/05/conjugation-considered-harmful/
+							spD.statements.push({
+								id: CONFIG.prefixS + simpleHash(pId + idStatementClassDefault + ty),
+								class: LIB.makeKey(idStatementClassDefault),
+								subject: LIB.makeKey(pId),
+								object: LIB.makeKey(ty),
+								properties: [{
+									class: LIB.makeKey("PC-Type"),
+									values: [[{ text: "sysml:InterfaceBlock" }]]
+								}],
+								changedAt: opts.fileDate
+							}); */
+
+							// Memorize for postprocessing to assign the port's directionand the serves relationships:
+							portL.push({ id: prt.id, resource: prt, interfaceBlock: ty, isConjugated: oA.getAttribute("isConjugated") == 'true', parent: params.parent });
+
 						// Interestingly enough a block shown on an IBD is not listed as usedElement, whereas its ports are.
 						// So let us add the parent block of the port to the usedElement list, which will become 'shows' statements during post-processing.
 
-
-					/*		break;
-						case 
-							// Add the connectors (in an IBD):
-						*/
 					};
 				};  // end of 'ownedAttribute'
 			}  // end of 'parseClass'
@@ -684,13 +940,13 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			);
 		};
 
-		function makeResource(el: any) {
+		function makeResource(el: Element, pars?: any) {
 			// @ts-ignore - class will be assigned later
 			let r: SpecifResource = {
-				id: el.getAttribute("xmi:id"),
+				id: /* pars && pars.id ? pars.id :*/ el.getAttribute("xmi:id"),
 				properties: [{
 					class: LIB.makeKey("PC-Name"),
-					values: [[{ text: el.getAttribute("name") }]]
+					values: [[{ text: pars && pars.name? pars.name : el.getAttribute("name") }]]
 				}, {
 					class: LIB.makeKey("PC-Type"),
 					values: [[{ text: el.getAttribute("xmi:type") }]]
@@ -773,5 +1029,11 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			console.warn("Cameo Import: Skipping statement " + st.id + ", because subject or object is undefined.");
 			return false;
 		}
+	}
+	function validateCameo(xmi) {
+	/*	return xmi.getElementsByTagName('parsererror').length < 1  // has been checked, before in LIB.validXML ...
+			&& */
+		return xmi.getElementsByTagName('xmi:exporter')[0].innerHTML.includes("MagicDraw")
+			&& xmi.getElementsByTagName('xmi:exporterVersion')[0].innerHTML.includes("19.0");
 	}
 }

@@ -7,9 +7,9 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.s.10",
+    CONFIG.appVersion = "1.1.s.11",
     CONFIG.specifVersion = "1.1";
-    CONFIG.imgURL = './vendor/assets/images';
+    CONFIG.imgURL = './assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
     CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";

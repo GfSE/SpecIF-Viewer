@@ -186,7 +186,7 @@ moduleManager.construct({
 		$('#hitlist').empty();
 		self.clear();
 	};
-	function handleError(xhr: xhrMessage): void {
+	function handleError(xhr: resultMsg): void {
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
 		LIB.stdError(xhr);

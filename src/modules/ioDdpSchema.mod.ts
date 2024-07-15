@@ -23,12 +23,12 @@ moduleManager.construct({
 		mime,
 		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
-		errNoOptions = new xhrMessage( 896, 'No options or no mediaTypes defined.' ),
-		errNoDdpSchemaFile = new xhrMessage( 897, 'No DDP-Schema file in the reqifz container.' ),
+		errNoOptions = new resultMsg( 896, 'No options or no mediaTypes defined.' ),
+		errNoDdpSchemaFile = new resultMsg( 897, 'No DDP-Schema file in the reqifz container.' ),
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' }, */
-		errInvalidXML = new xhrMessage(898, 'DDP Schema is not valid XML.'),
-		errTransformationCancelled = new xhrMessage(999, 'Transformation cancelled on user request.'),
-		errTransformationFailed = new xhrMessage(999, 'Input file could not be transformed to SpecIF.'),
+		errInvalidXML = new resultMsg(898, 'DDP Schema is not valid XML.'),
+		errTransformationCancelled = new resultMsg(999, 'Transformation cancelled on user request.'),
+		errTransformationFailed = new resultMsg(999, 'Input file could not be transformed to SpecIF.'),
 		domainOfDDPElements = "V-Domain-20";
 		
 	self.init = (/*options:any*/):boolean =>{

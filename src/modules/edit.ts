@@ -48,14 +48,14 @@ function SpecifApp():IApp {
 				name: 'ioBpmn'
 			}, {
 				name: 'ioSysml'
-				/*	},{
-						name: 'ioRdf' */
 			}, {
 				name: 'ioReqif'
 			}, {
-				name: 'ioDdpSchema'
-			}, {
 				name: 'ioXls'
+		/*	}, {
+				name: 'ioDdpSchema'
+			},{
+				name: 'ioRdf' */
 			}]
 		}, {
 			name: CONFIG.specifications,

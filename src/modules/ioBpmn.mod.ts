@@ -80,7 +80,7 @@ moduleManager.construct({
 		if( typeof(data)=='object' && data.id )
 			bDO.resolve( data )
 		else
-			bDO.reject(new xhrMessage(999, 'Input file could not be transformed to SpecIF'));
+			bDO.reject(new resultMsg(999, 'Input file could not be transformed to SpecIF'));
 
 		return bDO
 	};

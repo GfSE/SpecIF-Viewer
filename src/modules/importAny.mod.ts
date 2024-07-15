@@ -80,14 +80,6 @@ moduleManager.construct({
 		//	extensions: [".xml", ".xmi", ".model"],
 			help: "Experimental: Import an XMI file from Cameo v19.0."
 		}, {
-			id: 'ddp',
-			name: 'ioDdpSchema',
-			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
-			label: 'DDP',
-			extensions: [".xsd"],
-			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
-			opts: { mediaTypeOf: LIB.attachment2mediaType }
-		}, {
 			id: 'reqif',
 			name: 'ioReqif',
 			desc: 'Requirement Interchange Format',
@@ -104,6 +96,14 @@ moduleManager.construct({
 			help: i18n.MsgImportXls,
 			opts: { dontCheck: ["statement.object"] }
 	/*	},{
+			id: 'ddp',
+			name: 'ioDdpSchema',
+			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
+			label: 'DDP',
+			extensions: [".xsd"],
+			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
+			opts: { mediaTypeOf: LIB.attachment2mediaType }
+		}, {
 			id: 'rdf',
 			name: 'ioRdf',
 			desc: 'Resource Description Format',
@@ -457,7 +457,7 @@ moduleManager.construct({
 			CONFIG.showTimelag
 		)
 	}
-	function handleError(xhr: xhrMessage): void {
+	function handleError(xhr: resultMsg): void {
 //		console.debug( 'handleError', xhr );
 		self.clear();
 		LIB.stdError(xhr);

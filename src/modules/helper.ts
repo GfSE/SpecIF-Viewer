@@ -358,19 +358,19 @@ class CCheckDialogInput {
 }
 
 // see: https://javascript.info/xmlhttprequest
-class xhrMessage {
+class resultMsg {
     status: number;
     statusText: string;
     responseType?: string;
-    responseText?: string;
-    constructor(st: number, sTxt: string, rTyp?: string, rTxt?: string) {
+    response?: any;
+    constructor(st: number, sTxt: string, rTyp?: string, resp?: any) {
         this.status = st;
         this.statusText = sTxt;
         this.responseType = rTyp;
-        this.responseText = rTxt;
+        this.response = resp;
     }
     asString():string {
-        return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.responseText : ")")
+        return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.response : ")")
     }
     log() {
         console.log(this.asString());
@@ -381,14 +381,14 @@ class xhrMessage {
         return this;  // make it chainable
     }
 }
-/*LIB.logMsg = (xhr: xhrMessage): void =>{
-    console.log(xhr.statusText + " (" + xhr.status + (xhr.responseType == 'text' ? "): " + xhr.responseText : ")"));
+/*LIB.logMsg = (xhr: resultMsg): void =>{
+    console.log(xhr.statusText + " (" + xhr.status + (xhr.responseType == 'text' ? "): " + xhr.response : ")"));
 }*/
 // standard error handler:
-LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
+LIB.stdError = (xhr: resultMsg, cb?:Function): void =>{
 //    console.debug('stdError',xhr);
-    // clone, as xhr.responseText ist read-only:
-    let xhrCl = new xhrMessage(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : '');
+    // clone, as xhr.response ist read-only:
+    let xhrCl = new resultMsg(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.response : '');
     
     switch( xhr.status ) {
         case 0:
@@ -399,29 +399,29 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
             app.me.logout();
             break;
         case 402:  // payment required - insufficient license
-            // avoid TypeError: setting getter-only property "responseText" 
+            // avoid TypeError: setting getter-only property "response" 
             // ('Object.assign({},..) does not work properly for some reason)
             xhrCl.responseType = 'text';
-            xhrCl.responseText = i18n.Err402InsufficientLicense;
+            xhrCl.response = i18n.Err402InsufficientLicense;
             message.show(xhrCl);
             break;
         case 403:  // forbidden
-            // avoid TypeError: setting getter-only property "responseText"
+            // avoid TypeError: setting getter-only property "response"
             xhrCl.responseType = 'text';
-            xhrCl.responseText = i18n.Err403Forbidden;
+            xhrCl.response = i18n.Err403Forbidden;
             message.show(xhrCl);
             break;
         case 404:  // not found
-            // avoid TypeError: setting getter-only property "responseText"
+            // avoid TypeError: setting getter-only property "response"
             xhrCl.responseType = 'text';
-            xhrCl.responseText = i18n.Err404NotFound;
+            xhrCl.response = i18n.Err404NotFound;
             message.show(xhrCl);
             break;
     /*    case 500:
-            // avoid TypeError: setting getter-only property "responseText"
-            message.show( Object.assign({}, xhr, { statusText = i18n.ErrInvalidData, responseText: '' }), {severity:'danger'});
+            // avoid TypeError: setting getter-only property "response"
+            message.show( Object.assign({}, xhr, { statusText = i18n.ErrInvalidData, response: '' }), {severity:'danger'});
         //    x.statusText = i18n.ErrInvalidData;
-        //    x.responseText = '';
+        //    x.response = '';
         //    message.show( x, {severity:'danger'} );
             break;
         case 996:  // server request queue flushed
@@ -453,7 +453,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
         if( --this.pend<1 )
             this.hide();
     }
-    show( msg:xhrMessage|string, opts?:any ):void {
+    show( msg:resultMsg|string, opts?:any ):void {
         // msg: message string or jqXHR object
         // opts.severity: severity with a value listed below 
         // opts.duration: time in ms before fading out
@@ -474,12 +474,12 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 
                 /*    msg = (msg.statusText || i18n.Error)
                         + " (" + msg.status
-                        + ((msg.responseType == 'text' || typeof (msg.responseText) == 'string') && msg.responseText.length > 0 ?
-                            "): " + msg.responseText : ")"); */
+                        + ((msg.responseType == 'text' || typeof (msg.response) == 'string') && msg.response.length > 0 ?
+                            "): " + msg.response : ")"); */
 
                     msg = (msg.statusText || i18n.Error)
                         + " (" + msg.status
-                        + ( msg.responseText ? "): " + msg.responseText : ")");
+                        + ( msg.response ? "): " + msg.response : ")");
                     break;  // the switch, not the if ;-)
                 };
             default:
@@ -1213,9 +1213,14 @@ LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
                     for (let att in c) {
                         //	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
                         // @ts-ignore - indexing an object with a string is perfectly OK
-                        if (["propertyClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
-                            // @ts-ignore - indexing an object with a string is perfectly OK
-                            LIB.cacheL(rC[att], c[att])
+                        if (["propertyClasses"].includes(att)) {
+                            if (Array.isArray(c[att]))
+                                if (Array.isArray(rC[att]))
+                                    // @ts-ignore - indexing an object with a string is perfectly OK
+                                    LIB.cacheL(rC[att], c[att]);
+                                else
+                                    rC[att] = c[att];
+                        }
                         else
                             // @ts-ignore - indexing an object with a string is perfectly OK
                             rC[att] = simpleClone(c[att]);  // in case of an array, create a new one, elements can be the same
@@ -1901,9 +1906,8 @@ LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: 
 LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
     // Given a propertyClass key, return it's dataType:
     if (LIB.isKey(key)) {
-        let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
-        //       |                            get propertyClass
-        //        get dataType
+        let pC = LIB.itemByKey(prj.propertyClasses, key),
+            dT = pC? LIB.itemByKey(prj.dataTypes, pC.dataType) : undefined;
         if (dT)
             return dT
         else
@@ -1958,11 +1962,14 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
 
     // Look for the propertyClasses pCs of the item's class iC:
     // ToDo: Add statementClasses, as soon as needed.
-    var iC: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, itm['class']),
+    var // cl: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, itm['class']),
+        iCL = LIB.getExtendedClasses(dta.resourceClasses, [itm['class']]),
         prp: SpecifProperty;
-//    console.debug('propByTitle',dta,itm,pN,iC);
+    if (iCL.length < 1)
+        throw Error("Data inconsistent: LIB.getExtendedClasses doesn't return a result for " + itm['class'].id);
+//    console.debug('propByTitle',dta,itm,pN,iCL);
     for (var pC of dta.propertyClasses) {
-        if (LIB.referenceIndex(iC.propertyClasses, pC) > -1     // pC is used by the item's class iC
+        if (LIB.referenceIndex(iCL[0].propertyClasses, pC) > -1     // pC is used by the item's class iC
             && pC.title == pN) {                        // pC has the specified title
             // take the existing property, if it exists;
             // the property's title is not necessarily (in fact, is rarely) present:

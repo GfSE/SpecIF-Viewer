@@ -136,7 +136,7 @@ class CSpecIF implements SpecIF {
 	set(spD: any, opts: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
-				let msg: xhrMessage;
+				let msg: resultMsg;
 				if (this.isValid(spD)) {
 					msg = this.toInt(spD, opts);
 					// an error found during import has been logged in this.toInt()
@@ -157,7 +157,7 @@ class CSpecIF implements SpecIF {
 						reject(msg);
 				}
 				else {
-					msg = new xhrMessage(999, "SpecIF id is not defined or version is not supported.").warn();
+					msg = new resultMsg(999, "SpecIF id is not defined or version is not supported.").warn();
 					reject(msg);
                 }
 			}
@@ -215,7 +215,7 @@ class CSpecIF implements SpecIF {
 					} 
 				}
 				else {
-					reject(new xhrMessage( 999, 'No SpecIF data provided for checking' ));
+					reject(new resultMsg( 999, 'No SpecIF data provided for checking' ));
 				};
 				return;
 
@@ -231,7 +231,7 @@ class CSpecIF implements SpecIF {
 						sma['$schema'] = "http://json-schema.org/draft-04/schema#";
 
 						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
-						let rc: xhrMessage = checker.checkSchema(spD, { schema: sma });
+						let rc: resultMsg = checker.checkSchema(spD, { schema: sma });
 						if (rc.status == 0) {
 							// 2. Check further constraints:
 							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
@@ -242,19 +242,19 @@ class CSpecIF implements SpecIF {
 							}
 						};
 					/*	// older versions of the checking routine don't set the responseType:
-						if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+						if (typeof (rc.response) == 'string' && rc.response.length > 0)
 							rc.responseType = 'text';  */
 						reject(rc);
 					}
 					else
 						throw Error( 'Standard routines checkSchema and/or checkConstraints are not available.' );
 				}
-				function handleError(xhr: xhrMessage) {
+				function handleError(xhr: resultMsg) {
 					switch (xhr.status) {
 						case 404:
 							// @ts-ignore - 'specifVersion' is defined for versions <1.0
 							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
-							xhr = new xhrMessage ( 903, 'SpecIF ' + v + ' is not supported by this program!' );
+							xhr = new resultMsg ( 903, 'SpecIF ' + v + ' is not supported by this program!' );
 						// no break
 						default:
 							reject(xhr);
@@ -280,7 +280,7 @@ class CSpecIF implements SpecIF {
 			&& specifData.title[0]['text'].includes("Ontology")
 		);
 	};
-	private toInt(spD: any, opts: any):xhrMessage {
+	private toInt(spD: any, opts: any):resultMsg {
 	//	if (!this.isValid(spD)) return;
 
 		// Transform SpecIF to internal data;
@@ -336,8 +336,8 @@ class CSpecIF implements SpecIF {
 		catch (e) {
 			let txt = "Error when importing the project '" + LIB.displayValueOf(spD.title, {targetLanguage:spD.language||browser.language}) + "': " + e;
 			console.error(txt);
-		//	message.show(new xhrMessage( 999, txt ), { severity: 'danger' });
-			return new xhrMessage(904, txt); // undefined 
+		//	message.show(new resultMsg( 999, txt ), { severity: 'danger' });
+			return new resultMsg(904, txt); // undefined 
 		};
 
 		// header information provided only in case of project creation, but not in case of project update:
@@ -356,7 +356,7 @@ class CSpecIF implements SpecIF {
 		this.$schema = 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json';
 	/*	// Namespace for JSON-LD:
 		this.context = spD['@Context'] || "http://purl.org/dc/terms/"; */
-		return new xhrMessage(0, 'SpecIF data has been successfully imported!');
+		return new resultMsg(0, 'SpecIF data has been successfully imported!');
 
 //		console.debug('specif.toInt',simpleClone(this));
 
@@ -1980,7 +1980,7 @@ class CSpecIF implements SpecIF {
 									default:
 										/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
 											resolve(); */
-										reject(new xhrMessage( 999, "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." ))
+										reject(new resultMsg( 999, "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." ))
 								}
 							}
 						}

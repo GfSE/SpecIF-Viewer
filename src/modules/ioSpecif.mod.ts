@@ -19,9 +19,9 @@ moduleManager.construct({
 		opts:any;
 		
 	const 
-		errNoOptions = new xhrMessage( 899, 'Programming flaw: No options or no mediaTypes defined.' ),
-		errNoSpecif = new xhrMessage( 901, 'No SpecIF file in the specifz container.' ),
-		errInvalidJson = new xhrMessage( 900, 'SpecIF data is not valid JSON.' );
+		errNoOptions = new resultMsg( 899, 'Programming flaw: No options or no mediaTypes defined.' ),
+		errNoSpecif = new resultMsg( 901, 'No SpecIF file in the specifz container.' ),
+		errInvalidJson = new resultMsg( 900, 'SpecIF data is not valid JSON.' );
 		
 	self.init = (options:any):boolean => {
 		opts = options;
@@ -69,7 +69,7 @@ moduleManager.construct({
 	self.toSpecif = (buf: ArrayBuffer): JQueryDeferred<SpecIF> => {
 		// import a read file buffer containing specif data:
 		// a button to upload the file appears at <object id="file-object"></object>
-//		console.debug('iospecif.toSpecif');
+//		console.debug('ioSysml.toSpecif');
 		self.abortFlag = false;
 		var zDO = $.Deferred();
 		if( zipped ) {
@@ -84,7 +84,7 @@ moduleManager.construct({
 					zDO.reject( errNoSpecif );
 					return zDO;
 				};
-//				console.debug('iospecif.toSpecif 1',fileL[0].name);
+//				console.debug('ioSysml.toSpecif 1',fileL[0].name);
 				// take the first specif file found, ignore any other so far:
 				zip.file( fileL[0].name ).async("string")
 				.then( (dta:string) => {
@@ -102,7 +102,7 @@ moduleManager.construct({
 							// Create a list of all attachments:
 							// @ts-ignore - relPath is never read, but must be specified anyways
 							fileL = zip.filter( (relPath, file) => {return !file.name.endsWith('.specif')});
-//							console.debug('iospecif.toSpecif 2',fileL);
+//							console.debug('ioSysml.toSpecif 2',fileL);
 							if( fileL.length>0 ) {
 								let pend = 0;
 								fileL.forEach( (aFile:any) => { 
@@ -113,7 +113,7 @@ moduleManager.construct({
 												   // skip files with unknown mediaTypes:
 													if( !fType ) return false;
 													
-//													console.debug('iospecif.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
+//													console.debug('ioSysml.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
 													pend++;
 													zip.file(aFile.name).async("blob")
 													.then( (f:Blob) => {

@@ -1,0 +1,427 @@
+/* 	CSS for SpecIF Web-Apps.
+	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
+	Intended to be replaced with a custom file;
+	it is recommended to use a different name and to change path and name in definitions.ts.
+	(C)copyright since 2010 enso managers gmbh (http://enso-managers.de)
+	Author: se@enso-managers.de, Berlin
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
+	Notes:
+	- #4A8C00 SpecIF dark green
+*/
+
+@font-face {
+  font-family: "dejavusansmono";
+  src: url("../fonts/DejaVuSansMono.ttf");
+}
+body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+	padding: 0 0 0 8px;
+	font-family: arial, "DejaVu Sans Mono", dejavusansmono, sans-serif;
+	font-size: 10.5pt;
+}
+#pageHeader {
+	padding: 0.3em 0 0.3em 0;
+}
+#logo {
+	width: 122px;
+	height: 36px;
+	float: right;
+	margin-right: 16px;
+	background-image: url("../images/logo-navbar-right.svg");
+	background-repeat: no-repeat;
+	background-size: 121px;
+}
+#spinner {
+	font-size: 24px;
+	color: #3F3F3F;
+	float: right;
+	margin: 0px 16px 0 0;
+}
+#message {
+ position:fixed;
+ top:8px;
+ z-index:990;
+}
+.pageTitle {
+	font-size: 180%;
+}
+.chapterTitle,
+h1 {
+	font-size: 160%;
+	margin: 0.9em 0 0.3em;
+}
+.objectTitle,
+h2 {
+	font-size: 140%;
+	margin: 0.6em 0 0.3em;
+}
+h3 {
+	font-size: 120%;
+	margin: 0.3em 0 0.3em;
+}
+h4 {
+	font-size: 110%;
+	margin: 0 0 0.3em;
+}
+h5, h6, p, ul, ol {
+	margin: 0 0 0.3em;
+}
+.notice-default {
+	font-style:italic;
+}
+.notice-primary {
+	font-style:italic;
+	color: #337ab7;
+}
+.notice-success {
+	font-style:italic;
+	color: #3c763d;
+}
+.notice-danger {
+	font-style:italic;
+	color: #a94442;
+}
+div.noOverflow {
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+div.pageActions {
+    float: right;
+	margin-right: 16px;
+}
+div.contentCtrl {
+	position: fixed;
+	top: 120px;
+	display: inline-block;
+    box-sizing: border-box;
+	padding: 8px 30px 0 4px;
+	width: 100%;
+	z-index: 900;
+}
+div.contentNotice {
+	display: inline-block;
+    box-sizing: border-box;
+	padding-left: 8px;
+}
+div.contentActions {
+	display: inline-block;
+	float: right;
+}
+div.doneBtns {
+	float: right;
+	padding: 0 15px 0 0;  /* 15px like Bootstrap form */
+}
+/* for views without selector on the left: */
+div.contentWide {
+    /*height is set by script*/
+    box-sizing: border-box;
+    width: 100%;
+    overflow: auto;
+}
+/* for views with selector on the left: */
+div.content {   /* width is 75% with wide screen, 100% otherwise */
+	clear: both;
+    /* height is set by script */
+    box-sizing: border-box;
+	position: relative; /* create reference for inner absolute blocks */
+    width: 100%;
+    overflow: auto;
+    padding: 0 0 0 4px;
+}
+/* main column for title and description: */
+div.content-main {
+	clear: both;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+}
+/* selector on the left: */
+div.paneLeft,
+/* column on the right for additional properties: */
+div.content-other {
+	display: none;
+}
+@media (min-width: 768px) {
+  div.paneLeft {
+	font-size: 90%;
+	display: inline-block;
+	margin-right: -4px;
+	vertical-align: top;
+    width: 25%;
+    /* height is set by script */
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 8px 0 0;
+  }
+  div.contentCtrl {
+	width: 75%;
+  }
+  div.content {
+	display: inline-block;
+	vertical-align: top;
+    width: 75%;
+  }
+  div.content-main {
+	display: inline-block;
+	margin-right: -4px;
+	vertical-align: top;
+	width: 67%;
+	padding-right: 8px;
+    overflow-x: hidden;
+  }
+  div.content-other {
+	display: inline-block;
+	vertical-align: top;
+	width: 33%;
+    overflow-x: hidden;
+  }
+}
+/* div.primaryFilters {
+    box-sizing: border-box;
+    overflow: auto;
+}
+#secondaryFilters {
+	font-size: 90%;
+}
+#secondaryFilters div.panel-filter {
+	display: inline-block;
+	vertical-align: top;
+} */
+div.pane-tree ,
+div.pane-filter {
+	background-color:#f5f5f5;
+    box-sizing: border-box;
+    overflow: auto;
+	padding: 8px 2px 2px 2px;
+}
+div.pane-details {
+	display: none;
+	background-color:#c8def0;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 8px 2px 2px 2px;
+}
+div.panel-filter {
+	background-color:#f5f5f5;
+    box-sizing: border-box;
+	margin: 0 0 0.4em 0;
+	padding: 0.2em;
+}
+div.panel-options {
+    box-sizing: border-box;
+	padding: 0.2em;
+}
+.listEntry {
+	border-bottom:1px solid #ddd;
+}
+div.attribute {
+	padding: 0 0 0.6em;
+}
+div.attribute-condensed {
+	font-size:90%;
+	padding: 0 0 0.4em;
+}
+div.attribute-condensed > div.attribute-value > p {
+	margin-bottom: 0;
+}
+div.attribute-condensed > div.attribute-value > ul,
+div.attribute-condensed > div.attribute-value > ol {
+	margin-bottom: 0;
+	padding-left: 12px;
+}
+/* use total width to display the content: */
+div.attribute-wide {
+	width: 100%;
+}
+/* or use two blocks for label and value: */
+div.attribute-label {
+	display: inline-block;
+	margin-right: -4px;
+	padding-right: 8px;
+	vertical-align: middle;
+    text-align: right;
+	width: 25%;
+	font-style:italic;
+	font-size: 90%;
+	color: #23527c; /* bootstrap brand-primary */
+	word-wrap:break-word;
+}
+div.attribute-value {
+	display: inline-block;
+	margin-right: -4px;
+	padding-left: 8px;
+	vertical-align: middle;
+	width: 75%;
+	word-wrap:break-word;
+}
+div.attribute table {
+/*	width:100%;  */
+	border-collapse:collapse;
+	vertical-align:top;
+	margin: 0;
+}
+div.attribute th {
+	border: 1px solid #DDDDDD;
+	margin: 0em;
+	padding: 0.2em;
+}
+div.attribute td {
+	border: 1px solid #DDDDDD;
+	margin: 0em;
+	padding: 0.2em;
+}
+.forImage { max-width: 960px; margin: 8px 0; }
+.forImagePreview { max-width: 160px; margin: 4px 0; }
+.forImage object,
+.forImage img,
+.forImage svg,
+.forImagePreview object,
+.forImagePreview img,
+.forImagePreview svg {
+	max-width: 100%;
+/*	width: auto; */
+	height: auto;
+}
+div.forDeletion a {
+	color: #ff3366;
+}
+div.forDeletion a:hover,
+div.forDeletion a:focus {
+	color: #ff0066;
+}
+div.form-active {
+	background-color: #ffffe0;
+}
+
+/* for content generated by ARCWAY ReqIF export and for DOORS tables rendered by the ReqIF Server: */
+.inline-label {
+	margin: 12px 0 8px;
+	font-style:italic;
+	font-size: 90%;
+	color: #23527c; /* bootstrap brand-primary */
+}
+table.stdInlineWithBorder,
+table.doors-table {
+	width:100%;
+    border: 1px solid #DDDDDD;
+    border-collapse:collapse;
+	vertical-align:top;
+	margin: 0;
+}
+table.stdInlineWithBorder th,
+table.stdInlineWithBorder td,
+table.doors-table th,
+table.doors-table td {
+    border: 1px solid #DDDDDD;
+    margin: 0;
+    padding: 2pt;
+	font-size: 90%;
+}
+/*
+th.stdInlineWithBorder,
+td.stdInlineWithBorder,
+td.doors-table-cell {
+    border: 1px solid #DDDDDD;
+    margin: 0;
+    padding: 2pt;
+	font-size: 90%;
+}
+*/
+
+/* override bootstrap.css */
+/*object[disabled] {
+	cursor: not-allowed;
+	pointer-events: none;
+}*/
+.font-sm { font-size: 90%; }
+.force_word_break{ word-wrap:break-word;word-break:break-all; }
+
+.row {
+	margin: 0;
+}
+ul.nav-tabs {
+	font-size: 90%;
+}
+.nav-tabs > li > a {
+	line-height: 1;
+}
+.nav > li.disabled,
+.nav > li.disabled > a {
+  color: #ccc;
+}
+.checkbox {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+.form-group,
+.form-horizontal .form-group {
+	margin: 0 0 0.4em;
+}
+.form-control[disabled],
+.form-control[readonly],
+fieldset[disabled] .form-control {
+	background-color: #fff;
+}
+mark{
+	background: #ffffaa;
+}
+.table > thead > tr > td.selected,
+.table > tbody > tr > td.selected,
+.table > tfoot > tr > td.selected,
+.table > thead > tr > th.selected,
+.table > tbody > tr > th.selected,
+.table > tfoot > tr > th.selected,
+.table > thead > tr.selected > td,
+.table > tbody > tr.selected > td,
+.table > tfoot > tr.selected > td,
+.table > thead > tr.selected > th,
+.table > tbody > tr.selected > th,
+.table > tfoot > tr.selected > th {
+	color: #fff;
+	background-image: none;
+	background-color: #1690D8;
+}
+/*.panel-title {
+  font-size: 100%;
+}*/
+.btn-fileinput {
+  position: relative;
+  overflow: hidden;
+}
+.btn-fileinput input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  font-size: 100%;
+  cursor: pointer;
+}
+
+/* override jqtree.css */
+.jqtree-tree .jqtree-title {
+	display: block;
+}
+.jqtree-tree .jqtree-title.jqtree-title-folder {
+	display: inline;
+}  
+/* ul.jqtree-tree .jqtree-element {
+	display: unset;    for selection buttonLeft:false 
+} */
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler,
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-title {
+	color: #ffffff;
+}
+ul.jqtree-tree li.jqtree-selected > .jqtree-element,
+ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
+	background: none;
+	background-color: #1690D8;
+	text-shadow: none;
+}

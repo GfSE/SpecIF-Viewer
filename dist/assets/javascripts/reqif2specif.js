@@ -25,25 +25,23 @@ function reqif2Specif(reqifDoc,options) {
 
     var xhr;
     if (validateReqif(xmlDoc))
-        xhr = { status: 0, statusText: "ReqIF data is valid" }
+        xhr = { status: 0, statusText: "ReqIF data is valid", responseType: 'object' };
     else
-        xhr = options.errInvalidReqif || { status: 899, statusText: "ReqIF data is invalid" };
+        return options.errInvalidReqif || { status: 899, statusText: "ReqIF data is invalid" };
 
-    if (xhr.status == 0) {
-        // Transform ReqIF data provided as an XML string to SpecIF data.
-        xhr.response = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
-        xhr.response.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
-        xhr.response.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-        xhr.response.resourceClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), ['SPECIFICATION-TYPE','SPEC-OBJECT-TYPE']);
-        xhr.response.statementClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), [/*'RELATION-GROUP-TYPE',*/'SPEC-RELATION-TYPE']);
-        xhr.response.resources = extractResources("SPEC-OBJECTS")
-            // ReqIF hierarchy roots are SpecIF resouces:
-            .concat(extractResources("SPECIFICATIONS"));
-        xhr.response.statements = extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS"));
-        xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
-    };
+    // Transform ReqIF data provided as an XML string to SpecIF data.
+    xhr.response = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
+    xhr.response.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
+    xhr.response.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+    xhr.response.resourceClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), ['SPECIFICATION-TYPE','SPEC-OBJECT-TYPE']);
+    xhr.response.statementClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), [/*'RELATION-GROUP-TYPE',*/'SPEC-RELATION-TYPE']);
+    xhr.response.resources = extractResources("SPEC-OBJECTS")
+        // ReqIF hierarchy roots are SpecIF resources:
+        .concat(extractResources("SPECIFICATIONS"));
+    xhr.response.statements = extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS"));
+    xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
 
-    // get project title from hierarchy roots in case of default;
+    // Get project title from hierarchy roots in case of default;
     // for example the ReqIF exports from Cameo do not have a TITLE:
     if (!xhr.response.title) {
         let ti = '', r;

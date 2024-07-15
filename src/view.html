@@ -4,8 +4,8 @@
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 	<meta http-equiv="expires" content="0" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<link rel="shortcut icon" href="./vendor/assets/icons/favicon.ico" type="image/x-icon">
-	<link rel="icon" href="./vendor/assets/icons/favicon.ico" type="image/x-icon">
+	<link rel="shortcut icon" href="./assets/icons/favicon.ico" type="image/x-icon">
+	<link rel="icon" href="./assets/icons/favicon.ico" type="image/x-icon">
 </head>
 <body>
 
@@ -43,7 +43,7 @@ let pend=4;
 getScript('https://code.jquery.com/jquery-3.7.1.min.js');
 getScript( './config/definitions.js?'+ Date.now().toString() ); // with cache-busting
 getScript( './config/moduleManager.js?'+ Date.now().toString() );
-getScript( './'+fileName+'.js?'+ Date.now().toString() );
+getScript( './modules/'+fileName+'.js?'+ Date.now().toString() );
 
 </script>
 <noscript>

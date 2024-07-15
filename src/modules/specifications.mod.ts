@@ -1438,7 +1438,7 @@ moduleManager.construct({
 		app.busy.reset()
 	}; 
 
-/*	function handleError(xhr:xhrMessage):void {
+/*	function handleError(xhr:resultMsg):void {
 		console.debug( 'handleError', xhr );
 		self.clear();
 		switch( xhr.status ) {
@@ -1909,7 +1909,7 @@ moduleManager.construct({
 			$( self.view ).prepend( actionBtns() );
 			app.busy.reset()
 		}
-		function handleErr(err: xhrMessage):void {
+		function handleErr(err: resultMsg):void {
 			LIB.stdError( err );
 			app.busy.reset()
 		}
@@ -2278,7 +2278,7 @@ moduleManager.construct({
 				}
 			)
 			.catch(
-				(xhr: xhrMessage) => {
+				(xhr: resultMsg) => {
 					LIB.stdError(xhr);
 					app.busy.reset();
 				}

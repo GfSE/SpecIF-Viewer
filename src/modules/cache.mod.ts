@@ -1508,7 +1508,7 @@ class CProject implements SpecifProject {
 //						console.debug('deleteItems',ctg,itmL);
 						if (this.cache.delete(ctg, itmL))
 							break;
-						reject( new xhrMessage( 999, 'One or more items of ' + ctg + ' not found and thus not deleted.' ));
+						reject( new resultMsg( 999, 'One or more items of ' + ctg + ' not found and thus not deleted.' ));
 						return;
 				};
 				resolve()
@@ -2532,7 +2532,7 @@ class CProject implements SpecifProject {
 		.open();
 		return;
 
-		function handleError(xhr: xhrMessage): void {
+		function handleError(xhr: resultMsg): void {
 			self.exporting = false;
 			app.busy.reset();
 			message.show(xhr);
@@ -2553,7 +2553,7 @@ class CProject implements SpecifProject {
 
 			if (self.exporting) {
 				// prohibit multiple entry
-				reject(new xhrMessage( 999, "Export in process, please wait a little while" ));
+				reject(new resultMsg( 999, "Export in process, please wait a little while" ));
 			}
 			else {
 			//	if (self.cache.exp) { // check permission
@@ -2577,7 +2577,7 @@ class CProject implements SpecifProject {
 					default:
 						// !
 						let msg = "Programming error: Invalid format specified on export."
-					//	reject(new xhrMessage(999, msg));
+					//	reject(new resultMsg(999, msg));
 						throw Error(msg);
 			//	}
 			//	else {
@@ -2635,7 +2635,7 @@ class CProject implements SpecifProject {
 							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
 							done: () => { app.projects.selected.exporting = false; resolve() },
-							fail: (xhr:xhrMessage) => { app.projects.selected.exporting = false; reject(xhr) }
+							fail: (xhr:resultMsg) => { app.projects.selected.exporting = false; reject(xhr) }
 						};
 
 						// Take the title entered in the export dialog;
@@ -2713,7 +2713,7 @@ class CProject implements SpecifProject {
 						opts.adoptOntologyDataTypes = true;
 						break;
 					default:
-						reject(new xhrMessage(999,"Programming Error: Invalid format selector on export."));
+						reject(new resultMsg(999,"Programming Error: Invalid format selector on export."));
 						return; // should never arrive here
 				};
 //				console.debug( "storeAs", simpleClone(self), opts );
@@ -2780,7 +2780,7 @@ class CProject implements SpecifProject {
 								fName += ".specif";
 								zName = fName + '.zip';
 								if (!Array.isArray(opts.domains) || opts.domains.length < 1) {
-									reject(new xhrMessage(999, "No domain selected, so no classes will be generated."));
+									reject(new resultMsg(999, "No domain selected, so no classes will be generated."));
 									return;  // yes, we need a return to avoid further processing ...
 								};
 								expStr = JSON.stringify(
@@ -2831,7 +2831,7 @@ class CProject implements SpecifProject {
 								self.exporting = false;
 								resolve();
 							},
-							(xhr: xhrMessage) => {
+							(xhr: resultMsg) => {
 								// an error has occurred:
 								console.error("Cannot create ZIP of '" + fName + "'.");
 								self.exporting = false;
@@ -2904,7 +2904,7 @@ class CProject implements SpecifProject {
 				case XsDataType.Double:
 					// to be compatible, the new 'fractionDigits' must be lower or equal:
 					if (refC.fractionDigits < newC.fractionDigits) {
-						new xhrMessage(952, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
+						new resultMsg(952, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;
 					};
 				// else: go on ...
@@ -2912,14 +2912,14 @@ class CProject implements SpecifProject {
 					// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //					console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 					if (refC.maxInclusive < newC.maxInclusive || refC.minInclusive > newC.minInclusive) {
-						new xhrMessage(953, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
+						new resultMsg(953, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;
 					};
 					break;
 				case XsDataType.String:
 //					console.debug( refC.maxLength>newC.maxLength-1 );
 					if (refC.maxLength && (newC.maxLength == undefined || refC.maxLength < newC.maxLength)) {
-						new xhrMessage(951, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
+						new resultMsg(951, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;;
 					};
 					break;
@@ -2948,14 +2948,14 @@ class CProject implements SpecifProject {
 				idx = LIB.indexById(refC.enumeration, newC.enumeration[v].id);
 				// a. The id of the new 'enumeration' must be present in the present one:
 				if (idx < 0) {
-					new xhrMessage( 954, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
+					new resultMsg( 954, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
 					return false;
 				};
 			/*	//  b. the values must be equal; distinguish between data types:
 			 	// - XsDataType.String: multiLanguage text (ToDo:  needs rework!)
 				// - all others: string
 				if (refC.enumeration[idx].value != newC.enumeration[v].value) { 
-					new xhrMessage( 955, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
+					new resultMsg( 955, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
 					return false;
 				}; */
 			};
@@ -2967,7 +2967,7 @@ class CProject implements SpecifProject {
 		if (LIB.equalPC(refC, newC))
 			return true;
 		// else:
-		new xhrMessage(956, "new propertyClass '" + newC.id + "' is incompatible" ).log();
+		new resultMsg(956, "new propertyClass '" + newC.id + "' is incompatible" ).log();
 		return false;
 
 	/*	// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
@@ -3060,31 +3060,31 @@ class CProject implements SpecifProject {
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
-		new xhrMessage( 963, "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
+		new resultMsg( 963, "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
 	private compatibleSC(refC: SpecifStatementClass, newC: SpecifStatementClass, opts?:any): boolean {
 		// Check whether newC is compatible with refC.
 		if (refC.title != newC.title) {
-			new xhrMessage( 961, "new statementClass '" + newC.id + "' is incompatible; titles don't match" ).log();
+			new resultMsg( 961, "new statementClass '" + newC.id + "' is incompatible; titles don't match" ).log();
 			return false;
         }
 		// To be compatible, all subjectClasses of newC must be contained in the subjectClasses of refC;
 		// no subjectClasses means that all resourceClasses are permissible as subject.
 		if (!this.compatibleECReferences(refC.subjectClasses, newC.subjectClasses) ) {
-			new xhrMessage( 962, "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" ).log();
+			new resultMsg( 962, "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" ).log();
 			return false;
 		};
 		// ... and similarly for the objectClasses:
 		if (!this.compatibleECReferences(refC.objectClasses, newC.objectClasses)) {
-			new xhrMessage( 962, "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" ).log();
+			new resultMsg( 962, "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" ).log();
 			return false;
 		};
 		// else: so far everything is OK, but go on checking ... (no break!)
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
-		new xhrMessage( 963, "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
+		new resultMsg( 963, "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
 	// Substitutions:

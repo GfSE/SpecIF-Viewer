@@ -29,9 +29,9 @@ moduleManager.construct({
 		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts:any,
-		errNoOptions = new xhrMessage( 896, 'No options or no mediaTypes defined.' ),
-		errNoReqifFile = new xhrMessage( 897, 'No ReqIF file found in the reqifz container.' ),
-		errInvalidXML = new xhrMessage( 898, 'ReqIF data is not valid XML.' );
+		errNoOptions = new resultMsg( 896, 'No options or no mediaTypes defined.' ),
+		errNoReqifFile = new resultMsg( 897, 'No ReqIF file found in the reqifz container.' ),
+		errInvalidXML = new resultMsg( 898, 'ReqIF data is not valid XML.' );
 		
 	self.init = (options:any):boolean =>{
 		mime = undefined;

@@ -72,7 +72,7 @@ moduleManager.construct({
 		$(self.view).empty();
 		self.clear()
 	};
-	function handleError(xhr: xhrMessage): void {
+	function handleError(xhr: resultMsg): void {
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
