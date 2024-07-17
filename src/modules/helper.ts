@@ -362,6 +362,7 @@ class resultMsg {
     status: number;
     statusText: string;
     responseType?: string;
+    responseText?: string;  // only for compatibility with checkSchema and checkConstraints
     response?: any;
     constructor(st: number, sTxt: string, rTyp?: string, resp?: any) {
         this.status = st;
@@ -369,8 +370,9 @@ class resultMsg {
         this.responseType = rTyp;
         this.response = resp;
     }
-    asString():string {
-        return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.response : ")")
+    asString(): string {
+        // Recur to responseText for compatibility with checkSchema and checkConstraints
+        return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + (this.response || this.responseText) : ")")
     }
     log() {
         console.log(this.asString());
@@ -388,7 +390,8 @@ class resultMsg {
 LIB.stdError = (xhr: resultMsg, cb?:Function): void =>{
 //    console.debug('stdError',xhr);
     // clone, as xhr.response ist read-only:
-    let xhrCl = new resultMsg(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.response : '');
+    // Recur to responseText for compatibility with checkSchema and checkConstraints
+    let xhrCl = new resultMsg(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType == 'text' ? (xhr.response || xhr.responseText) : '');
     
     switch( xhr.status ) {
         case 0:
@@ -477,9 +480,10 @@ LIB.stdError = (xhr: resultMsg, cb?:Function): void =>{
                         + ((msg.responseType == 'text' || typeof (msg.response) == 'string') && msg.response.length > 0 ?
                             "): " + msg.response : ")"); */
 
+                    // Recur to responseText for compatibility with checkSchema and checkConstraints
                     msg = (msg.statusText || i18n.Error)
                         + " (" + msg.status
-                        + ( msg.response ? "): " + msg.response : ")");
+                        + (msg.responseType == 'text' ? "): " + (msg.response || msg.responseText) : ")");
                     break;  // the switch, not the if ;-)
                 };
             default:

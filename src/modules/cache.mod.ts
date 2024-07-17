@@ -3087,7 +3087,7 @@ class CProject implements SpecifProject {
 		new resultMsg( 963, "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
-	// Substitutions:
+	// ------- Substitutions:
 	private substituteProp(L:any[]|undefined, propN: string, rK: SpecifKey, dK: SpecifKey): void {
 		// Replace key of the duplicate item dK by the key of the original one rK;
 		// this applies to the property 'propN' of each member of the list L:
@@ -3233,13 +3233,10 @@ class CProject implements SpecifProject {
 		prj.statements.forEach((st: SpecifStatement) => {
 			if (LIB.references(st.subject, replacedE)) st.subject = LIB.makeKey(replacingE.id);
 			if (LIB.references(st.object, replacedE)) st.object = LIB.makeKey(replacingE.id);
-	//		if (LIB.references(st.subject, replacedE)) st.subject = LIB.keyOf(replacingE);
-	//		if (LIB.references(st.object, replacedE)) st.object = LIB.keyOf(replacingE);
 		});
 
 		// 2. Replace the references in all hierarchies:
 		this.substituteRef(prj.hierarchies, LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
-	//	this.substituteRef(prj.hierarchies, LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 
 		// 3. Make sure all statementClasses allowing replacedE.class also allow replacingE.class (the class of the adopted resource):
 		if (replacingE['class'] && replacedE['class'] && !LIB.equalKey(replacingE['class'], replacedE['class']))

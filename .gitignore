@@ -1,4 +1,5 @@
 .vs
 node_modules
-scratch
+dist/
+scratch/
 coverage

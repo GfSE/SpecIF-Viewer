@@ -323,6 +323,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					(st) => {
 						if (st['class'].id == idStatementClassComprises) {
 						//	console.debug('comprises', st, port0.parent, port1.parent);
+							// b. If both are servers, the contained ("nested") class is the origin of the serves relationship
 							if (st.subject.id == port0.parent.id && st.object.id == port1.parent.id) {
 								spD.statements.push({
 									id: co.id,
@@ -333,6 +334,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 								});
 								return;
 							};
+							// c. If both are no servers thus clients, the contained ("nested") class is the destination of the serves relationship
 							if (st.subject.id == port1.parent.id && st.object.id == port0.parent.id) {
 								spD.statements.push({
 									id: co.id,
@@ -341,14 +343,11 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 									object: LIB.makeKey(p0serves && p1serves ? port1.id : port0.id),
 									changedAt: opts.fileDate
 								});
-								return;
+							//	return;
 							};
 						};
 					}
 				);
-
-				// b. If both are servers, the contained ("nested") class is the origin of the serves relationship
-				// c. If both are no servers thus clients, the contained ("nested") class is the destination of the serves relationship
 			}
 		);
 
@@ -682,7 +681,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 									//	id: CONFIG.prefixS + simpleHash(params.parent.id + cl + ty),
 									id: pId,
 									associationId: oA.getAttribute("association"),
-									associationType: LIB.makeKey(cl), // composition, aggregation or association
+									associationType: cl, // composition, aggregation or association
 									thisEnd: LIB.makeKey(params.parent.id),
 									otherEnd: LIB.makeKey(ty)
 								});
@@ -832,7 +831,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					});
 				}
 				else if (aEnds.length == 2) {
-					// It is an undirected association:
+					// An association without owned ends, i.e. navigable from both ends (bidirectional in UML terms):
 					// ToDo: Define an undirected association in the ontology
 					//	console.debug("uml:Association", el, aEnds);
 
@@ -868,11 +867,39 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					//	console.debug("uml:Association", simpleClone('spD.statements'));
 				}
 				else if (aEnds.length < 1) {
-					console.error("Cameo Import: Too few association ends found; must be 2 and is " + aEnds.length);
-					console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
+					// An association with 2 owned ends (not navigable from both ends, undirected in UML terms)):
+					// ToDo: A non-navigable 'pure' association is not supported, so far
+					let st = {
+						id: aId,
+					//	class:,
+						properties: prpL,
+					//	subject: LIB.makeKey(sbj),
+					//	object: LIB.makeKey(obj),
+						changedAt: opts.fileDate
+					};
+					// The association should be 2 owned ends:
+					Array.from(
+						el.getElementsByTagName('ownedEnd'),
+						(oE) => {
+							let ag = oE.getAttribute("aggregation");
+							if (ag && ['composite','shared'].includes(ag)) {
+								// A composition or an aggregation:
+								st['class'] = LIB.makeKey(ag == 'composite' ? idStatementClassComprises : idStatementClassAggregates);
+								st.object = LIB.makeKey(oE.getAttribute("type"));
+							}
+							else {
+								// The other end:
+								st.subject = LIB.makeKey(oE.getAttribute("type"));
+							};
+						}
+					);
+					if (LIB.isKey(st['class']) && LIB.isKey(st.subject) && LIB.isKey(st.object))
+						spD.statements.push(st);
+					else
+						console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because some reference is missing.");
 				}
 				else if (aEnds.length > 2) {
-					console.error("Cameo Import: Too many association ends found; must be 2 and is " + aEnds.length);
+					console.error("Cameo Import: Too many association ends found; must be 0, 1 or 2 and is " + aEnds.length);
 					console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
 				};
 			}  // end of 'parseAssociation'

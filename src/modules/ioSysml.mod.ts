@@ -92,6 +92,7 @@ moduleManager.construct({
 				.then((zip: any) => {
 					// @ts-ignore - all's fine, no need to re-declare the zip interface.
 					modelL = zip.filter((relPath, file) => { return file.name.endsWith('.uml_model.model') });
+					// @ts-ignore - all's fine, no need to re-declare the zip interface.
 					packgL = zip.filter((relPath, file) => { return file.name.endsWith('.uml_model.shared_model') });
 
 					if (modelL.length < 1) {

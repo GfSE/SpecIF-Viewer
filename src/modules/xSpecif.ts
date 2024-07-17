@@ -241,9 +241,7 @@ class CSpecIF implements SpecIF {
 								return;
 							}
 						};
-					/*	// older versions of the checking routine don't set the responseType:
-						if (typeof (rc.response) == 'string' && rc.response.length > 0)
-							rc.responseType = 'text';  */
+						console.info("The invalid SpecIF data set: ",spD);
 						reject(rc);
 					}
 					else
