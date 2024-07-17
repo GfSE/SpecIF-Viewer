@@ -31,17 +31,18 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
 	//	idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
 		idStatementClassComprises = idStatementClassHasPart,
-		idStatementClassAggregates = app.ontology.getClassId("statementClass", "uml:Aggregation"),
-		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "uml:Specialization"),
+		idStatementClassAggregates = app.ontology.getClassId("statementClass", "SpecIF:aggregates"),
+		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "SpecIF:isSpecializationOf"),
 		idStatementClassRealizes = app.ontology.getClassId("statementClass", "uml:Realization"),
 		idStatementClassServes = app.ontology.getClassId("statementClass", "SpecIF:serves"),
-		idStatementClassAssociatedWith = app.ontology.getClassId("statementClass", "uml:Association"),
+		idStatementClassAssociatedWith = app.ontology.getClassId("statementClass", "SpecIF:isAssociatedWith"),
 		idStatementClassCommunicatesWith = app.ontology.getClassId("statementClass", "FMC:communicatesWith"),
 		idStatementClassHandles = app.ontology.getClassId("statementClass", "SpecIF:handles"),
 		idStatementClassProvides = app.ontology.getClassId("statementClass", "SpecIF:provides"),
 		idStatementClassConsumes = app.ontology.getClassId("statementClass", "SpecIF:consumes"),
 		idStatementClassShows = app.ontology.getClassId("statementClass", "SpecIF:shows"),
-		idStatementClassDefault = app.ontology.getClassId("statementClass", "SpecIF:relates");
+	//	idStatementClassDefault = app.ontology.getClassId("statementClass", "SpecIF:relates");
+		idStatementClassDefault = idStatementClassAssociatedWith;
 
 	if (typeof (options) != 'object' || !options.fileName)
 		throw Error("Programming Error: Cameo import gets no parameter options");
@@ -939,6 +940,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 						}],
 						changedAt: opts.fileDate
 					};
+					addDesc(r, el);
 
 					// Relate the diagram to the containing package:
 					if (params.package)
@@ -1032,7 +1034,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 			// - Are both subject and object defined
 			// - Are both subject and object listed in spD.resources or spD.statements
 			// - Are the subjectClasses and objectClasses listed in the statementClass, thus eligible
-			if (LIB.isKey(st.subject) && LIB.isKey(st.object)) {
+			if (LIB.isKey(st.subject) && LIB.isKey(st.object) && LIB.isKey(st["class"])) {
 				let
 					stC = LIB.itemByKey(spD.statementClasses, st["class"]),
 					// @ts-ignore - can join lists of different classes, here
@@ -1054,7 +1056,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				};
 				return valid;
 			};
-			console.warn("Cameo Import: Skipping statement " + st.id + ", because subject or object is undefined.");
+			console.warn("Cameo Import: Skipping statement, because class, subject or object is undefined: " + st);
 			return false;
 		}
 	}
