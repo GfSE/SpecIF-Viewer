@@ -5,6 +5,10 @@
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
+	ToDo:
+	- This code assumes that certain dataTypes including DT-Text and DT-ShortString are retrieved from the ontology.
+	- Need to make that more robust ... and deal with the dataTypes actually returned.
 */
 
 // Constructor for XLS import:
@@ -14,19 +18,14 @@ moduleManager.construct({
 }, function (self: ITransform) {
 	"use strict";
 	// the mode for creating a new project:
-	var fDate: string,		// the file modification date
-		ontologyStatementClasses:string[] = [];
+	var fDate: string;		// the file modification date
 		
 	self.init = function (): boolean {
-        // Get the list of terms for a statementClass;
-		// XLS colums with one of these terms will be transformed to statements rather than properties:
-		// ToDo: Get only the specializations of "SpecIF:ModelRelation".
-		ontologyStatementClasses = app.ontology.getTerms('statementClass');
 		return true;
 	};
 
 	self.verify = function( f ):boolean {
-//		console.debug( 'file', f );
+		//		console.debug( 'file', f );
 
 			function isXls( fname:string ):boolean {
 				return fname.endsWith('.xlsx') || fname.endsWith('.xlsm') || fname.endsWith('.xls') || fname.endsWith('.csv') 
@@ -56,7 +55,7 @@ moduleManager.construct({
 		self.abortFlag = false;
 		var xDO = $.Deferred();
 		
-	//	xDO.notify('Transforming Excel to SpecIF',10); 
+	//	xDO.notify('Transforming Excel to SpecIF',10);
 		// Transform the XLSX-data to SpecIF:
 		let data = xlsx2specif(buf, self.parent.projectName, fDate);
 		xDO.resolve( data );
@@ -76,6 +75,12 @@ moduleManager.construct({
 function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	"use strict";
 	// requires sheetjs
+
+	// initialize:
+	// Get the list of terms for a statementClass;
+	// XLS colums with one of these terms will be transformed to statements rather than properties:
+	// ToDo: Get only the specializations of "SpecIF:ModelRelation".
+	let ontologyStatementClasses = app.ontology.getTerms('statementClass');
 
 	interface ICell {
 		t: string;
@@ -126,45 +131,9 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.col2dT = new Map();
 		}
 	}
-	var xlsTerms = ["xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder];
-/*	class BaseTypes implements SpecIF {
-		id: SpecifId;
-		title: SpecifMultiLanguageText;
-		generator: string;
-		$schema: SpecifMetaSchema;
-		dataTypes: SpecifDataType[];
-		propertyClasses: SpecifPropertyClass[];
-		resourceClasses: SpecifResourceClass[];
-		statementClasses: SpecifStatementClass[];
-		resources: SpecifResource[];
-		statements: SpecifStatement[];
-		hierarchies: SpecifNode[];
-		constructor(prjName:string) {
-			this.id = 'XLS-' + prjName.toSpecifId();
-			this.title = LIB.makeMultiLanguageValue(prjName);
-			this.generator = "xlsx2specif";
-			this.$schema = 'https://specif.de/v1.1/schema.json';
-			this.dataTypes = LIB.forAll(
-				// this works even if any of the listed ids is not found:
-				["DT-ShortString", "DT-Text", "DT-DateTime", "DT-Boolean", "DT-Integer", "DT-Real"],
-				(el:string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
-			);
-			this.propertyClasses = LIB.forAll(
-				["PC-VisibleId", "PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
-				(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
-			);
-			this.resourceClasses = LIB.forAll(
-				["RC-Paragraph", "RC-Folder"],
-				(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
-			);
-			this.statementClasses = [];
-			this.resources = [];
-			this.statements = [];
-			this.hierarchies = [];
-		}
-	} */
-	function dataTypeId( str:string ):string { 
-		// must be able to find it just knowing the ws-name and the column index:
+	function dataTypeId(str: string): string { 
+		// Create a dataType identifier for enumerations created from content in the (Enumerations) tab.
+		// Must be able to find it just knowing the ws-name and the column index:
 		return CONFIG.prefixDT + simpleHash(str);
 	}
 	class PropClass {
@@ -172,10 +141,10 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		title: string;
 		dataType: SpecifKey;
 		changedAt: string;
-		constructor (nm: string, ti: string, dT: string) {
+		constructor (nm: string, ti: string, dTid: string) {
 			this.id = propClassId(nm);
 			this.title = ti;
-			this.dataType = LIB.makeKey(CONFIG.prefixDT + dT);		// like baseTypes[i].id
+			this.dataType = LIB.makeKey(dTid);		// like baseTypes[i].id
 			this.changedAt = chAt;
 		}
 	}
@@ -214,7 +183,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		changedAt: string;
 		constructor(ti: string) {
 			this.title = ti;
-			this.id = staClassId(this.title);
+			this.id = staClassId(ti);
 			this.description = LIB.makeMultiLanguageValue('For statements created by columns whose title is declared as a statement');
 			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			// No subjectClasses or objectClasses means all are allowed.
@@ -651,7 +620,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// 1. A native property will be used, if possible, so no propertyClass is created:
 						if (CONFIG.nativeProperties.has(pTi))
 							continue;
-						// 2. Find out, whether its a (previously created) enumerated dataType:
+						// 2. Find out, whether it's a (previously created) enumerated dataType:
 						pC = LIB.itemByTitle(specifData.propertyClasses as SpecifItem[], pTi);
 						if (pC && pC.id) {
 							dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType);
@@ -753,7 +722,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					};
 					//					console.debug( 'getPropClass 4',valL[i],pC );
 
-					return new PropClass(ws.name + cX, pTi, pC);
+					return new PropClass(ws.name + cX, pTi, CONFIG.prefixDT + pC);
 			/*		// Is the propertyClass already available:
 					if (LIB.indexById(specifData.propertyClasses, CONFIG.prefixPC + pC) < 0) return;
 					// else create a new propertyClass:
@@ -769,9 +738,9 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					}
 				}
 			}
-			function getStaClasses(ws: Worksheet, sCL: SpecifStatementClass[]): void {
+			function getStaClasses(ws: Worksheet): void {
 				// build a list of statementClasses:
-				var sTi, sC: SpecifStatementClass;
+				var sTi, sC: SpecifStatementClass, sCL: SpecifStatementClass[] = [];
 				for (var c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {		// every column
 					sTi = ws.data[cellName(c, ws.firstCell.row)];  			// value of first line
 					// Skip columns without title;
@@ -779,14 +748,15 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					// so we need to take a look at the actual values:
 					if (sTi) {
 						sTi = sTi.w || sTi.v;
-						// Add statementClass, if it is declared as such and if it is not yet listed:
-						if (sTi && LIB.indexById(sCL, staClassId(sTi)) < 0 && ontologyStatementClasses.includes(sTi)) {
+						// Add statementClass, if it is declared:
+						if (sTi && ontologyStatementClasses.includes(sTi)) {
 							sC = new StaClass(sTi);
 							//							console.debug( 'getStaClasses', sTi, sC );
 							sCL.push(sC);
 						};
 					};
 				};
+				return sCL;
 			}
 
 			//		console.debug( 'sheetName:', ws.name );
@@ -795,17 +765,21 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			if (ws.range) {
 				// The sheet has content:
 
-				// 3.1 Create a resourceClass per XLS-sheet:
+				// 3.1 Create the statementClasses which are referenced in the column headers
+				// avoiding duplicates:
+				LIB.cacheL(specifData.statementClasses, getStaClasses(ws));
+
+				// 3.2 Create a resourceClass per XLS-sheet:
 				// The resourceClass' title is taken from the worksheet name, project name or a default is applied;
 				// any local name will be transformed to the preferred ontology term during import (if defined):
-				var rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow);
-				// Add a property class for each column using the names specified in line 1:
+				let rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow);
+				// Add the propertyClass keys to the resourceClass;
+				// the propertyClasses are added to specifData within the procedure:
 				rC.propertyClasses = getPropClasses(ws);
 				//			console.debug('rC',rC);
 				specifData.resourceClasses.push(rC);
-				getStaClasses(ws, specifData.statementClasses);
 
-				// 3.2 Create a folder with the resources of this worksheet:
+				// 3.3 Create a folder with the resources of this worksheet:
 				createFld(ws);
 			}
 		}
@@ -826,8 +800,8 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// Transform the worksheets to SpecIF:
 	// 1. Create the project:
-//	var specifData:SpecIF = new BaseTypes(pN);
-	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms /*, adoptOntologyDataTypes: true */});
+	var xlsTerms = ["xs:string", "xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassTitle, CONFIG.propClassDesc, CONFIG.propClassType, CONFIG.resClassFolder],
+		specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true});
 	// the root folder resource:
 	specifData.resources.push({
 		id: CONFIG.prefixR + pN.toSpecifId(),

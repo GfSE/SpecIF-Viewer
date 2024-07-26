@@ -19,7 +19,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 
 	const
 		idResourceClassDiagram = app.ontology.getClassId("resourceClass", "SpecIF:View"),
-	//	idResourceClassActor = app.ontology.getClassId("resourceClass", "FMC:Actor"),
+		idResourceClassActor = app.ontology.getClassId("resourceClass", "FMC:Actor"),
 		idResourceClassState = app.ontology.getClassId("resourceClass", "FMC:State"),
 	//	idResourceClassEvent = app.ontology.getClassId("resourceClass", "FMC:Event"),
 	//	idResourceClassCollection = "RC-Collection",
@@ -115,7 +115,15 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 			models = xmi.getElementsByTagName('uml:Model'), // in case of a model
 			packgs = xmi.getElementsByTagName('uml:Package'), // in case of a shared model
 			modDoc = models.length>0? models[0] : packgs[0],
-			spD: CSpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] }),
+			spD: CSpecIF = app.ontology.generateSpecifClasses({
+				domains: [
+					"SpecIF:DomainBase",
+					"SpecIF:DomainSystemsEngineering",
+					"SpecIF:DomainSystemModelIntegration"
+				],
+				SpecIF_LifecycleStatusReleased: true,
+				SpecIF_LifecycleStatusEquivalent: true
+			}),
 
 			// Memorized for postprocessing:
 			usedElements: SpecifStatement[] = [],     // --> shows
@@ -140,11 +148,22 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 		spD.resources
 			.forEach(
 				(me) => {
-					if (me["class"].id==idResourceClassDefault ) {
-						// --- Case 1: Look for	a stereotype ---
+					if (me["class"].id == idResourceClassDefault) {
+						let rC: SpecifResourceClass,
+							prpL: SpecifProperty[];
+						// --- Case 1: Look for	a stereotype to assign a corresponding resourceClass ---
 						let sTy = classStereotypes.get(me.id);
 						if (sTy) {
-							// In SpecIF, an InterfaceBlock is the transferred state (data object in case of information):
+							// First, check whether it is an ontology term = if a resource class with that name exists:
+							rC = LIB.itemByTitle(spD.resourceClasses, sTy);
+							if (rC) {
+								me["class"] = LIB.makeKey(rC.id);
+								console.info("Cameo Import: Reassigning class '" + rC.id + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
+								return;
+							};
+
+							// In SpecIF, an InterfaceBlock is the transferred state (data object in case of information);
+							// .. in case an uml:InterfaceBlock is not itself an ontology term with a corresponding resourceClass:
 							if (sTy == "sysml:InterfaceBlock") {
 								me["class"] = LIB.makeKey(idResourceClassState);
 								console.info("Cameo Import: Reassigning class '" + idResourceClassState + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
@@ -156,10 +175,11 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 								prp.values = [[{ text: sTy }]];
 								console.info("Cameo Import: Assigning stereotype '" + sTy + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle,spD));
 							};
+							return;
 						};
 
 						// --- Case 2: Look for the generalizing class in the set of resourceClasses generated from the ontology ---
-						let rC = generalizingResourceClassOf(me);
+						rC = generalizingResourceClassOf(me);
 						if (rC && rC.id != idResourceClassDefault ) {
 							me["class"] = LIB.makeKey(rC.id);
 							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
@@ -513,6 +533,10 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719087753882_499580_42356' visibility='public' type='_19_0_3_e40094_1719086921605_648048_42122' association='_19_0_3_e40094_1719087753881_699229_42355'/>
 	</packagedElement>
 */
+				let r2: SpecifResource = makeResource(ch);
+				// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
+				r2["class"] = LIB.makeKey(idResourceClassDefault);
+			/*  ... this is not really, what we want:
 				let r2: SpecifResource = makeResource(ch),
 					// If is an ontology term, use the corresponding class:
 					rC = LIB.itemByTitle(spD.resourceClasses, ch.getAttribute("name"));
@@ -524,7 +548,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				else {
 					// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
 					r2["class"] = LIB.makeKey(idResourceClassDefault);
-				};
+				};  */
 				spD.resources.push(r2);
 
 				// Add the hierarchy node referencing the resource:
@@ -562,7 +586,24 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 								break;
 							case 'ownedAttribute':
 								// Add the properties=associationEnds and ports:
-								parseOwnedAttribute(ch2, { parent: r2 })
+								parseOwnedAttribute(ch2, { parent: r2, nodes: nd2.nodes })
+								break;
+							case 'ownedOperation':
+								// Add a resource representing the operation:
+								let oO: SpecifResource = makeResource(ch2);
+								oO["class"] = LIB.makeKey(idResourceClassActor);
+								spD.resources.push(oO);
+								// Add the hierarchy node referencing the resource:
+								nd2.nodes.push(makeNode(oO, r2.id));
+								// Relate the operation to the containing class:
+								spD.statements.push({
+									id: CONFIG.prefixS + simpleHash(r2.id + idStatementClassComprises + oO.id),
+									class: LIB.makeKey(idStatementClassComprises),
+									subject: LIB.makeKey(r2.id),
+									object: LIB.makeKey(oO.id),
+									changedAt: opts.fileDate
+								});
+							//	console.debug('oO',oO,nd2);
 								break;
 							case 'ownedConnector':
 								// A connector between ports on an IBD (or other?);
@@ -665,6 +706,10 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 										}],
 										changedAt: opts.fileDate
 									});
+									// Add the hierarchy node referencing the specialized class:
+									params.nodes.push(makeNode(LIB.makeKey(pId), params.parent.id));
+
+									// It is a specialization of the class specified by 'type':
 									specializations.push({
 										id: CONFIG.prefixS + simpleHash(pId + idStatementClassSpecializes + ty),
 										class: LIB.makeKey(idStatementClassSpecializes),
@@ -680,9 +725,9 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 								// - has no name: use its type as object
 								associationEnds.push({
 									//	id: CONFIG.prefixS + simpleHash(params.parent.id + cl + ty),
-									id: pId,
+								//	id: pId,  // to find it more easily
 									associationId: oA.getAttribute("association"),
-									associationType: cl, // composition, aggregation or association
+									associationType: cl, // composition, aggregation or undefined
 									thisEnd: LIB.makeKey(params.parent.id),
 									otherEnd: LIB.makeKey(ty)
 								});
@@ -729,7 +774,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 									});
 								}
 								else {
-									// b. Otherwise a child with tag <type ../> provides a linkt to a standard data type:
+									// b. Otherwise a child with tag <type ../> provides a link to a standard data type:
 
 								};
 
@@ -739,7 +784,24 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 									flowProperties.set(params.parent.id, stT.dir ); // interfaceBlock and its direction
 							}
 							else {
-								console.info("Cameo Import: Skipping the " + oA.getAttribute("xmi:type") + " with id " + pId + ".");
+								// Without association or type, this is an ordinary attribute 
+								// ToDo: Can it be something else?
+								// Add a resource representing the operation:
+								let r: SpecifResource = makeResource(oA);
+								r["class"] = LIB.makeKey(idResourceClassState);
+								spD.resources.push(r);
+								// Add the hierarchy node referencing the resource:
+								nd2.nodes.push(makeNode(r, params.parent.id));
+								// Relate the operation to the containing class:
+								spD.statements.push({
+									id: CONFIG.prefixS + simpleHash(params.parent.id + idStatementClassComprises + r.id),
+									class: LIB.makeKey(idStatementClassComprises),
+									subject: LIB.makeKey(params.parent.id),
+									object: LIB.makeKey(r.id),
+									changedAt: opts.fileDate
+								});
+
+							//	console.info("Cameo Import: Skipping the " + oA.getAttribute("xmi:type") + " with id " + pId + ".");
 							};
 							break;
 						case "uml:Port":
@@ -807,25 +869,30 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				//   It is assumed that the pointer is found first.
 				// ToDo: Can it happen, that the pointer is found after this element? Both are at the same level.
 				let nm = el.getAttribute("name"),
-					prpL,
+					sC: SpecifStatementClass,
+					prpL: SpecifProperty[],
 					aId = el.getAttribute("xmi:id"),
 					aEnds = associationEnds.filter(
 						aE => aE.associationId == aId
 					);
 
-				if (nm)
-					prpL = [{
-						class: LIB.makeKey("PC-Type"),
-						values: [[{ text: nm }]]
-					}];
+				if (nm) {
+					// Check whether it is an ontology term = if a statement class with that name exists:
+					sC = LIB.itemByTitle(spD.statementClasses, nm);
+					if(!sC)
+						prpL = [{
+							class: LIB.makeKey("PC-Type"),
+							values: [[{ text: nm }]]
+						}];
+				};
 
 				if (aEnds.length == 1) {
 					// It is a directed association;
 					// the uml:Association should have an element ownedEnd pointing to the origin, buth we use otherEnd = 'type' attribute of the ownedAttribute:
 					spD.statements.push({
 						id: aId,
-						class: LIB.makeKey(aEnds[0].associationType || idStatementClassAssociatedWith),
-						properties: nm ? prpL : undefined,
+						class: LIB.makeKey(aEnds[0].associationType || (sC?sC.id:undefined) || idStatementClassAssociatedWith),
+						properties: prpL ? prpL : undefined,
 						subject: LIB.makeKey(aEnds[0].thisEnd),
 						object: LIB.makeKey(aEnds[0].otherEnd),
 						changedAt: opts.fileDate
@@ -833,7 +900,8 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				}
 				else if (aEnds.length == 2) {
 					// An association without owned ends, i.e. navigable from both ends (bidirectional in UML terms):
-					// ToDo: Define an undirected association in the ontology
+					// - in case of Composition and Aggregation a direction can be assumed from the position of the rhombus,
+					// - a non-navigable 'pure' association is not supported, because the direction in SpecIF/RDF terms is unknown.
 					//	console.debug("uml:Association", el, aEnds);
 
 					/*	.. this can happen, if the association specifies a role at the other end:
@@ -843,33 +911,39 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 							console.error("Cameo Import: For an undirected association, the association ends don't match: " + aEnds[1].thisEnd.id + " and " + aEnds[0].otherEnd.id);
 					*/
 					let cl, sbj, obj;
-					// aEnds[x].associationType is defined in case of composition and aggregation:
-					if (aEnds[1].associationType) {
-						// not expected, but who knows:
-						cl = aEnds[1].associationType;
-						sbj = aEnds[1].thisEnd;
-						obj = aEnds[1].otherEnd;
-					}
-					else {
-						// usual case:
-						cl = aEnds[0].associationType || idStatementClassAssociatedWith;
-						sbj = aEnds[0].thisEnd;
-						obj = aEnds[0].otherEnd;
-					};
+					// aEnds[x].associationType is defined in case of composition and aggregation;
+					// in all other cases we do not know the direction and ignore the association:
+					if (aEnds[0].associationType || aEnds[1].associationType) {
+						if (aEnds[1].associationType) {
+							// not expected, but who knows:
+							cl = aEnds[1].associationType;
+							sbj = aEnds[1].thisEnd;
+							obj = aEnds[1].otherEnd;
+						}
+						else {
+							// usual case:
+							cl = aEnds[0].associationType || (sC ? sC.id : undefined) || idStatementClassAssociatedWith;
+							sbj = aEnds[0].thisEnd;
+							obj = aEnds[0].otherEnd;
+						};
 
-					spD.statements.push({
-						id: aId,
-						class: LIB.makeKey(cl),
-						properties: nm ? prpL : undefined,
-						subject: LIB.makeKey(sbj),
-						object: LIB.makeKey(obj),
-						changedAt: opts.fileDate
-					});
-					//	console.debug("uml:Association", simpleClone('spD.statements'));
+						spD.statements.push({
+							id: aId,
+							class: LIB.makeKey(cl),
+							properties: prpL ? prpL : undefined,
+							subject: LIB.makeKey(sbj),
+							object: LIB.makeKey(obj),
+							changedAt: opts.fileDate
+						});
+						//	console.debug("uml:Association", simpleClone('spD.statements'));
+					}
+					else
+						console.warn("Cameo Import: Skipping the uml:Association with id " + aId + ", because it has no direction in RDF terms.");
 				}
 				else if (aEnds.length < 1) {
 					// An association with 2 owned ends (not navigable from both ends, undirected in UML terms)):
-					// ToDo: A non-navigable 'pure' association is not supported, so far
+					// - in case of Composition and Aggregation a direction can be assumed from the position of the rhombus,
+					// - a non-navigable 'pure' association is not supported, because the direction in SpecIF/RDF terms is unknown.
 					let st = {
 						id: aId,
 					//	class:,
@@ -878,7 +952,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					//	object: LIB.makeKey(obj),
 						changedAt: opts.fileDate
 					};
-					// The association should be 2 owned ends:
+					// The association should have 2 owned ends:
 					Array.from(
 						el.getElementsByTagName('ownedEnd'),
 						(oE) => {
@@ -897,7 +971,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					if (LIB.isKey(st['class']) && LIB.isKey(st.subject) && LIB.isKey(st.object))
 						spD.statements.push(st);
 					else
-						console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because some reference is missing.");
+						console.warn("Cameo Import: Skipping the uml:Association with id " + aId + ", because it has no direction in RDF terms.");
 				}
 				else if (aEnds.length > 2) {
 					console.error("Cameo Import: Too many association ends found; must be 0, 1 or 2 and is " + aEnds.length);

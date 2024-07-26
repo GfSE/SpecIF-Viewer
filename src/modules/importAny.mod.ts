@@ -75,7 +75,7 @@ moduleManager.construct({
 			id: 'sysml',
 			name: 'ioSysml',
 			desc: 'System Modeling Language',
-			label: 'SysML',
+			label: 'UML/SysML',
 			extensions: [".mdzip"],
 		//	extensions: [".xml", ".xmi", ".model"],
 			help: "Experimental: Import an XMI file from Cameo v19.0."
@@ -125,6 +125,10 @@ moduleManager.construct({
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
 		urlP:any,				// the latest URL parameters
+		urlOntology = (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+				CONFIG.ontologyURL
+				: '../../SpecIF/vocabulary/Ontology.specif'  // local 
+			),
 		importing = false,
 		cacheLoaded = false,
 		allValid = false;
@@ -151,6 +155,12 @@ moduleManager.construct({
 
 		let h = 
 			'<div style="max-width:768px; margin-top:1em">'
+			+   '<div class="fileSelect" style="display:none;" >'
+				+ '<div class="attribute-label" style="vertical-align:top; padding-top:0.2em" >' + i18n.LblOntology + '</div>'	// column to the left
+				+ '<div class="attribute-value" >'
+				+		'<div id="ontologySelector" style="margin: 0 0 0.4em 0" ></div>'
+				+ '</div>'
+			+   '</div>'
 			+	'<div class="fileSelect" style="display:none;" >'
 				+   '<div class="attribute-label" style="vertical-align:top; font-size:140%; padding-top:0.2em" >' + i18n.LblImport + '</div>'	// column to the left
 				+	'<div class="attribute-value" >'
@@ -232,16 +242,21 @@ moduleManager.construct({
 						return f;
 				};
 			}
+			function getOntologyURL(uParms: string): string | undefined {
+				// ToDo: check it somehow
+				return uParms[CONFIG.keyOntology]
+			}
 		urlP = opts.urlParams;
 		if( urlP && urlP[CONFIG.keyImport] ) {
-			// Case 1: A file name for import has been specified in the URL:
+			// ---- Case 1: A file name for import has been specified in the URL ----
 //			console.debug('import 1',urlP);
 			// replace project with same id, unless a different import mode is specified:
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the file format:
-			self.format = getFormat( urlP );
-//			console.debug('filename:',self.file.name,self.format);
+			self.format = getFormat(urlP);
+			urlOntology = getOntologyURL(urlP) || urlOntology;
+//			console.debug('filename:',self.file.name,self.format,urlOntology);
 			if( self.format && app[self.format.name] ) {
 				// initialize the import module:
 				app[self.format.name].init( self.format.opts );
@@ -254,23 +269,33 @@ moduleManager.construct({
 					self.projectName = self.file.name.fileName();	
 					setImporting( true );
 
-					// Assume it is an absolute or relative URL;
-					// must be either from the same URL or CORS-enabled.
-					// Import the file: 
-					LIB.httpGet({
-						// force a reload through cache-busting:
-						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
-						responseType: 'arraybuffer',
-						withCredentials: false,
-						done: function (result: XMLHttpRequest) {
-//							console.debug('httpGet done',result.response);
-							app[self.format.name].toSpecif(result.response)
-								.progress( setProgress )
-								.done( handleResult )
-								.fail( handleError );
-						},
-						fail: handleError
-					});
+					getOntology(urlOntology)
+						.then(
+							(ont) => {
+								app.ontology = ont;
+
+								// Assume it is an absolute or relative URL;
+								// must be either from the same URL or CORS-enabled.
+								// Import the file: 
+								LIB.httpGet({
+									// force a reload through cache-busting:
+									url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
+									responseType: 'arraybuffer',
+									withCredentials: false,
+									done: function (result: XMLHttpRequest) {
+										//							console.debug('httpGet done',result.response);
+										app[self.format.name].toSpecif(result.response)
+											.progress(setProgress)
+											.done(handleResult)
+											.fail(handleError);
+									},
+									fail: handleError
+								});
+							}
+						)
+						.catch(
+							handleError
+						);
 					return
 				}
 			};
@@ -280,7 +305,7 @@ moduleManager.construct({
 			self.show();
 			return;
 		};
-		// Case 2: let the user pick an import file.
+		// ---- Case 2: let the user pick an import file. ----
 //		console.debug('import 2');
 		self.setFormat( 'specif' );
 		
@@ -300,6 +325,7 @@ moduleManager.construct({
 			};
 		});
 		$('#formatSelector').html( str );
+		$('#ontologySelector').html(urlOntology);
 		showFileSelect.set();
 
 		setImporting( false );
@@ -427,10 +453,18 @@ moduleManager.construct({
 		importMode = {id:mode};
 		setProgress(i18n.MsgReading,10); 
 
-		self.projectName = textValue(i18n.LblProjectName);
-//		console.debug( 'importLocally', self.projectName, self.file );
-
-		readFile( self.file, app[self.format.name].toSpecif );
+		getOntology(urlOntology)
+		.then(
+			(ont) => {
+				app.ontology = ont;
+				self.projectName = textValue(i18n.LblProjectName);
+				//	console.debug( 'importLocally', self.projectName, self.file );
+				readFile(self.file, app[self.format.name].toSpecif);
+			}
+		)
+		.catch(
+			handleError
+		);
 		return;
 
 		function readFile( f:File, fn:Function ):void {
@@ -600,6 +634,24 @@ moduleManager.construct({
 	}; 
 	function setProgress(msg:string,perc:number):void {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
+	}
+	function getOntology(urlO:string): Promise<COntology> {
+		return new Promise(
+			(resolve, reject) => {
+				LIB.httpGet({
+					url: urlO + "?" + new Date().toISOString(), // bust to reload from server
+					responseType: 'arraybuffer',
+					withCredentials: false,
+					done: (xhr: XMLHttpRequest) => {
+						let ont = JSON.parse(LIB.ab2str(xhr.response));
+						//	console.debug('Ontology loaded: ',ont);
+						resolve( new COntology(ont) );
+						//	setReady(module.name)
+					},
+					fail: reject
+				})
+			}
+		);
 	}
 	self.abort = function():void {
 		console.info('abort pressed');

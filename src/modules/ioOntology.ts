@@ -535,8 +535,8 @@ class COntology {
                 pCL: [] as SpecifPropertyClass[],
                 rCL: [] as SpecifResourceClass[],
                 sCL: [] as SpecifStatementClass[],
-                rL: [] as SpecifResource[],
-                hL: [] as SpecifNodes
+                rL: [] as SpecifResource[],  // only used when classes for domain ontology are created 
+                hL: [] as SpecifNodes  // only used when classes for domain ontology are created
             };
 
             // Generate in 3 steps;
@@ -586,18 +586,20 @@ class COntology {
             // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
             return Object.assign(
                 opts.delta ? {} : this.makeTemplate(),
+                opts.delta ? {} : {
+                                        "id": spId,
+                                        "title": [{
+                                            "text": "SpecIF Classes" + (opts.domains ? (" for " + opts.domains.toString().replace(/:/g, " ")) : ""),
+                                            "format": SpecifTextFormat.Plain,
+                                            "language": "en"
+                                        }],
+                                        "description": [{
+                                            "text": "A set of SpecIF Classes derived from a SpecIF Ontology" + (opts.domains ? (" for the domain" + (opts.domains.length < 2 ? " " : "s ") + opts.domains.toString().replace(/,/g, ", ") + ".") : ""),
+                                            "format": SpecifTextFormat.Plain,
+                                            "language": "en"
+                                        }],
+                                  },
                 {
-                    "id": spId,
-                    "title": [{
-                        "text": "SpecIF Classes" + (opts.domains ? (" for " + opts.domains.toString().replace(/:/g, " ")) : ""),
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }],
-                    "description": [{
-                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology" + (opts.domains ? (" for the domain" + (opts.domains.length < 2 ? " " : "s ") + opts.domains.toString().replace(/,/g, ", ") + ".") : ""),
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }],
                     "dataTypes": this.generated.dTL,
                     "propertyClasses": this.generated.pCL,
                     "resourceClasses": this.generated.rCL,
@@ -790,22 +792,22 @@ class COntology {
         dT.revision = this.valueByTitle(r, "SpecIF:Revision") || r.revision;
         dT.changedAt = r.changedAt;
 
-    /*    if (this.options.adoptOntologyDataTypes) {
+        if (this.options.adoptOntologyDataTypes) {
             // if selected by an option, replace the generated dataType by an equivalent one of the Ontology itself:
             dT = adoptOntologyDataType(dT) || dT
-        }; */
+        };
 
         LIB.cacheE(this.generated.dTL, dT); // store avoiding duplicates
 
         // In this case, return the whole dataType, as its type is needed for generating the propertyClass
         return dT;  
 
-     /*   function adoptOntologyDataType(d: SpecifDataType) {
+       function adoptOntologyDataType(d: SpecifDataType) {
             for (let dT of self.data.dataTypes) {
                 if (LIB.equalDT(d, dT)) return dT
             }
             // return undefined
-        } */
+        }
     }
     private makePC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:

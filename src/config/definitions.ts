@@ -11,8 +11,8 @@ const CONFIG:any = {};
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
-    CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
-    CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
+    CONFIG.QuickStartGuideEn = "https://gfse.github.io/SpecIF-Pages/Manuals/01_Quick-Start-Guide_EN.html";
+    CONFIG.QuickStartGuideDe = "https://gfse.github.io/SpecIF-Pages/downloads/SpecIF-Einfuehrung.pdf";
 
     CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.passwordAnonymous = ''; // as configured in the server
@@ -76,7 +76,8 @@ const CONFIG:any = {};
     CONFIG.keyItem = 'item';
     CONFIG.keyNode = 'node';
     CONFIG.keyView = 'view';    // dialog
-    CONFIG.urlParamTags = [CONFIG.keyImport, CONFIG.keyMode, CONFIG.keyFormat,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+    CONFIG.keyOntology = 'ontology';    // dialog
+    CONFIG.urlParamTags = [CONFIG.keyImport, CONFIG.keyMode, CONFIG.keyFormat, CONFIG.keyProject, CONFIG.keyItem, CONFIG.keyNode, CONFIG.keyView, CONFIG.keyOntology];
 
     // Dialog names used as query parameters - if changed, existing links will end up in default view:
     // Base:

@@ -184,7 +184,6 @@ class CSpecIF implements SpecIF {
 					if (spD['$schema'] && !spD['$schema'].includes('v1.0')) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
-					//	import(window.location.href.startsWith('file:/') ? '../../SpecIF/schema-and-checker/check/CCheck.mjs'
 						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
 								: 'https://specif.de/v' + /\/(?:v|specif-)(\d+\.\d+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
 						.then(modChk => {

@@ -576,8 +576,13 @@ var app:IApp,
 
 			/*	// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'assets/stylesheets/jqtree-buttonleft.css'); */
-				case "tree":				getCss("https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.3/jqtree.css");
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.3/tree.jquery.js'); return true;
+				case "tree":				getCss("https://cdn.jsdelivr.net/npm/jqtree@1.8.4/jqtree.css");
+											getScript('https://cdn.jsdelivr.net/npm/jqtree@1.8.4/tree.jquery.js'); return true;
+											/* jqtree 1.8.4 is available, but is blocked
+											Die Ressource von "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.4/jqtree.css" wurde wegen eines MIME - Typ - Konfliktes("text/html") blockiert(X - Content - Type - Options: nosniff).
+											Die Ressource von "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.4/tree.jquery.js" wurde wegen eines MIME - Typ - Konfliktes("text/html") blockiert(X - Content - Type - Options: nosniff).
+											see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options?utm_source=mozilla&utm_medium=firefox-console-errors&utm_campaign=default
+											*/
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
@@ -585,25 +590,28 @@ var app:IApp,
 			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
 				case "excel":		//		loadModule('toXlsx');
 									//		getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true; .. works!
-											getScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js'); return true;
+									//		getScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js'); return true;
+											getScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'); return true;
 									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
 												.then(XLSX => {
 													console.debug('xlsx', XLSX);
 													setReady(mod);
 												}); */
-			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true; .. works!
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.2.2/dist/bpmn-viewer.production.min.js'); return true;
-				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
-										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
-										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.2.2/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.9.1/dist/bpmn-viewer.production.min.js'); return true;
+				case "graphViz":			getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
+										//  ... has a breaking change:
+										//	getScript('https://cdn.jsdelivr.net/npm/vis-network@9.1.9/peer/umd/vis-network.min.js');
 											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
 				case "dataTable": 			getCss( loadPath+'assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 											getScript( loadPath+'assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
-				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js')
+				// see: https://medium.com/@logosnikita/how-i-chose-markdown-parser-97190a59fa5d --> markdown-it works fine
+				// and: https://css-tricks.com/choosing-right-markdown-parser/ --> investigates special features
+				case "markdown":		//	getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js')
+											getScript('https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js')
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;
@@ -627,12 +635,11 @@ var app:IApp,
 					return true;
 				case "standards": getScript(loadPath + 'modules/standards.js'); return true;
 				case 'ioOntology': getScript(loadPath + 'modules/ioOntology.js'); return true;
-				case "Ontology": getOntology(); return true;
+			//	case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
 				case "cache":
-					loadModule("Ontology");
-				//	loadModule('standards');
+			//		loadModule("Ontology");
 					getScript(loadPath + 'modules/cache.mod.js'); return true;
 				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
 			/*	case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
@@ -716,7 +723,7 @@ var app:IApp,
         }
 		function getCss( url:string ) {
 			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
-			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
+			// 'setReady' is not called, because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'; 
 			// thus call 'setReady' explicitly, if not in conjunction with 'getScript'.
 		}
@@ -737,11 +744,11 @@ var app:IApp,
 				return $.ajax(settings)
 						.done(() => { setReady(module.name) })
 		}
-		function getOntology() {
+	/*	function getOntology() {
 			LIB.httpGet({
 				url: (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
 						CONFIG.ontologyURL
-						: '../../SpecIF/vocabulary/Ontology.specif'
+						: '../../SpecIF/vocabulary/Ontology.specif'  // local 
 					) + "?" + new Date().toISOString(), // bust to reload from server
 				responseType: 'arraybuffer',
 				withCredentials: false,
@@ -752,9 +759,8 @@ var app:IApp,
 					setReady(module.name)
 				},
 				fail: LIB.stdError
-			//	fail: () => { console.error('Failed loading ' + module.name) }
 			})
-		}
+		} */
 		function loadAfterRequiredModules(mod: IModule, fn: Function): void {
 			// start the loading of the modules not before all required modules are ready:
 			if (!Array.isArray(mod.requires) || LIB.containsAllStrings( self.ready, mod.requires ))

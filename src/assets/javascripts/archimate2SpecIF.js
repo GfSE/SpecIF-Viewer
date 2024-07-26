@@ -149,7 +149,7 @@ function Archimate2Specif(xmlString, options) {
 				};
 			}
 			else
-				console.warn("Skipping ArchiMate propertyDefinition of type '" + ty + "'.");
+				console.warn("ArchiMate Import: Skipping ArchiMate propertyDefinition of type '" + ty + "'.");
 		}
 	);
 //	console.debug('propertyDefinitions', propertyDefinitions, model.propertyClasses);
@@ -532,7 +532,7 @@ function Archimate2Specif(xmlString, options) {
 					break;
 				default:
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
-					console.warn("Skipping element with unknown xsi:type '" + ty + "'.");
+					console.warn("ArchiMate Import: Skipping element with unknown xsi:type '" + ty + "'.");
 				//	r['class'] = "RC-Paragraph";  // better than nothing .. but the element will not appear in the glossary!
 			};
 
@@ -639,7 +639,7 @@ function Archimate2Specif(xmlString, options) {
 					break;
 				default:
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
-					console.warn('Relationship: Unknown xsi:type ', ty)
+					console.warn('ArchiMate Import: Relationship has unknown xsi:type ', ty)
 			};
 
 			// Store a relation, only if it has a known class and when both subject and object have been recognized:
@@ -701,7 +701,7 @@ function Archimate2Specif(xmlString, options) {
 			}
 			else {
 				addStatementIfNotListed(stPair.shows);
-				console.info('Added an implicit \'contains\' statement with subject="' + stPair.contains.subject
+				console.info('ArchiMate Import: Added an implicit \'contains\' statement with subject="' + stPair.contains.subject
 					+ '" and object="' + stPair.contains.object + '".');
 			};
 		}
@@ -721,7 +721,7 @@ function Archimate2Specif(xmlString, options) {
 				//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
 				|| indexById(model.resources, st.object) < 0
 				&& indexById(model.statements, st.object) < 0) {
-				console.warn('Skipping statement '
+				console.warn('ArchiMate Import: Skipping statement '
 					+ ' with id="' + st.id
 					+ '" of class="' + st["class"]
 					+ '" with subject="' + st.subject
@@ -734,7 +734,7 @@ function Archimate2Specif(xmlString, options) {
 			else {
 				if (opts.transformPermissibleStatementsOnly) {
 					if (!isStatementPermissible(st)) {
-						console.warn('Skipping statement '
+						console.warn('ArchiMate Import: Skipping statement '
 							+ ' with id="' + st.id
 							+ '" of class="' + st["class"]
 							+ '" with subject="' + st.subject
@@ -1306,7 +1306,7 @@ function Archimate2Specif(xmlString, options) {
 		// ADOIT adds single spaces to empty lines causing trouble for the markdown parser:
 		let str = orig.replace(/^\s\n/gm,'\n');
 		if (str && str.length > mxLen) {
-			console.warn(errT + ' has been truncated because it is too long');
+			console.warn('ArchiMate Import: '+errT + ' has been truncated because it is too long');
 			return str.slice(0, mxLen)
 		};
 		return str;
@@ -1353,7 +1353,7 @@ function Archimate2Specif(xmlString, options) {
 		// Add a subjectClass, if a statement has a subject with class which is not yet listed;
 		// if the statementClass has no subjectClasses, subjects of all classes are eligible:
 		if (sC.subjectClasses && !sC.subjectClasses.includes(subC)) {
-			console.info('Adding resourceClass="' + subC 
+			console.info('ArchiMate Import: Adding resourceClass="' + subC 
 				+ '" of subject="' + st.subject
 				+ 'of statement="' + st.id
 				+ (st.title ? " with title '" + st.title + "' " : "")
@@ -1363,7 +1363,7 @@ function Archimate2Specif(xmlString, options) {
 		// Add an objectClass, if a statement has an object with class which is not yet listed;
 		// if the statementClass has no objectClasses, objects of all classes are eligible:
 		if (sC.objectClasses && !sC.objectClasses.includes(obC)) {
-			console.info('Adding resourceClass="' + obC
+			console.info('ArchiMate Import: Adding resourceClass="' + obC
 				+ '" of subject="' + st.object
 				+ 'of statement="' + st.id
 				+ (st.title ? " with title '" + st.title + "' " : "")

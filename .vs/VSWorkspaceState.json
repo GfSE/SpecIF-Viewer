@@ -2,11 +2,14 @@
   "ExpandedNodes": [
     "",
     "\\src",
+    "\\src\\assets",
+    "\\src\\assets\\javascripts",
+    "\\src\\assets\\stylesheets",
     "\\src\\config",
     "\\src\\config\\locales",
     "\\src\\modules",
     "\\src\\types"
   ],
-  "SelectedNode": "\\src\\modules\\sysml2specIF.ts",
+  "SelectedNode": "\\src\\config\\moduleManager.ts",
   "PreviewInSolutionExplorer": false
 }

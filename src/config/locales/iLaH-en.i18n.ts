@@ -53,6 +53,7 @@ function LanguageTextsEn() {
 //	self.LblExportPdf = 'PDF Export';
 	self.LblAll = "All";
 	self.LblAllObjects = "All resources";
+	self.LblOntology = "Ontology";
 	self.LblImport = 'Import';
 	self.LblExport = 'Export';
 	self.LblExportReqif = 'Export ReqIF-file';

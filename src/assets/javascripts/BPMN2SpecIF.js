@@ -69,7 +69,7 @@ function BPMN2Specif( xmlString, options ) {
 	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
 	// There should be exactly one collaboration per BPMN file:
 	if( Cs.length<1 ) {
-		console.error("BPMN Import:BPMN-XML has no collaboration.");
+		console.error("BPMN Import: BPMN-XML has no collaboration.");
 		return
 	};
 	if( Cs.length>1 )
@@ -136,7 +136,7 @@ function BPMN2Specif( xmlString, options ) {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if (!el.tagName) return;
-		let tag = withoutNamespace(el.tagName),	// tag without namespace
+		let tag = omitNamespace(el.tagName),	// tag without namespace
 			res;
 
 	//	if (el.nodeName.includes("documentation")) {
@@ -295,7 +295,7 @@ function BPMN2Specif( xmlString, options ) {
 			if( itm )
 				return itm
 			else
-				console.error("BPMN Import:Did not find a resource with id '"+id+"'.")
+				console.error("BPMN Import: Did not find a resource with id '"+id+"'.")
 		}
 		function analyzeProcess(prc) {
 			// analyze a process or subprocess and transform all contained model elements;
@@ -388,11 +388,11 @@ function BPMN2Specif( xmlString, options ) {
 				title = el.getAttribute("name");
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
-					if ( withoutNamespace(nd.tagName) == 'documentation'
+					if ( omitNamespace(nd.tagName) == 'documentation'
 						&& nd.innerHTML ) 
 							desc = nd.innerHTML
 				});
-				tag = withoutNamespace(el.nodeName);
+				tag = omitNamespace(el.nodeName);
 //				console.debug('#1',tag);
 				switch(tag) {
 					case 'laneSet':
@@ -470,7 +470,7 @@ function BPMN2Specif( xmlString, options ) {
 										})
 									}
 									else {
-										console.error("BPMN Import:Did not find a dataStore or dataObject with id '"+dSId+"'.")
+										console.error("BPMN Import: Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
 							});
@@ -498,7 +498,7 @@ function BPMN2Specif( xmlString, options ) {
 										})
 									}
 									else {
-										console.error("BPMN Import:Did not find a dataStore or dataObject with id '"+dSId+"'.")
+										console.error("BPMN Import: Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
 							})
@@ -509,12 +509,12 @@ function BPMN2Specif( xmlString, options ) {
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
 				// else:
-				tag = withoutNamespace(el.tagName);
+				tag = omitNamespace(el.tagName);
 				id = el.getAttribute("id");
 				title = el.getAttribute("name")||'';
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
-					if (withoutNamespace(nd.tagName) == 'documentation'
+					if (omitNamespace(nd.tagName) == 'documentation'
 						&& nd.innerHTML) {
 							desc = nd.innerHTML
 					}
@@ -701,7 +701,7 @@ function BPMN2Specif( xmlString, options ) {
 						break;
 					default:
 						// also getting here, when a documentation of the process hase been encountered.
-						console.warn('The BPMN element with tag ',tag,' and title ',title,' has not been transformed.')
+						console.warn('BPMN Import: Skipping BPMN element with tag ',tag,' and title ',title,'.')
 				};
 				// Add a containment relation for every transformed model-element:
 				if( addContainment ) {
@@ -744,7 +744,7 @@ function BPMN2Specif( xmlString, options ) {
 		// That's why the sequenceFlows are parsed separately after collecting all resouces.
 		let	id = el.getAttribute("id"),
 			title = el.getAttribute("name"),
-			tag = withoutNamespace(el.tagName),
+			tag = omitNamespace(el.tagName),
 			feG = itemById(gwL,el.getAttribute('sourceRef')), 
 			seqF;
 //		console.debug('#3',gwL,el,id,title);
@@ -926,7 +926,7 @@ function BPMN2Specif( xmlString, options ) {
 					if( refEl ) 
 						for (var prp of refEl.properties)
 							if (prp['class'] == 'PC-Type')
-								return withoutNamespace(prp.value);
+								return omitNamespace(prp.value);
 					// else:
 				//	return // undefined
                 }
@@ -1309,12 +1309,12 @@ function BPMN2Specif( xmlString, options ) {
 		};
 		return -1
 	} */
-	function withoutNamespace(str) {
+	function omitNamespace(str) {
 		return (str ? str.split(':').pop() : '');
     }
 	function truncStr(orig, mxLen, errT) {
 		if (orig && orig.length > mxLen) {
-			console.warn(errT + ' has been truncated because it is too long');
+			console.warn('BPMN Import: '+errT + ' has been truncated because it is too long');
 			return orig.slice(0, mxLen)
 		};
 		return orig;
