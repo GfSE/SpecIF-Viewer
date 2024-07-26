@@ -417,7 +417,7 @@ LIB.stdError = (xhr: resultMsg, cb?:Function): void =>{
         case 404:  // not found
             // avoid TypeError: setting getter-only property "response"
             xhrCl.responseType = 'text';
-            xhrCl.response = i18n.Err404NotFound;
+            xhrCl.response = typeof(xhrCl.response)=='string'? xhrCl.response : i18n.Err404NotFound;
             message.show(xhrCl);
             break;
     /*    case 500:

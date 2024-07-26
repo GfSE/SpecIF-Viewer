@@ -242,11 +242,14 @@ moduleManager.construct({
 						return f;
 				};
 			}
-			function getOntologyURL(uParms: string): string | undefined {
+			function getOntologyURL(uP: string): string | undefined {
 				// ToDo: check it somehow
-				return uParms[CONFIG.keyOntology]
+				return uP ? uP[CONFIG.keyOntology] : undefined;
 			}
 		urlP = opts.urlParams;
+
+		urlOntology = getOntologyURL(urlP) || urlOntology;
+
 		if( urlP && urlP[CONFIG.keyImport] ) {
 			// ---- Case 1: A file name for import has been specified in the URL ----
 //			console.debug('import 1',urlP);
@@ -255,7 +258,6 @@ moduleManager.construct({
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the file format:
 			self.format = getFormat(urlP);
-			urlOntology = getOntologyURL(urlP) || urlOntology;
 //			console.debug('filename:',self.file.name,self.format,urlOntology);
 			if( self.format && app[self.format.name] ) {
 				// initialize the import module:
@@ -294,7 +296,11 @@ moduleManager.construct({
 							}
 						)
 						.catch(
-							handleError
+							(xhr) => {
+								handleError(
+									new resultMsg(xhr.status, xhr.statusText, "text", "Ontology not found")
+								);
+							}
 						);
 					return
 				}
@@ -454,17 +460,21 @@ moduleManager.construct({
 		setProgress(i18n.MsgReading,10); 
 
 		getOntology(urlOntology)
-		.then(
-			(ont) => {
-				app.ontology = ont;
-				self.projectName = textValue(i18n.LblProjectName);
-				//	console.debug( 'importLocally', self.projectName, self.file );
-				readFile(self.file, app[self.format.name].toSpecif);
-			}
-		)
-		.catch(
-			handleError
-		);
+			.then(
+				(ont) => {
+					app.ontology = ont;
+					self.projectName = textValue(i18n.LblProjectName);
+					//	console.debug( 'importLocally', self.projectName, self.file );
+					readFile(self.file, app[self.format.name].toSpecif);
+				}
+			)
+			.catch(
+				(xhr) => {
+					handleError(
+						new resultMsg( xhr.status, xhr.statusText, "text", "Ontology not found" )
+					);
+				}
+			);
 		return;
 
 		function readFile( f:File, fn:Function ):void {
