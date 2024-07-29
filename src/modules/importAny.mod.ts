@@ -295,13 +295,7 @@ moduleManager.construct({
 								});
 							}
 						)
-						.catch(
-							(xhr) => {
-								handleError(
-									new resultMsg(xhr.status, xhr.statusText, "text", "Ontology not found")
-								);
-							}
-						);
+						.catch(noOntologyFound);
 					return
 				}
 			};
@@ -468,13 +462,7 @@ moduleManager.construct({
 					readFile(self.file, app[self.format.name].toSpecif);
 				}
 			)
-			.catch(
-				(xhr) => {
-					handleError(
-						new resultMsg( xhr.status, xhr.statusText, "text", "Ontology not found" )
-					);
-				}
-			);
+			.catch(noOntologyFound);
 		return;
 
 		function readFile( f:File, fn:Function ):void {
@@ -507,6 +495,12 @@ moduleManager.construct({
 		LIB.stdError(xhr);
 		self.show();
 	}
+	function noOntologyFound(xhr: XMLHttpRequest): void {
+		// when started directly from the file system (without localHost), it happens that status == 0,
+		// if no file was found. Yes: httpRequest fails with status == 0.
+		handleError(new resultMsg(xhr.status == 0 ? 404 : xhr.status, xhr.statusText, "text", "Ontology not found") );
+	}
+
 	// ToDo: construct an object ...
 	function handleResult( data:SpecIF|SpecIF[] ):void {
 		var resQ: SpecIF[] = [],
@@ -653,10 +647,14 @@ moduleManager.construct({
 					responseType: 'arraybuffer',
 					withCredentials: false,
 					done: (xhr: XMLHttpRequest) => {
-						let ont = JSON.parse(LIB.ab2str(xhr.response));
-						//	console.debug('Ontology loaded: ',ont);
-						resolve( new COntology(ont) );
-						//	setReady(module.name)
+						let txt = JSON.parse(LIB.ab2str(xhr.response)),
+							ont = new COntology(txt);
+						if (ont.isValid()) {
+							//	console.debug('Ontology loaded: ',ont);
+							resolve(ont);
+						}
+						else
+							reject( new resultMsg(539,"bad file", "text", "Ontology is invalid."))
 					},
 					fail: reject
 				})

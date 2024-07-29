@@ -101,17 +101,19 @@ class COntology {
         dta.hierarchies = dta.hierarchies.filter(
             (h: SpecifNode) => {
                 let r = LIB.itemByKey(dta.resources, h.resource);
-                return this.valueByTitle(r, CONFIG.propClassType) == "W3C:Ontology"
+                return this.valueByTitle(r, CONFIG.propClassType) == "W3C:Ontology";
             }
         );
         if (dta.hierarchies.length < 1) {
             message.show("No ontology found.", { severity: 'warning' });
-            return
+            this.data = undefined;
+            return;
         };
 
         if (!this.checkConstraintsOntology()) {
             message.show("The Ontology violates one or more constraints, so no classes will be generated. Please see the browser log for details.", { severity: 'error' });
-            return
+            this.data = undefined;
+            return;
         };
 
      /*   // Make a list of all defined domains in the SpecIF Ontology:
@@ -129,6 +131,9 @@ class COntology {
         this.makeStatementsIsNamespace();
 
         this.options = {};
+    }
+    isValid() {
+        return this.data && this.data.id && this.data.hierarchies.length > 0 && this.checkConstraintsOntology();
     }
 
     private getTermResources(ctg: string, term: string): SpecifResource[] {
