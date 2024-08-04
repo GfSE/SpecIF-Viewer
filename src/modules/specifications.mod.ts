@@ -194,9 +194,9 @@ class CPropertyToShow implements SpecifProperty {
 						ti = this.cData.instanceTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
-						// disregard link targets which aren't diagrams nor model elements:
+					/*	// disregard link targets which aren't diagrams nor model elements:
 						rC = LIB.itemByKey(this.cData.resourceClasses, cR['class']);
-						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching  */
 
 						// the titleLink content equals a resource's title, remember the first occurrence:
 						target = cR;
@@ -676,8 +676,8 @@ class CResourceToShow {
 			},
 			optsDesc = Object.assign(
 				{
-					titleLinking: clickable,
-					titleLinkTargets: app.standards.titleLinkTargets()
+					titleLinking: clickable
+				//	titleLinkTargets: app.standards.titleLinkTargets()
 				},
 				opts
 			);

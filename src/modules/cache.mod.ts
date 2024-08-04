@@ -2619,7 +2619,7 @@ class CProject implements SpecifProject {
 					(expD:SpecIF) => {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
-							titleLinkTargets: app.standards.titleLinkTargets().map((e: string) => { return app.ontology.localize(e, opts) }),
+						//	titleLinkTargets: app.standards.titleLinkTargets().map((e: string) => { return app.ontology.localize(e, opts) }),
 							titleProperties: CONFIG.titleProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							descriptionProperties: CONFIG.descProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'

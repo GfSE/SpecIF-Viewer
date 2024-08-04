@@ -50,7 +50,7 @@ class CStandards {
 		return this.listName.size;
 	}
 
-	titleLinkTargets(): string[] {
+/*	titleLinkTargets(): string[] {
 		// (this is a function, because app.ontology is not yet ready when this file is loaded);
 		// Return the resource classes which can be targets of title-linking (in [[name]] ):
 		return app.ontology.modelElementClasses
@@ -58,7 +58,7 @@ class CStandards {
 			.concat(CONFIG.folderClasses)
 			.concat(app.ontology.termClasses)
     }
-
+*/
 /*	get(ctg: string, key: SpecifKey, chAt?: string): SpecifClass {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:

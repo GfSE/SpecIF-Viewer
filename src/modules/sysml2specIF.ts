@@ -29,14 +29,15 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
-	//	idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
+		idStatementClassAggregates = idStatementClassHasPart,
 		idStatementClassComprises = idStatementClassHasPart,
-		idStatementClassAggregates = app.ontology.getClassId("statementClass", "SpecIF:aggregates"),
+	//	idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
+	//	idStatementClassAggregates = app.ontology.getClassId("statementClass", "SpecIF:aggregates"),
 		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "SpecIF:isSpecializationOf"),
 		idStatementClassRealizes = app.ontology.getClassId("statementClass", "uml:Realization"),
 		idStatementClassServes = app.ontology.getClassId("statementClass", "SpecIF:serves"),
 		idStatementClassAssociatedWith = app.ontology.getClassId("statementClass", "SpecIF:isAssociatedWith"),
-		idStatementClassCommunicatesWith = app.ontology.getClassId("statementClass", "FMC:communicatesWith"),
+	//	idStatementClassCommunicatesWith = app.ontology.getClassId("statementClass", "FMC:communicatesWith"),
 		idStatementClassHandles = app.ontology.getClassId("statementClass", "SpecIF:handles"),
 		idStatementClassProvides = app.ontology.getClassId("statementClass", "SpecIF:provides"),
 		idStatementClassConsumes = app.ontology.getClassId("statementClass", "SpecIF:consumes"),
@@ -149,8 +150,8 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 			.forEach(
 				(me) => {
 					if (me["class"].id == idResourceClassDefault) {
-						let rC: SpecifResourceClass,
-							prpL: SpecifProperty[];
+						let rC: SpecifResourceClass;
+						//	prpL: SpecifProperty[];
 						// --- Case 1: Look for	a stereotype to assign a corresponding resourceClass ---
 						let sTy = classStereotypes.get(me.id);
 						if (sTy) {

@@ -171,7 +171,7 @@ function toOxml( data, options ) {
 					addOrder: false,
 				//	clickableElements = false,
 					hasContent: hasContent,
-					titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+				//	titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 					titleProperties: ['dcterms:title'],
 					typeProperty: 'dcterms:type',
 					descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
@@ -1059,9 +1059,9 @@ function toOxml( data, options ) {
 					//		ti = minimizeXmlExcapes( cR.title );
 							if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
-							// disregard link targets which aren't diagrams nor model elements:
+					/*		// disregard link targets which aren't diagrams nor model elements:
 							rC = itemById(data.resourceClasses, cR['class']);
-							if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
+							if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;  */
 
 							// if the titleLink content equals a resource's title, return a text run with hyperlink:
 							if(m==ti.toLowerCase())

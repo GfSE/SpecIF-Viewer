@@ -36,7 +36,7 @@ function toXhtml( data, options ) {
 			addIcon: true,
 			addOrder: false,
 		//	hasContent: hasContent,
-			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+		//	titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 			titleProperties: ['dcterms:title'],
 			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
 			stereotypeProperties: ['uml:Stereotype'],
@@ -486,9 +486,9 @@ function toXhtml( data, options ) {
 						// disregard objects whose title is too short:
 						if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
-						// disregard link targets which aren't diagrams nor model elements:
+					/*	// disregard link targets which aren't diagrams nor model elements:
 						rC = itemById(data.resourceClasses, cR['class']);
-						if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;  */
 
 						// if the titleLink content equals a resource's title, replace it with a link:
 						if(m==ti.toLowerCase()) return '<a href="'+anchorOf(cR,hi)+'">'+$1+'</a>'
