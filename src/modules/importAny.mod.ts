@@ -238,8 +238,10 @@ moduleManager.construct({
 					// 1. look for format parameter
 					// ToDo ..
 					// 2. derive from file extension
-					if (f.extensions.includes('.' + uParms[CONFIG.keyImport].fileExt()) && moduleManager.isReady(f.name))
-						return f;
+					for (var ext of f.extensions) {
+						if (uParms[CONFIG.keyImport].endsWith(ext) && moduleManager.isReady(f.name))
+							return f;
+					};
 				};
 			}
 			function getOntologyURL(uP: string): string | undefined {
