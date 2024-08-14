@@ -22,9 +22,9 @@ moduleManager.construct({
 		self.clear()
 	};
 	self.show = function( opts?:any ):void {
-		const isEditor = app.title == i18n.LblEditor,
+	/*	const isEditor = app.title == i18n.LblEditor,
 			isReviewer = app.title == i18n.LblReviewer,
-			padding = '16px'; // = margin-right of logo, see css
+			padding = '16px'; // = margin-right of logo, see css */
 
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -34,7 +34,20 @@ moduleManager.construct({
 			}); 
 
 		$('#pageTitle').html( app.title );
+		// see: https://stackoverflow.com/questions/17710039/full-page-iframe
 		$('#about').html(
+			'<iframe id="aboutFrame" '
+			+	'src="./index.html" '
+			+	'title="About SpecIF Apps" '
+			+	'style="width: 100%; border: none; margin: 0; padding: 0; height: 100%;" '
+			+ '/>'
+		);
+		// There is a space of about 4px after the iframe causing a scroll-bar for the enclosing div #about.
+		// No idea where it comes from, but this ugly hack helps for the moment:
+	//	$('#aboutFrame').outerHeight($('#about').outerHeight(true) - 8);
+		// ... has been moved to doResize in moduleManager.
+
+	/*	$('#about').html(
 			'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
 			+ '<p>An app for your web-browser to ' + (isEditor ? 'integrate, edit and transform' : (isReviewer? 'review' : 'view'))+' system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It combines partial specifications from different tools in a semantic net for</p>'
@@ -107,8 +120,8 @@ moduleManager.construct({
 		+	'<h2>Credits and License Information</h2>'
 		+	'<p>The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software'
 		+		' and we gratefully thank the contributors for their effort.'
-	/*	+		' Our policy is to donate 12% of our revenues made with'
-		+		' the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'  */
+	//	+		' Our policy is to donate 12% of our revenues made with'
+	//	+		' the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'
 		+	'</p>'
 		+	'<table class="table table-condensed">'
 		+	'<thead>'
@@ -131,12 +144,12 @@ moduleManager.construct({
 		+			'<td><a href="https://github.com/mbraak/jqTree/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
 		+ (moduleManager.isReady('markdown')?
-	/*			'<tr>'
-			+		'<td>remarkable</td>'
-			+		'<td><a href="https://github.com/jonschlinkert" target="_blank">Jon Schlinkert</a></td>'
-			+		'<td>Markdown parser, done right. Commonmark support, extensions, syntax plugins, high speed ... <a href="https://github.com/jonschlinkert/remarkable" target="_blank">more</a></td>'
-			+		'<td><a href="https://github.com/jonschlinkert/remarkable/blob/master/LICENSE" target="_blank">MIT</a></td>'
-			+	'</tr>' */
+	//			'<tr>'
+	//		+		'<td>remarkable</td>'
+	//		+		'<td><a href="https://github.com/jonschlinkert" target="_blank">Jon Schlinkert</a></td>'
+	//		+		'<td>Markdown parser, done right. Commonmark support, extensions, syntax plugins, high speed ... <a href="https://github.com/jonschlinkert/remarkable" target="_blank">more</a></td>'
+	//		+		'<td><a href="https://github.com/jonschlinkert/remarkable/blob/master/LICENSE" target="_blank">MIT</a></td>'
+	//		+	'</tr>'
 				'<tr>'
 			+		'<td>markdown-it</td>'
 			+		'<td><a href="https://github.com/Kirill89" target="_blank">Kirill</a>,&nbsp;<a href="https://github.com/puzrin" target="_blank">Vitaly Puzrin</a>,&nbsp;<a href="https://github.com/rlidwka" target="_blank">Alex Kocharin</a></td>'
@@ -176,20 +189,20 @@ moduleManager.construct({
 		+			'<td>Excel parser and writer ... <a href="https://github.com/SheetJS/js-xlsx" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/SheetJS/js-xlsx/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
-	/*	+		'<tr>'
-		+			'<td>DataTables</td>'
-		+			'<td></td>'
-		+			'<td>DataTables is a highly flexible tool adding advanced interaction controls to any HTML table ... '
-		+				'<a href="http://www.datatables.net" target="_blank">more</a></td>'
-		+			'<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>'
-		+		'</tr>'  
-		+		'<tr>'
-		+			'<td>Font Awesome</td>'
-		+			'<td></td>'
-		+			'<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow, '
-		+				'and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>'
-		+			'<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>'
-		+		'</tr>' */
+	//	+		'<tr>'
+	//	+			'<td>DataTables</td>'
+	//	+			'<td></td>'
+	//	+			'<td>DataTables is a highly flexible tool adding advanced interaction controls to any HTML table ... '
+	//	+				'<a href="http://www.datatables.net" target="_blank">more</a></td>'
+	//	+			'<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>'
+	//	+		'</tr>'  
+	//	+		'<tr>'
+	//	+			'<td>Font Awesome</td>'
+	//	+			'<td></td>'
+	//	+			'<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow, '
+	//	+				'and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>'
+	//	+			'<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>'
+	//	+		'</tr>'
 		+		'<tr>'
 		+			'<td>jQuery</td>'
 		+			'<td></td>'
@@ -223,7 +236,7 @@ moduleManager.construct({
 		+	'</tbody>'
 		+	'</table>'
 		+	'</div>'
-		)
+		) */
 	};
 	return self;
 });

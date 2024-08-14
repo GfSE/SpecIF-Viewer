@@ -2730,6 +2730,7 @@ class CProject implements SpecifProject {
 						// A) Processing for 'html':
 						if (opts.format == 'html') {
 							// find the fully qualified path of the content delivery server to fetch the viewer modules:
+							// @ts-ignore - window.cdn is used by files *.specif.html
 							opts.cdn = window.cdn  // in case the calling app is itself html with embedded SpecIF
 									||	window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
 

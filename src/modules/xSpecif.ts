@@ -899,7 +899,7 @@ class CSpecIF implements SpecIF {
 										if(typeof(val)=='string')
 											return makeISODate(LIB.cleanValue(val))
 										else
-											throw "Property Value of "+prp.id+" with class "+val['class']+" must be a string.";
+											throw "Value of property "+prp.id+" with class "+prp['class'].id+" must be a string.";
 									case XsDataType.Boolean:
 										if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
 											return "true";

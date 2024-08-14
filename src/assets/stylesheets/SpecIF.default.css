@@ -12,17 +12,13 @@
 	- #4A8C00 SpecIF dark green
 */
 
-@font-face {
-  font-family: "dejavusansmono";
-  src: url("../fonts/DejaVuSansMono.ttf");
-}
 body {
     height: 100%;
     overflow: hidden;
     margin: 0;
 	padding: 0 0 0 8px;
-	font-family: arial, "DejaVu Sans Mono", dejavusansmono, sans-serif;
-	font-size: 10.5pt;
+	font-family: arial, sans-serif;
+	font-size: 11pt;
 }
 #pageHeader {
 	padding: 0.3em 0 0.3em 0;

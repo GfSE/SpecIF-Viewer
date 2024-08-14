@@ -3,10 +3,10 @@
     "",
     "\\src",
     "\\src\\assets",
-    "\\src\\assets\\javascripts",
     "\\src\\assets\\stylesheets",
     "\\src\\modules",
     "\\src\\types"
   ],
+  "SelectedNode": "\\src\\assets\\stylesheets\\SpecIF.default.css",
   "PreviewInSolutionExplorer": false
 }

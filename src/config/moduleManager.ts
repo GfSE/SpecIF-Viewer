@@ -857,11 +857,10 @@ function doResize(): void {
 
 	// adjust the vertical position of the contentActions:
 	$('.contentCtrl').css("top", hH);
-	/*	return
-		
-		function getNavbarHeight() {
-			return $('#navbar').css("height")
-		} */
+
+	// hack to adjust the iframe on the about page;
+	// no idea why there is a space after the iframe causing a scroll-bar for the enclosing div:
+	$('#aboutFrame').outerHeight(pH - 8);
 }
 function bindResizer(): void {
 	// adapt the display in case the window is being resized:
