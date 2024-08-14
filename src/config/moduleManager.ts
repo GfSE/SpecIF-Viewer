@@ -575,9 +575,9 @@ var app:IApp,
 											getScript('https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js'); return true;
 
 			/*	// temporary solution with fix for buttonLeft=false:
-				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css'); */
-				case "tree":				getCss("https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.2/jqtree.css");
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.2/tree.jquery.js'); return true;
+				case "tree":				getCss(loadPath + 'assets/stylesheets/jqtree-buttonleft.css'); */
+				case "tree":				getCss("https://cdn.jsdelivr.net/npm/jqtree@1.8.4/jqtree.css");
+											getScript('https://cdn.jsdelivr.net/npm/jqtree@1.8.4/tree.jquery.js'); return true;
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
@@ -585,32 +585,32 @@ var app:IApp,
 			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
 				case "excel":		//		loadModule('toXlsx');
 									//		getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true; .. works!
-											getScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js'); return true;
+											getScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'); return true;
 									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
 												.then(XLSX => {
 													console.debug('xlsx', XLSX);
 													setReady(mod);
 												}); */
 			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true; .. works!
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.2.2/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.9.1/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
 										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
 										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
 											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
-											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
+				case "dataTable": 			getCss( loadPath+'assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+											getScript( loadPath+'assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js')
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js')
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;
 			//	case "xml2js":				getScript('https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js'); return true;
 
 				// libraries:
-				case "mainCSS":				getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "mainCSS":				getCss(loadPath + 'assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
 				case "types":				getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
@@ -642,15 +642,15 @@ var app:IApp,
 				case 'toHtml': // the loading of fileSaver is attached here for all exports:
 								loadModule('fileSaver');
 								getScript(loadPath + 'modules/specif2html.js'); return true;
-				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
+				case "toXhtml": getScript(loadPath + 'assets/javascripts/toXhtml.js'); return true;
 				case "toEpub":	loadModule('toXhtml');
-								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
-				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
+								getScript(loadPath + 'assets/javascripts/toEpub.js'); return true;
+				case "toOxml":	getScript(loadPath + 'assets/javascripts/toOxml.js'); return true;
 				case "toTurtle": getScript(loadPath + 'modules/specif2turtle.js'); return true;
-				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
-				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
+				case 'bpmn2specif': getScript(loadPath + 'assets/javascripts/BPMN2SpecIF.js'); return true;
+				case 'archimate2specif': getScript(loadPath + 'assets/javascripts/archimate2SpecIF.js'); return true;
 				case "sysml2specif": getScript(loadPath + 'modules/sysml2specif.js'); return true;
-				case 'reqif2specif': getScript(loadPath + 'vendor/assets/javascripts/reqif2specif.js'); return true;
+				case 'reqif2specif': getScript(loadPath + 'assets/javascripts/reqif2specif.js'); return true;
 				case 'vicinityGraph': loadModule('graphViz');
 								getScript(loadPath + 'modules/graph.js'); return true;
 			/*	case CONFIG.objectTable:  	loadModule( 'dataTable' );
