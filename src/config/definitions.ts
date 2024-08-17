@@ -11,8 +11,8 @@ const CONFIG:any = {};
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
-    CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
-    CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
+    CONFIG.QuickStartGuideDe = "https://specif.de/downloads/SpecIF-Einfuehrung.pdf";
+    CONFIG.QuickStartGuideEn = "https://specif.de/Manuals/01_Quick-Start-Guide_EN.html";
 
     CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.passwordAnonymous = ''; // as configured in the server
