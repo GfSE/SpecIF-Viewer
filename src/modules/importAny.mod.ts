@@ -225,12 +225,11 @@ moduleManager.construct({
 				// - this is however too insignificant, when there are multiple formats with the same extension.
 				// - at least allow any extension listed in 'extensions', see Excel.
 //				console.debug('getFormat',uParms);
-				for( var f of formats) {
-					// 1. look for format parameter
-					// ToDo ..
-					// 2. derive from file extension
-					if (f.extensions.includes('.' + uParms[CONFIG.keyImport].fileExt()) && moduleManager.isReady(f.name))
-						return f;
+				for (var f of formats) {
+					for (var ext of f.extensions) {
+						if (uParms[CONFIG.keyImport].endsWith(ext) && moduleManager.isReady(f.name))
+							return f;
+					};
 				};
 			}
 		urlP = opts.urlParams;
