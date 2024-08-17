@@ -851,11 +851,9 @@ function doResize(): void {
 
 	// adjust the vertical position of the contentActions:
 	$('.contentCtrl').css("top", hH);
-	/*	return
-		
-		function getNavbarHeight() {
-			return $('#navbar').css("height")
-		} */
+
+	// a hack to avoid double scroll-bars:
+	$('#aboutFrame').outerHeight(pH - 8);
 }
 function bindResizer(): void {
 	// adapt the display in case the window is being resized:
