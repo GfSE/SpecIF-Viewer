@@ -7,6 +7,6 @@
     "\\src\\modules",
     "\\src\\types"
   ],
-  "SelectedNode": "\\src\\config\\locales\\iLaH-de.i18n.ts",
+  "SelectedNode": "\\src\\modules\\importAny.mod.ts",
   "PreviewInSolutionExplorer": false
 }
