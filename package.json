@@ -5,17 +5,17 @@
   "main": "src/views/view.html",
   "scripts": {
     "test": "jest --coverage",
-    "clean": "shx rm -rf coverage build",
+    "clean": "shx rm -rf coverage dist",
     "build": "(tsc && npm run _postbuild) || npm run _postbuild",
     "start": "node start.js",
-    "open_browser_macos": "shx open ./build/views/view.html || echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
-    "open_browser_linux": "shx xdg-open ./build/views/view.html || echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
-    "open_browser_win": "explorer 'build\\views\\view.html' || echo 'Could not open default browser. Please open ./build/view.html manually.'",
+    "open_browser_macos": "shx open ./dist/views/view.html || echo 'Could not open Safari browser. Please open ./dist/view.html manually.'",
+    "open_browser_linux": "shx xdg-open ./dist/views/view.html || echo 'Could not open XDG browser. Please open ./dist/view.html manually.'",
+    "open_browser_win": "explorer 'dist\\views\\view.html' || echo 'Could not open default browser. Please open ./dist/view.html manually.'",
     "_postbuild": "npm run _copy_assets_folder & npm run _copy_apps",
-    "_copy_assets_folder": "shx mkdir ./build/vendor/ & shx mkdir ./build/vendor/assets/ & shx cp -R ./src/vendor/assets ./build/vendor/",
-    "_copy_config_folder": "shx mkdir ./build/config/ & shx cp -R ./src/config/*/**.json ./build/config/locales/",
-    "_copy_views_folder": "shx mkdir ./build/views/ & shx cp -R ./src/views/* ./build/views/",
-    "_copy_apps": "shx cp -R ./src/*.html ./build/"
+    "_copy_assets_folder": "shx mkdir ./dist/assets/ & shx cp -R ./src/assets ./dist/",
+    "_copy_config_folder": "shx mkdir ./dist/config/ & shx cp -R ./src/config/*/**.json ./dist/config/locales/",
+    "_copy_views_folder": "shx mkdir ./dist/views/ & shx cp -R ./src/views/* ./dist/views/",
+    "_copy_apps": "shx cp -R ./src/*.html ./dist/"
   },
   "repository": {
     "type": "git",
