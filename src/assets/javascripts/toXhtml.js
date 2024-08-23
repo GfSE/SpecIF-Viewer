@@ -34,11 +34,11 @@ function toXhtml( data, options ) {
 		{
 			showEmptyProperties: false,
 			addIcon: true,
-			hasContent: hasContent,
+		//	hasContent: hasContent,
 			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 			titleProperties: ['dcterms:title'],
 			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
-			stereotypeProperties: ['UML:Stereotype'],
+			stereotypeProperties: ['uml:Stereotype'],
 			titleLinkBegin: '\\[\\[',	// must escape javascript AND RegEx
 			titleLinkEnd: '\\]\\]',		// must escape javascript AND RegEx
 			titleLinkMinLength: 3,
@@ -121,13 +121,15 @@ function toXhtml( data, options ) {
 		// render the resource or statement title
 
 		// First, find and set the configured title:
-		let a = titleIdx( itm.properties ), ti;
-		if( a>-1 ) {  // found!
+		let a = titleIdx(itm.properties), ti;
+		// The title property may be present, but empty, when opts.showEmptyProperties is set:
+		if (a > -1 && itm.properties[a].values.length > 0) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
 			// A title property should have just one value:
 			ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
-		} else {
+		}
+		else {
 			// In case of a statement, use the class' title by default:
 			ti = classTitleOf(itm);
 		};
@@ -261,7 +263,7 @@ function toXhtml( data, options ) {
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
-		let c1='', rows='', rt,
+		let c1='', rows='',
 			descriptions=[], other=[];
 		
 		if( r.properties ) {
@@ -289,10 +291,9 @@ function toXhtml( data, options ) {
 		
 		// Finally, list the remaining properties with property title (name) and value:
 		other.forEach( function(p) {
-			// the property title or it's class's title:
-			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-				rt = prpTitleOf(p);
-				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
+			// the property title or its class' title:
+			if( p.values.length>0 || opts.showEmptyProperties ) {
+				rows += '<tr><td class="propertyTitle">' + prpTitleOf(p)+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
 			}
 		});
 		// Add a property 'SpecIF:Type':
@@ -636,25 +637,28 @@ function toXhtml( data, options ) {
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return prp.title || itemById(data.propertyClasses,prp['class']).title
+		return prp.title || itemById(data.propertyClasses, prp['class']).title;
 	}
 	function classTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class;
+		/*	// get the title of a resource or statement as defined by itself or it's class;
+			// el is a statement, if it has a subject:
+			return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title */
+		// get the title of a statement as defined by it's class;
 		// el is a statement, if it has a subject:
-		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
+		return el.subject ? itemById(data.statementClasses, el['class']).title : '';
 	}
 	function languageValueOf(val) {
 		// assuming that only the desired language has already been selected during export:
 		return (typeof (val) == 'string' ? val : val[0].text)
 	}
-	function hasContent( str ) {
+/*	function hasContent( str ) {
 		// Check whether str has content or a reference:
 		if( !str ) return false;
 		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
 			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str);
-	}
+	} */
 	function escapeXML( s ) {
 		if( !s ) return '';
 		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {

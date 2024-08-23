@@ -248,7 +248,7 @@ function ObjectTable() {
 			},
 			// the sorting routines for the column 'title and description' (type 'title'):
 			"title-pre": function ( a ) {
-				return stripHTML(a).substr(0,20)
+				return stripHTML(a).substring(0,20)
 			},
 			"title-asc": function ( a, b ) {
 				return ((a < b) ? -1 : ((a > b) ? 1 : 0))

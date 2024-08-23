@@ -8,15 +8,15 @@
 */
 
 class CStandards {
-	// @ts-ignore - initialized below
+/*	// @ts-ignore - initialized below
 	dataTypes: SpecifDataType[];
 	// @ts-ignore - initialized below
 	propertyClasses: SpecifPropertyClass[];
 	// @ts-ignore - initialized below
-	resourceClasses: SpecifResourceClass[];
+	resourceClasses: SpecifResourceClass[]; */
 	constructor() {
-		// Get all classes of the domain 'Base':
-		let oC = app.ontology.generateSpecifClasses({ Base: true, adoptOntologyDataTypes: true, delta: true });
+/*		// Get all classes of the domain 'Base':
+		let oC = app.ontology.generateSpecifClasses({ domains: ['Base'], adoptOntologyDataTypes: true, delta: true });
 //		console.debug('oC', oC);
 		['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
 			// @ts-ignore - indexing is fine
@@ -27,96 +27,9 @@ class CStandards {
 		["DT-Boolean", "DT-Integer", "DT-Real", "DT-DateTime", "DT-Duration", "DT-AnyURI"].forEach(
 			(id) => { LIB.cacheE(this.dataTypes, LIB.itemByKey( app.ontology.data.dataTypes, LIB.makeKey(id) )) }
 		);
+        */
 //		console.debug('CS',simpleClone(this));
-	};
-
-/*	dataTypes:SpecifDataType[] = [{
-		id: "DT-ShortString",
-		title: "Short string" ,
-		description: [{ text: "Unformatted character string with length " + CONFIG.textThreshold + '.'}],
-		type: SpecifDataTypeEnum.String,
-		maxLength: CONFIG.textThreshold,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-		id: "DT-Text",
-		title: "Plain or formatted Text",
-		description: [{ text: "A text string, plain, or formatted by means of XHTML or markdown with 'infinite' length." }],
-		type: SpecifDataTypeEnum.String,
-		changedAt: "2021-02-14T08:59:00+02:00"
-	},{ 
-		id: "DT-DateTime",  
-		title: "Date or Timestamp",
-		description: [{ text: "Date or timestamp in ISO-8601 format" }],
-		type: SpecifDataTypeEnum.DateTime,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Boolean",
-		title: "Boolean",
-		description: [{ text: "A Boolean value." }],
-		type: SpecifDataTypeEnum.Boolean,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Integer",
-		title: "Integer",
-		description: [{ text: "A numerical integer value from " + CONFIG.minInteger + " to " + CONFIG.maxInteger +"." }],
-		type: SpecifDataTypeEnum.Integer,
-		minInclusive: CONFIG.minInteger,
-		maxInclusive: CONFIG.maxInteger,
-	    changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Real",
-		title: "Real",
-		description: [{ text: "A floating point number (double)." }],
-		type: SpecifDataTypeEnum.Double,
-	//	fractionDigits: CONFIG.maxAccuracy,
-	//	minInclusive: CONFIG.minReal,
-	//	maxInclusive: CONFIG.maxReal,
-		changedAt: "2021-02-14T08:59:00+02:00"
-	}];
-	propertyClasses:SpecifPropertyClass[] = [{
-		id: "PC-Name",
-		title: CONFIG.propClassTitle,
-		description: [{ text: "The element's name or title." }],
-		dataType: { id: "DT-ShortString" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}, {
-		id: "PC-Description",
-		title: CONFIG.propClassDesc,
-		dataType: { id: "DT-Text" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}, {
-		id: "PC-Diagram",
-		title: CONFIG.resClassDiagram,
-		dataType: { id: "DT-Text" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-		id: "PC-Type",
-		title: CONFIG.propClassType,
-		dataType: { id: "DT-ShortString" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}];
-	resourceClasses:SpecifResourceClass[] = [{
-		id: "RC-Folder",
-		title: CONFIG.resClassFolder,
-		description: [{ text: "Folder with title and text for chapters or descriptive paragraphs." }],
-		isHeading: true,
-		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
-		propertyClasses: [{ id: "PC-Name" }, { id: "PC-Description" }, { id: "PC-Type" }],
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-        id: "RC-Paragraph",
-		title: CONFIG.resClassParagraph,
-		description: [{ text: "Information with title and text for descriptive paragraphs." }],
-		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
-		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
-		changedAt: "2020-12-04T18:59:00+01:00"
-	}];
-	statementClasses: SpecifStatementClass[] = [{
-		id: "SC-mentions",
-		title: CONFIG.staClassMentions,
-		instantiation: ['internal'],  // this value is not defined by the schema
-		changedAt: "2022-06-05T18:59:00+01:00"
-	}];  */
+	}; 
 
 	// Map category to listname;
 	// the sequence is such that every list's elements have references only to list elements above:
@@ -140,31 +53,32 @@ class CStandards {
 	titleLinkTargets(): string[] {
 		// (this is a function, because app.ontology is not yet ready when this file is loaded);
 		// Return the resource classes which can be targets of title-linking (in [[name]] ):
-		return CONFIG.modelElementClasses
+		return app.ontology.modelElementClasses
 			.concat(CONFIG.diagramClasses)
 			.concat(CONFIG.folderClasses)
 			.concat(app.ontology.termClasses)
     }
 
-	get(ctg: string, key: SpecifKey, chAt?: string): SpecifItem {
+/*	get(ctg: string, key: SpecifKey, chAt?: string): SpecifClass {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:
-		var item: SpecifItem = LIB.itemByKey(this[this.listName.get(ctg)], key);
+		var item: SpecifClass = LIB.itemByKey(this[this.listName.get(ctg)], key);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
 			if (chAt) item.changedAt = chAt;
+			// remove revision in references for easier updating of types (which must follow certain rules):
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.dataType) item.dataType = { id: item.dataType.id };
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.propertyClasses) item.propertyClasses = item.propertyClasses.map((k:SpecifKey) => { return { id: k.id } })
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.subjectClasses) item.subjectClasses = item.subjectClasses.map((k: SpecifKey) => { return { id: k.id } })
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.objectClasses) item.objectClasses = item.objectClasses.map((k: SpecifKey) => { return { id: k.id } })
 			return item;
 		};
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.revision +"' of category '"+ctg+"'");
-	}
-/*	getWithReferenced(ctg: string, key: SpecifKey, chAt?: string): Specif {
-		let spD = {} as SpecIF,
-			item = this.get(ctg,key,chAt);
-		spD[this.listName.get(ctg)] = [
-			item
-		];
-		return spD
 	}
 	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
 		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
@@ -174,7 +88,7 @@ class CStandards {
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
-	} */
+	}
 	addTo(ctg: string, key: SpecifKey, dta: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
 		// ToDo: Check for revision! It can happen that a class is considered available, but a reference with revision fails.
@@ -206,7 +120,7 @@ class CStandards {
 		}
 		else
 			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
-	}
+	} */
 };
 
 
@@ -237,6 +151,7 @@ CONFIG.resClassRole = "SpecIF:Role";
 CONFIG.resClassFolder = 'SpecIF:Heading';
 CONFIG.resClassParagraph = "SpecIF:Paragraph";
 CONFIG.resClassComment = 'SpecIF:Comment';
+CONFIG.hierarchyRoot = 'ReqIF:HierarchyRoot'; // ReqIF root node with meta-data
 //    CONFIG.resClassIssue = 'SpecIF:Issue';
 CONFIG.staClassShows = 'SpecIF:shows';
 //    CONFIG.staClassRefersTo = 'SpecIF:refersTo';
@@ -248,6 +163,13 @@ CONFIG.prefixDT = "DT-";
 CONFIG.prefixPC = "PC-";
 CONFIG.prefixRC = "RC-";
 CONFIG.prefixSC = "SC-";
+CONFIG.prefixHC = "HC-";
+CONFIG.prefixHR = "HR-"; // for hierarchyRoots needed by ReqIF
+CONFIG.prefixR = "R-";
+CONFIG.prefixS = "S-";
+CONFIG.prefixH = "H-";
+CONFIG.prefixN = "N-";
+CONFIG.prefixV = "V-";
 
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement based on the semantics;
@@ -268,41 +190,13 @@ CONFIG.idProperties = [
         'Identifier' */
 ];
 
-// A list of resourceClasses serving as hierarchyRoot with meta-data;
-// the value can be specified by a property titled CONFIG.propClassType
-// or by the title of the resourceClass:
-CONFIG.hierarchyRoots = [
-    CONFIG.resClassOutline, // do not remove
-    CONFIG.resClassGlossary,
-    CONFIG.resClassOntology,
-    'SpecIF:HierarchyRoot',
-    'SpecIF:Hierarchy',
-    'SpecIF:BillOfMaterials',
-    "W3C:Vocabulary"
-];
-
-// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
-// it is considered a heading (chapter title) and will be included in the outline numbering.
-// Also, this property will be used for the title when displaying the resource.
-CONFIG.headings =
-    CONFIG.hierarchyRoots
-        .concat([
-            CONFIG.resClassOutline, // do not remove
-            CONFIG.resClassFolder    // do not remove
-            /*    // ReqIF 1.0 and 1.1 Implementation Guide:
-                'ReqIF.ChapterName',    // do not remove
-                // DocBridge Resource Director:
-                'DBRD.ChapterName',
-                // Other:
-                'Überschrift'  */
-        ]);
-
 // The content of the property with a title in this list will be used for the title when displaying the resource:
 // The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
 // For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
 // the value of the latter will be the title of the resource, because it comes first in the list below.
 CONFIG.titleProperties = [
 	CONFIG.propClassTitle,
+	"dc:title",
 	"schema:name",
     CONFIG.propClassTerm
     /*       'DC.title',
@@ -328,7 +222,8 @@ CONFIG.titleProperties = [
 CONFIG.descProperties = [
     // Dublin core:
     CONFIG.propClassDesc,
-    CONFIG.propClassDiagram
+	CONFIG.propClassDiagram,
+	"dc:description"
     /*        'DC.description',
             // ReqIF 1.0 and 1.1 Implementation Guide:
             'ReqIF.Text',
@@ -348,15 +243,19 @@ CONFIG.descProperties = [
             'Object Text',
         //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
 ];
-
-// those will get a larger edit field, just like the description properties:
 CONFIG.commentProperties = [
     "ReqIF-WF.CustomerComment",
-    "ReqIF-WF.SupplierComment"
+	"ReqIF-WF.SupplierComment",
+	"SpecIF:Comment"
 ];
+/* // those will get a larger edit field, just like the description properties:
+// CONFIG.formattedProperties =
+CONFIG.textProperties =
+    CONFIG.descProperties
+	.concat(CONFIG.commentProperties); */
 
 CONFIG.stereotypeProperties = [
-    'UML:Stereotype'
+    'uml:Stereotype'
 ];
 
 // A list of properties to suppress generally, specified by title.
@@ -446,16 +345,6 @@ CONFIG.diagramClasses = [
 CONFIG.folderClasses = [
     CONFIG.resClassOutline,
     CONFIG.resClassFolder
-];
-// A list with all model-element types by title,
-// is used for example to build a glossary;
-// it is expected that a plural of any list element exists ( element+'s' ):
-// ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
-CONFIG.modelElementClasses = [
-    'FMC:Actor',
-    'FMC:State',
-    'FMC:Event',
-    'SpecIF:Collection'
 ];
 
 // Used to map resource or statement properties to native properties, where applicable;

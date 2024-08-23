@@ -52,15 +52,15 @@ moduleManager.construct({
 			name:'ioSpecif',
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
-			extensions: ".specif, .specifz, .specif.zip",
+			extensions: [".specif", ".specifz", ".specif.zip"],
 			help: i18n.MsgImportSpecif,
 			opts: { mediaTypeOf: LIB.attachment2mediaType, doCheck: ['statementClass.subjectClasses', 'statementClass.objectClasses'] }
 		},{
-			id:'xml',	
+			id:'archimate',
 			name:'ioArchimate',	
 			desc:'ArchiMate Open Exchange',
 			label:'ArchiMate®',
-			extensions: ".xml",
+			extensions: [".xml"],
 //			help: i18n.MsgImportArchimate,
 			help: "Experimental: Import an ArchiMate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
 			opts: { mediaTypeOf: LIB.attachment2mediaType } 
@@ -69,29 +69,44 @@ moduleManager.construct({
 			name:'ioBpmn',
 			desc:'Business Process',
 			label:'BPMN',
-			extensions: ".bpmn",
+			extensions: [".bpmn"],
 			help: i18n.MsgImportBpmn
-		},{
-			id:'reqif',	
-			name:'ioReqif',	
-			desc:'Requirement Interchange Format',
-			label:'ReqIF',
-			extensions: ".reqif, .reqifz",
-			help: i18n.MsgImportReqif,
-		opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
-	/*	},{
+	/*	}, {
+			id: 'sysml',
+			name: 'ioSysml',
+			desc: 'System Modeling Language',
+			label: 'SysML',
+			extensions: [".xml", ".xmi", ".model"],
+			help: "Experimental: Import an XMI file from Cameo v19.0."
+		}, {
             id: 'rdf',
             name: 'ioRdf',
             desc: 'Resource Description Format',
             label: 'RDF',
-			extensions: "",
-            help: 'ToDo' */
-		},{ 
+			extensions: []],
+            help: 'ToDo' 
+		}, {
+			id: 'ddp',
+			name: 'ioDdpSchema',
+			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
+			label: 'DDP',
+			extensions: [".xsd"],
+			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
+			opts: { mediaTypeOf: LIB.attachment2mediaType } */
+		}, {
+			id: 'reqif',
+			name: 'ioReqif',
+			desc: 'Requirement Interchange Format',
+			label: 'ReqIF',
+			extensions: [".reqif", ".reqifz"],
+			help: i18n.MsgImportReqif,
+			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
+		},{
 			id:'xls',
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
-			extensions: ".xlsx, .xls, .csv",
+			extensions: [".xlsx", ".xls", ".csv"],
 			help: i18n.MsgImportXls,
 			opts: { dontCheck: ["statement.object"] }
 		},{
@@ -99,7 +114,7 @@ moduleManager.construct({
 			name:'ioMm',
 			desc:'Freemind Mindmap',
 			label: 'MM',
-			extensions: ".mm",
+			extensions: [".mm"],
 			help: i18n.MsgImportMm
 		}];
 	// list of projects to check whether the project is already existent in the server.
@@ -205,11 +220,16 @@ moduleManager.construct({
 		
 		$('#pageTitle').html( app.title );
 		
-			function getFormat(fN:string):object|undefined {
-//				console.debug('getFormat',fN.indexOf('.specif'),fN.indexOf('.xls'));
-				for( var i=0, I=formats.length; i<I; i++) {
-					if( fN.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
-						return formats[i];
+			function getFormat(uParms: string): object | undefined {
+				// Derive the format from the file extension:
+				// - this is however too insignificant, when there are multiple formats with the same extension.
+				// - at least allow any extension listed in 'extensions', see Excel.
+//				console.debug('getFormat',uParms);
+				for (var f of formats) {
+					for (var ext of f.extensions) {
+						if (uParms[CONFIG.keyImport].endsWith(ext) && moduleManager.isReady(f.name))
+							return f;
+					};
 				};
 			}
 		urlP = opts.urlParams;
@@ -220,7 +240,7 @@ moduleManager.construct({
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the file format:
-			self.format = getFormat( urlP[CONFIG.keyImport] );
+			self.format = getFormat( urlP );
 //			console.debug('filename:',self.file.name,self.format);
 			if( self.format && app[self.format.name] ) {
 				// initialize the import module:
@@ -316,7 +336,7 @@ moduleManager.construct({
 
 		$("#fileSelectBtn").html(
 			  '<span>' + i18n.BtnFileSelect + '</span>'
-			+ '<input id="importFile" type="file" accept="'+self.format.extensions+'" onchange="' + myFullName + '.pickFiles()" />'
+			+ '<input id="importFile" type="file" accept="'+self.format.extensions.toString()+'" onchange="' + myFullName + '.pickFiles()" />'
 		);
 
 		self.enableActions();
@@ -339,9 +359,9 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("cloneBtn").disabled =
+			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("updateBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
@@ -361,9 +381,9 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("cloneBtn").disabled =
+			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("updateBtn").disabled = 
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
@@ -561,13 +581,13 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError );
 						break;
-				/*	case 'update':
+					case 'update':
 						opts.collectProcesses = false;
-						app.projects.update(dta, opts)
+						app.projects.selected.update(dta, opts)
 							.progress(setProgress)
 							.done(handleNext)
 							.fail(handleError)
-						break; */
+						break;
 					case 'adopt':
 						opts.collectProcesses = true;
 						app.projects.selected.adopt( dta, opts )
@@ -575,7 +595,7 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError )
 			};
-			console.info(importMode.id + ' project ' + (typeof (dta.title) == 'string' ? dta.title : LIB.languageTextOf(dta.title, { targetLanguage: browser.language })) || dta.id);
+			console.info(importMode.id + ' project ' + (dta.title? (typeof (dta.title) == 'string' ? dta.title : LIB.languageTextOf(dta.title, { targetLanguage: browser.language })) : dta.id));
 		};
 	}; 
 	function setProgress(msg:string,perc:number):void {

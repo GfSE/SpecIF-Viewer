@@ -56,9 +56,10 @@ interface IApp {
 //	vicinityGraph?: IModule;
 	importAny: IModule;
 	ioSpecif: IModule;
-	ioReqif?: IModule;
-	ioBpmn?: IModule;
 	ioArchimate?: IModule;
+	ioBpmn?: IModule;
+	ioSysml?: IModule;
+	ioReqif?: IModule;
 	ioXls?: IModule;
 	// additional properties and methods are possible,
 	// see: https://stackoverflow.com/questions/33836671/typescript-interface-that-allows-other-properties
@@ -87,9 +88,8 @@ class ViewControl {
 	}
 	show(params:any): void {
 		// Select a new view
-		// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
-		// - simple case: params is a string with the name of the new view.
-		// - more powerful: params is an object with the new target view plus optionally content or other parameters
+		// by calling functions 'show'/'hide' in case they are implemented in the respective modules;
+		// 'params' is an object with the new target view plus optionally content or other parameters.
 		if (typeof (params)!='object') 
 			throw Error("moduleManager.show() needs a parameter.");
 //		console.debug('ViewControl.show',this.list,this.selected,params);
@@ -102,11 +102,11 @@ class ViewControl {
 		// else: show params.view and hide all others:
 		let v:JQuery, s:JQuery;
 		this.list.forEach((le:IModule) => {
-//					console.debug('ViewControl.show le',le);
+//			console.debug('ViewControl.show le',le);
 			v = $(le.view);			// the view
 			s = $(le.selectedBy); 	// the visual selector
 			if (params.view == le.view) {
-				//					console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
+//				console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
 				this.selected = le;
 				// set status of the parent's view selector:
 				s.addClass('active');
@@ -135,12 +135,12 @@ class ViewControl {
 				if (typeof (le.hide) == 'function') {
 					le.hide();
 					return;
-				};
-			};
+				}
+			}
 		});
 		if (typeof (doResize) == 'function') {
 			doResize();
-		};
+		}
 	}
 	hide(v:string):void {
 		if (typeof (v) == 'string' && this.exists(v)) {
@@ -473,18 +473,19 @@ var app:IApp,
 		setViewToLeaf( mo, params );
 		return;
 
-		function setViewFromRoot( le:IModule, pL:any[] ):void {
+		function setViewFromRoot( le:IModule, pars:any[] ):void {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
 				// all levels get access to the parameters besides view, if needed:
-				let nPL = simpleClone( pL );
+			/*	let nPL = simpleClone( pars );
 				nPL.view = le.parent.view;
-				setViewFromRoot( le.parent, nPL )
+				setViewFromRoot( le.parent, nPL ) */
+				setViewFromRoot(le.parent, Object.assign({}, pars, { view: le.parent.view}))
 			};
 			// set this level's view controller to choose the desired view:
-			le.parent.ViewControl.show( pL )
+			le.parent.ViewControl.show( pars )
 		}
-		function setViewToLeaf(le: IModule, pL: any[] ):void {
+		function setViewToLeaf(le: IModule, pars: any[] ):void {
 			// step down, if there is a child view:
 				function findDefault(vL: IModule[]): IModule {
 					for( var i=vL.length-1; i>-1; i-- ) {
@@ -493,12 +494,15 @@ var app:IApp,
 					// in absence of a default view, take the first in the list:
 					return vL[0]
 				}
+			// It *is* a leaf, if there is no more view controller --> no more need to step down:
 			if( le.ViewControl && le.ViewControl.list.length>0 ) {
-				let ch = findDefault( le.ViewControl.list ),
-					nPL = simpleClone( pL );
+			/*	let ch = findDefault( le.ViewControl.list ),
+					nPL = simpleClone( pars );
 				nPL.view = ch.view;
-				le.ViewControl.show( nPL );
-				setViewToLeaf( ch, pL )
+				le.ViewControl.show( nPL ); */
+				let ch = findDefault(le.ViewControl.list);
+				le.ViewControl.show(Object.assign({}, pars, {view:ch.view}));
+				setViewToLeaf( ch, pars )
 			}
 		}
 	};
@@ -570,41 +574,43 @@ var app:IApp,
 				case "bootstrapDialog":		getCss("https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css");
 											getScript('https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js'); return true;
 
-			//	case "tree":				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
-				// temporary solution with fix for buttonLeft=false:
-				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js'); return true;
+			/*	// temporary solution with fix for buttonLeft=false:
+				case "tree":				getCss(loadPath + 'assets/stylesheets/jqtree-buttonleft.css'); */
+				case "tree":				getCss("https://cdn.jsdelivr.net/npm/jqtree@1.8.4/jqtree.css");
+											getScript('https://cdn.jsdelivr.net/npm/jqtree@1.8.4/tree.jquery.js'); return true;
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
 			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
 				case "excel":		//		loadModule('toXlsx');
-											getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true;
+									//		getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true; .. works!
+											getScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'); return true;
 									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
 												.then(XLSX => {
 													console.debug('xlsx', XLSX);
 													setReady(mod);
 												}); */
-			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@14.1.3/dist/bpmn-viewer.production.min.js'); return true;
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true; .. works!
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.9.1/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
 										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
 										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
 											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
-											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
+				case "dataTable": 			getCss( loadPath+'assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+											getScript( loadPath+'assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js')
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;
+			//	case "xml2js":				getScript('https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js'); return true;
 
 				// libraries:
-				case "mainCSS":				getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "mainCSS":				getCss(loadPath + 'assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
 				case "types":				getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
@@ -635,16 +641,16 @@ var app:IApp,
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
 				case 'toHtml': // the loading of fileSaver is attached here for all exports:
 								loadModule('fileSaver');
-								getScript(loadPath + 'modules/toHtml.js'); return true;
-				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
+								getScript(loadPath + 'modules/specif2html.js'); return true;
+				case "toXhtml": getScript(loadPath + 'assets/javascripts/toXhtml.js'); return true;
 				case "toEpub":	loadModule('toXhtml');
-								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
-				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
-			//	case "toXlsx": getScript(loadPath + 'export/toXlsx.js'); return true;
-				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
-				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
-				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
-				case 'reqif2specif': getScript(loadPath + 'vendor/assets/javascripts/reqif2specif.js'); return true;
+								getScript(loadPath + 'assets/javascripts/toEpub.js'); return true;
+				case "toOxml":	getScript(loadPath + 'assets/javascripts/toOxml.js'); return true;
+				case "toTurtle": getScript(loadPath + 'modules/specif2turtle.js'); return true;
+				case 'bpmn2specif': getScript(loadPath + 'assets/javascripts/BPMN2SpecIF.js'); return true;
+				case 'archimate2specif': getScript(loadPath + 'assets/javascripts/archimate2SpecIF.js'); return true;
+				case "sysml2specif": getScript(loadPath + 'modules/sysml2specif.js'); return true;
+				case 'reqif2specif': getScript(loadPath + 'assets/javascripts/reqif2specif.js'); return true;
 				case 'vicinityGraph': loadModule('graphViz');
 								getScript(loadPath + 'modules/graph.js'); return true;
 			/*	case CONFIG.objectTable:  	loadModule( 'dataTable' );
@@ -659,6 +665,7 @@ var app:IApp,
 								loadModule('jsonSchema');
 								getScript(loadPath + 'modules/importAny.mod.js'); return true;
 				case 'ioSpecif': getScript(loadPath + 'modules/ioSpecif.mod.js'); return true;
+				case 'ioDdpSchema': getScript(loadPath + 'modules/ioDdpSchema.mod.js'); return true;
 				case 'ioReqif': loadModule('reqif2specif');
 								getScript(loadPath + 'modules/ioReqif.mod.js'); return true;
 			//	case 'ioRdf': 	getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
@@ -669,6 +676,8 @@ var app:IApp,
 								getScript(loadPath + 'modules/ioBpmn.mod.js'); return true;
 				case 'ioArchimate': loadModule('archimate2specif');
 								getScript(loadPath + 'modules/ioArchimate.mod.js'); return true;
+				case 'ioSysml': loadModule('sysml2specif');
+								getScript(loadPath + 'modules/ioSysml.mod.js'); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 			/*	case CONFIG.users:		//	loadModule( 'mainCSS' );
@@ -730,9 +739,10 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
-					CONFIG.pathOntology
-					: '../../SpecIF/vocabulary/Ontology.specif',
+				url: (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+						CONFIG.ontologyURL
+						: '../../SpecIF/vocabulary/Ontology.specif'
+					) + "?" + new Date().toISOString(), // bust to reload from server
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {
@@ -841,11 +851,9 @@ function doResize(): void {
 
 	// adjust the vertical position of the contentActions:
 	$('.contentCtrl').css("top", hH);
-	/*	return
-		
-		function getNavbarHeight() {
-			return $('#navbar').css("height")
-		} */
+
+	// a hack to avoid double scroll-bars:
+	$('#aboutFrame').outerHeight(pH - 8);
 }
 function bindResizer(): void {
 	// adapt the display in case the window is being resized:

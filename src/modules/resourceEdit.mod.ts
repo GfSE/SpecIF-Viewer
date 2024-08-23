@@ -29,8 +29,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			localOpts = Object.assign({
 				lookupTitles: true,
 				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
-				targetLanguage: this.selPrj.language,
-				imgClass: 'forImagePreview'
+				targetLanguage: this.selPrj.language
 			}, opts),
 			ti = LIB.titleOf(this, localOpts);
 
@@ -44,7 +43,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				(eV: SpecifEnumeratedValue) => {
 					// - LIB.languageTextOf returns the value in the local language ... or a vocabulary term
 					// - a returned vocabulary term is then localized using the ontology.
-					let val = this.dT.type == SpecifDataTypeEnum.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
+					let val = this.dT.type == XsDataType.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
 					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
 				}
 			);
@@ -67,7 +66,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// create an input field depending on the property's dataType;
 		// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.Boolean:
+			case XsDataType.Boolean:
 				// - no input checking needed
 //				console.debug('xs:boolean',ti,this);
 				return makeBooleanField(
@@ -75,7 +74,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
 					this.dispOpts()
 				);
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
 					// it is a diagram reference (thus an XHTML-formatted text field):
 					return this.makeDiagramField(localOpts)
@@ -91,11 +90,11 @@ class CPropertyToEdit extends CPropertyToShow  {
 							opts.dialogForm.addField(ti, this.dT);
 						return makeTextField(
 							ti,
-							this.get(localOpts),
+							this.get(localOpts).escapeHTML(),
 							// - open an input text-area, if it is a description property
 							// - open an input line, otherwise
 							{
-								typ: (CONFIG.descProperties.includes(this.pC.title) || CONFIG.commentProperties.includes(this.pC.title) ? 'area' : 'line'),
+								typ: app.ontology.propertyClassIsText(this.pC.title) ? 'area' : 'line',
 								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.includes(this.pC.title)) ? 'line' : 'area',
 								handle: opts.myFullName + '.check()',
 								hint: this.pC.description
@@ -147,7 +146,10 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// while the propertyClass should be unique),
 		// so that the user can update and delete the diagram later on:
 		return '<div id="' + tagId(this['class'].id) + '">'
-			+ this.renderFile(this.values.length > 0 ? LIB.languageTextOf(this.values[0], opts) : '', opts)
+			+ this.renderFile(
+					this.values.length > 0 ? LIB.languageTextOf(this.values[0], opts) : '',
+					Object.assign({ renderFiles: true, imgClass: 'forImagePreview' }, opts)
+				)
 			+ '</div>'
 	}
 	private makeDiagramField(opts: any) {
@@ -237,7 +239,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// Otherwise take the value itself:
 		let val: string;
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
 					// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
 					// this.values is empthy, if the diagram has been removed while editing:
@@ -270,7 +272,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 								}
 								else {
 									// language not found, so append:
-									// @ts-ignore - this is of type SpecifDataTypeEnum.String, so we can push a new language value
+									// @ts-ignore - this is of type XsDataType.String, so we can push a new language value
 									this.values[0].push({ text: val, language: localOpts.targetLanguage } as SpecifLanguageText);
 								};
 								return { class: LIB.makeKey(this.pC.id), values: this.values };
@@ -286,7 +288,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					// no input value:
 					return { class: LIB.makeKey(this.pC.id), values: [] };
 				};
-			case SpecifDataTypeEnum.Boolean:
+			case XsDataType.Boolean:
 				val = booleanValue(ti).toString();
 				return { class: LIB.makeKey(this.pC.id), values: [val] };
 			default:
@@ -321,7 +323,7 @@ class CResourceToEdit {
 
 		this.id = el.id;
 	//	this['class'] = el['class'];
-		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = LIB.getExtendedClasses(this.selPrj.cache.get("resourceClass", "all"), [el['class']])[0] as SpecifResourceClass;
 		this.language = el.language || this.selPrj.language;
 	/*	this.revision = el.revision;
 		this.order = el.order;
@@ -525,6 +527,8 @@ moduleManager.construct({
 					(r: SpecifResource) => {
 //						console.debug( '#', self.localOpts.mode, r );
 						self.newRes = r;
+						if (app.me.userName != CONFIG.userNameAnonymous)
+							self.newRes.createdBy = app.me.userName;
 						if (self.localOpts.selNodeId)
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
@@ -536,9 +540,9 @@ moduleManager.construct({
 								msgBtns.cancel,
 								msgBtns.insert
 							];
-						self.toEdit = new CResourceToEdit(r);
-						self.toEdit.editForm(self.localOpts)
-				})
+						finalize();
+					}
+				)
 				.catch( LIB.stdError ); 
 				break;
 			case 'clone':
@@ -547,33 +551,39 @@ moduleManager.construct({
 				// get the selected resource:
 				app.projects.selected.readItems('resource', [self.parent.tree.selectedNode.ref], { showEmptyProperties: true } )
 				.then( 
-					(rL:SpecifItem[])=>{
+					(rL: SpecifItem[]) => {
 						// create a clone to collect the changed values before committing:
 						self.newRes = rL[0];
-						if( self.localOpts.mode=='clone' ) {
-							self.newRes.id = LIB.genID('R-');
+						if (self.localOpts.mode == 'clone') {
+							self.newRes.id = LIB.genID(CONFIG.prefixR);
 							self.localOpts.dialogTitle = i18n.MsgCloneResource,
-							self.localOpts.msgBtns = [
-								msgBtns.cancel,
-								msgBtns.insertAfter,
-								msgBtns.insertBelow
-							]
+								self.localOpts.msgBtns = [
+									msgBtns.cancel,
+									msgBtns.insertAfter,
+									msgBtns.insertBelow
+								]
 						}
 						else {
+							if ( rL[0].revision )
+								self.newRes.replaces = [rL[0].revision];
+								// revision will be set when saving
 							self.localOpts.dialogTitle = i18n.MsgUpdateResource;
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.update
 							]
-						}; 
-						self.toEdit = new CResourceToEdit(self.newRes);
-						self.toEdit.editForm(self.localOpts)
-					},
-					LIB.stdError
+						};
+						finalize();
+					}
 				)
+				.catch(LIB.stdError);
 		};
 		return;
 
+		function finalize(): void {
+			self.toEdit = new CResourceToEdit(self.newRes);
+			self.toEdit.editForm(self.localOpts);
+        }
 		function selectResClass(opts: any): Promise<SpecifResourceClass> {
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
@@ -666,6 +676,9 @@ moduleManager.construct({
 		);
 
 		self.newRes.changedAt = chD;
+		if (app.me.userName != CONFIG.userNameAnonymous)
+			self.newRes.changedBy = app.me.userName;
+		self.newRes.revision = "rev-"+simpleHash(chD);
 //		console.debug('save',simpleClone(self.newRes));
 
 		switch (mode) {
@@ -678,21 +691,22 @@ moduleManager.construct({
 					.then(finalize, LIB.stdError)
 		};
 
-		// If it is a new item, insert a mode in the hierarchy:
+		// If it is a new item, insert a mode in the hierarchy;
+		// save the resource reference without revision to allow for updates without changing the reference:
 		switch (mode) {
 			case 'insert':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD } as SpecifNode])
+				app.projects.selected.createItems('node', [{ id: LIB.genID(CONFIG.prefixN), resource: LIB.makeKey(self.newRes.id), changedAt: chD } as SpecifNode])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID(CONFIG.prefixN), resource: LIB.makeKey(self.newRes.id), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID(CONFIG.prefixN), resource: LIB.makeKey(self.newRes.id), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError )
 		};
 

@@ -35,7 +35,7 @@ interface SpecifProject {
      * @type {SpecifMetaSchema}
      * @memberof SpecifProject
      */
-    schema: SpecifMetaSchema;
+    $schema: SpecifMetaSchema;
     /**
      * 
      * @type {SpecifId}
@@ -109,11 +109,35 @@ interface SpecifProject {
      */
     language?: string;
     /**
-     * 
-     * @type {SpecifNodes}
+     * Memorize the type-set of the project
+     * @type {Array<SpecifDataType>}
+     * @memberof SpecIF
+     */
+    dataTypes: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    propertyClasses: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    resourceClasses: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    statementClasses: SpecifKeys;
+    /**
+     * Memorize the hierarchies of the project
+     * @type {SpecifKeys}
      * @memberof SpecifProject
      */
-    hierarchies: SpecifNodes;
+    hierarchies: SpecifKeys;
 }
 
 /**
@@ -414,7 +438,7 @@ interface SpecifDataType {
      * @type {string}
      * @memberof SpecifDataType
      */
-    type: SpecifDataTypeEnum;
+    type: XsDataType;
     /**
      * 
      * @type {number}
@@ -469,11 +493,11 @@ interface SpecifDataType {
 * @export
 * @enum {string}
 */
-enum SpecifDataTypeEnum {
+enum XsDataType {
     Boolean = <any> 'xs:boolean',
     Integer = <any> 'xs:integer',
     Double = <any> 'xs:double',
-    AnyUri = <any> 'xs:anyUri',
+    AnyURI = <any> 'xs:anyURI',
     DateTime = <any> 'xs:dateTime',
     Duration = <any> 'xs:duration',
     String = <any> 'xs:string'
@@ -542,13 +566,25 @@ interface SpecifFile {
      */
     url?: string;
     /**
+     * The file (image or object) as dataURL
+     * @type {string}
+     * @memberof SpecifFile
+     */
+    dataURL?: string;
+    /**
+     * The file as blob
+     * @type {Blob}
+     * @memberof SpecifFile
+     */
+    blob?: Blob;
+    /**
      * The file's media type (formerly MIME-type) according to https://www.iana.org/assignments/media-types/media-types.xhtml.
      * @type {string}
      * @memberof SpecifFile
      */
     type: string;
     /**
-     * 
+     *
      * @type {SpecifRevision}
      * @memberof SpecifFile
      */
@@ -592,7 +628,7 @@ type SpecifIcon = string
 type SpecifId = string
 
 /**
- * 
+ * Indicates whether an instance of the class is created automatically, manually or both. Manual *and* automatic instantiation is allowed, if the property is omitted. The class is abstract and cannot be instantiated, if the property list is present, but empty. 
  * @export
  */
 enum SpecifInstantiation {

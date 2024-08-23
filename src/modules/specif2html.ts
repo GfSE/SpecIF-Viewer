@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-function toHtmlDoc(pr: SpecIF, pars:any) {
+app.specif2html = (pr: SpecIF, pars: any): Promise<string> => {
 	// Transform pr to HTML with embedded SpecIF transformation,
 	// where pr is a SpecIF data in JSON format (not the internal cache).
 	// Attention: The SpecIF data as JSON may not contain any apostrophes 
@@ -18,7 +18,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 	return new Promise( (resolve)=>{
 		var pend = 0;
 		if (pr.files)
-			pr.files.forEach((f: IFileWithContent) => {
+			pr.files.forEach((f: SpecifFile) => {
 //				console.debug('zip a file',f);
 				if( f.blob ) {
 					pend++;
@@ -79,7 +79,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 		};
 	});
 
-	function make(pr:any): String {
+	function make(pr:any): string {
 		pr = JSON.stringify( pr )
 		.replace(/\\/g,"\\\\")
 		.replace(/'/g,"&apos;")
@@ -119,7 +119,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+			'function addFavicon(r) {'
 			+				'let link = document.createElement("link");'
 			+				'link.rel = r;'
-			+				'link.href = cdn+"vendor/assets/icons/favicon.ico";'
+			+				'link.href = cdn+"assets/icons/favicon.ico";'
 			+				'link.type = "image/x-icon";'
 			+				'document.head.appendChild(link);'
 			+			'}'
@@ -127,7 +127,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+		'getScript("https://code.jquery.com/jquery-3.7.1.min.js");'
 			+		'getScript(cdn+"config/definitions.js?" + Date.now().toString());'
 			+		'getScript(cdn+"config/moduleManager.js?" + Date.now().toString());'
-			+		'getScript(cdn+"embedded.js?" + Date.now().toString());'
+			+		'getScript(cdn+"modules/embedded.js?" + Date.now().toString());'
 			+		'addFavicon("shortcut icon");'
 			+		'addFavicon("icon");'
 			+	'</script>'

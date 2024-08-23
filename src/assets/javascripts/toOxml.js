@@ -174,7 +174,7 @@ function toOxml( data, options ) {
 					titleProperties: ['dcterms:title'],
 					typeProperty: 'dcterms:type',
 					descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
-					stereotypeProperties: ['UML:Stereotype'],
+					stereotypeProperties: ['uml:Stereotype'],
 				//	hierarchyRoots: ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'],
 					imgExtensions: [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ],
 					applExtensions: [ 'bpmn' ],
@@ -218,7 +218,8 @@ function toOxml( data, options ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*?>|</span>'
+				+ '<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<u>|</u>|<sup>|<sub>|<\/sup>|<\/sub>'
+				+	'|<span[^>]*?>|</span>'
 				+	'|'+reA
 				+	'|'+reI
 		/*		// The nested object pattern must be checked before the single object pattern:
@@ -266,7 +267,8 @@ function toOxml( data, options ) {
 
 				// First, find and set the configured title:
 				let a = titleIdx( itm.properties ), ti;
-				if( a>-1 ) {  // found!
+				// The title property may be present, but empty, when opts.showEmptyProperties is set:
+				if (a > -1 && itm.properties[a].values.length>0) {  // found!
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
 					// A title property should have just one value:
@@ -532,16 +534,20 @@ function toOxml( data, options ) {
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
-				let rows='', c3, rt;
+				let rows='';
 				other.forEach( (p)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
-					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-						rt = minimizeXmlExcapes( prpTitleOf(p) );
-						c3 = '';
-						propertyValuesOf( p ).forEach( 
-							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
-						);
+					if( p.values.length>0 || opts.showEmptyProperties ) {
+						let rt = minimizeXmlExcapes( prpTitleOf(p) ),
+							c3 = '';
+						if (p.values.length > 0)
+							propertyValuesOf(p).forEach(
+								(e) => { c3 += generateOxml(e, { font: { color: opts.colorAccent1 }, noSpacing: true }) }
+							)
+						else
+							c3 = generateOxml({ p: { text: "" } }, { noSpacing: true });  // setting the color on an empty string has no effect
+
 //						console.debug('other properties',p,rt,c3);
 						rows += wTableRow(wTableCell({
 											content: 
@@ -553,8 +559,8 @@ function toOxml( data, options ) {
 														align: 'end'
 													}
 												}),
-											border: { sides: "TB" },
-											width: 20 // in percent of table-width
+											width: 25, // in percent of table-width
+											border: { sides: "TB" }
 										})
 										+ wTableCell({
 											content: c3,
@@ -862,6 +868,26 @@ function toOxml( data, options ) {
 									delete fmt.font.style;	// simply, since there is only one value so far.
 									return '';
 								};
+								if (/<u>/.test($2)) {
+									fmt.font.underline = 'single';
+									return '';
+								};
+								if (/<\/u>/.test($2)) {
+									delete fmt.font.underline;
+									return '';
+								};
+								if (/<sup>/.test($2)) {
+									fmt.font.position = 'sup';
+									return '';
+								};
+								if (/<sub>/.test($2)) {
+									fmt.font.position = 'sub';
+									return '';
+								};
+								if (/<\/sup>|<\/sub>/.test($2)) {
+									delete fmt.font.position;
+									return '';
+								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
 								sp = /<span[^>]+?"color: ?#([\da-fA-F]{6})"[^>]*>/.exec($2);
@@ -1044,7 +1070,7 @@ function toOxml( data, options ) {
 					throw Error("SpecIF to WORD: Invalid title link.");
 				}
 				function propertyValuesOf( prp ) {
-					// In a first transformation step, return the value of a single property
+					// In a first transformation step, return the values of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
 					// The second transformation step will be done in generateOxml().
@@ -1205,10 +1231,11 @@ function toOxml( data, options ) {
 				// the following options are implemented:
 				// - font.weight == 'bold'
 				// - font.style == 'italic'
+				// - font.underline == 'single'
+				// - font.position == 'sub' or font.position == 'sup'
 				// - font.color == '007FFF' (RGB in Hex, like HTML without #)
 				// - 0 < heading < maxHeading+1
-				// - style == 'bulleted'
-				// - style == 'numbered'
+				// - style == 'bulleted'|'numbered'
 				// - align == 'both'|'center'|'end' (default:'start')
 				// - hyperlink to an internal 'bookmark'
 				// - bookmark
@@ -1295,7 +1322,7 @@ function toOxml( data, options ) {
 					};
 					// else, assuming that it is an internal hyperlink:
 					// Interestingly enough, Word only supports internal links up to 20 chars:
-					let lnk = ct.format.hyperlink.internal.substr(0,20);
+					let lnk = ct.format.hyperlink.internal.substring(0,20);
 					return	'<w:r>'
 						+		'<w:fldChar w:fldCharType="begin"/>'
 						+	'</w:r>'
@@ -1328,7 +1355,10 @@ function toOxml( data, options ) {
 					if( fmt && fmt.font ) {
 						let rPr =	(fmt.font.weight=='bold'?'<w:b/>':'')
 							+ 		(fmt.font.style=='italic'?'<w:i/>':'')
-							+ 		(fmt.font.color?'<w:color w:val="'+fmt.font.color+'"/>':'');
+							+		(fmt.font.underline == 'single' ? '<w:u w:val="single"/>' : '')
+							+		(fmt.font.position == 'sub' ? '<w:vertAlign w:val="subscript"/>' : '')
+							+		(fmt.font.position == 'sup' ? '<w:vertAlign w:val="superscript"/>' : '')
+							+ 		(fmt.font.color ? '<w:color w:val="' + fmt.font.color + '"/>' : '');
 						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':'';
 					};
 					// default:
@@ -2768,7 +2798,7 @@ function toOxml( data, options ) {
 	function store( f ) {
 //		let blob = new Blob([f.content],{type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document; charset=utf-8"});
 		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
-		saveAs(blob, f.name+".xml");
+		saveAs(blob, f.name);
 		if( typeof(opts.done)=="function" ) opts.done()
 	}
 	function clone( o ) { 
@@ -2839,12 +2869,15 @@ function toOxml( data, options ) {
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return itemById(data.propertyClasses, prp['class']).title
+		return itemById(data.propertyClasses, prp['class']).title;
 	}
 	function classTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class;
+	/*	// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
+		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title */
+		// get the title of a statement as defined by it's class;
+		// el is a statement, if it has a subject:
+		return el.subject ? itemById(data.statementClasses, el['class']).title : '';
 	}
 	function languageValueOf(val) {
 		// assuming that only the desired language has already been selected during export:

@@ -50,11 +50,11 @@ function BPMN2Specif( xmlString, options ) {
 			strForkEvtGateway: "Forking (exclusive) Event Gateway",
 			strForkEvtGatewayDesc: "The first of the following events to occur will prevail.",
 			strForkExcGateway: "Forking Exclusive Gateway",
-			strForkExcGatewayDesc: "Evaluate the condidition and signal the respective event.",
+			strForkExcGatewayDesc: "Evaluate the condition and signal the respective event.",
 			strForkParGateway: "Forking Parallel Gateway",
 			strForkParGatewayDesc: "Forward control to *all* outgoing branches.",
 			strForkIncGateway: "Forking Inclusive Gateway",
-			strForkIncGatewayDesc: "Evaluate all condiditions and signal the respective events.",
+			strForkIncGatewayDesc: "Evaluate all conditions and signal the respective events.",
 			strTextAnnotation: "Text Annotation"
 		},
 		options
@@ -69,11 +69,11 @@ function BPMN2Specif( xmlString, options ) {
 	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
 	// There should be exactly one collaboration per BPMN file:
 	if( Cs.length<1 ) {
-		console.error("BPMN-XML has no collaboration.");
+		console.error("BPMN Import:BPMN-XML has no collaboration.");
 		return
 	};
 	if( Cs.length>1 )
-		console.warn("BPMN-XML has more than one collaboration.");
+		console.warn("BPMN Import: BPMN-XML has more than one collaboration.");
 //	console.debug('collaboration',Cs);
 
 	var model = {};
@@ -262,7 +262,7 @@ function BPMN2Specif( xmlString, options ) {
 	//	else {
 			default:
 				// skip all other tags:
-				console.info("BPMN tag " + tag + " has been skipped.");
+				console.info("BPMN Import: Skipping tag " + tag + ".");
 				return;
 		};
 		// arrives here only in cases "participant" and "messageFlow"
@@ -295,7 +295,7 @@ function BPMN2Specif( xmlString, options ) {
 			if( itm )
 				return itm
 			else
-				console.error("Did not find a resource with id '"+id+"'.")
+				console.error("BPMN Import:Did not find a resource with id '"+id+"'.")
 		}
 		function analyzeProcess(prc) {
 			// analyze a process or subprocess and transform all contained model elements;
@@ -470,7 +470,7 @@ function BPMN2Specif( xmlString, options ) {
 										})
 									}
 									else {
-										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
+										console.error("BPMN Import:Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
 							});
@@ -498,7 +498,7 @@ function BPMN2Specif( xmlString, options ) {
 										})
 									}
 									else {
-										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
+										console.error("BPMN Import:Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
 							})
@@ -624,13 +624,13 @@ function BPMN2Specif( xmlString, options ) {
 						});
 //						console.debug('Gateway',gw);
 						if( gw.incoming.length>1 && gw.outgoing.length>1 ) {
-							console.warn("Gateway with id ',id,' has multiple incoming AND multiple outgoing paths!");
+							console.warn("BPMN Import: Gateway with id ',id,' has multiple incoming AND multiple outgoing paths!");
 							// ToDo: This is quite possible and allowed, but here it is not yet supported.
 							// see: https://docs.camunda.org/manual/7.7/reference/bpmn20/gateways/inclusive-gateway/
 							return
 						};
 						if( gw.incoming.length==1 && gw.outgoing.length==1 ) {
-							console.warn("Gateway with id ',id,' has one incoming AND one outgoing path!");
+							console.warn("BPMN Import: Gateway with id ',id,' has one incoming AND one outgoing path!");
 							return
 						};
 						// else:
@@ -899,7 +899,7 @@ function BPMN2Specif( xmlString, options ) {
 				changedAt: opts.fileDate
 			})
 		else
-			console.warn("Omitted association "+id+", because either the source or more probably the target is missing")
+			console.warn("BPMN Import: Skipping association "+id+", because either the source or more probably the target is missing")
 	});
 
 	// 8. Collect 'contains' statements using graphical information

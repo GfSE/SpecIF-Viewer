@@ -241,7 +241,7 @@ function toEpub( data, opts ) {
 				.then(
 					function(blob) {
 //						console.debug('storing ',blob,ePub.fileName+".epub");
-						saveAs(blob, ePub.fileName+".epub");
+						saveAs(blob, ePub.fileName);
 						if( typeof(opts.done)=="function" ) opts.done();
 					}, 
 					function(error) {

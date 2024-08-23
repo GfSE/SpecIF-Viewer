@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta http-equiv="expires" content="0" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />
+	<link rel="stylesheet" type="text/css" href="./assets/stylesheets/SpecIF.default.css" />
+	<title>SpecIF View</title>
+</head>
+<body style="overflow:auto;">
+	<div class="row" style="display: flex; flex-wrap: wrap; justify-content: center;">
+		<div class="col-md-6" style="padding-right: 16px; padding-left: 16px; max-width:768px;">
+			<h1 id="aboutTitle">About SpecIF Apps</h1>
+			<p>A family of apps for your web-browser to integrate, edit, transform and review system specifications:</p>
+			<ul>
+				<li><a href="https://specif.de/apps/edit.html" target="_blank">SpecIF Model Integrator and Editor</a></li>
+				<li><a href="https://specif.de/apps/view.html" target="_blank">SpecIF Viewer</a></li>
+				<li>An HTML file with embedded SpecIF data and viewer script can be generated with the apps listed above.</li>
+			</ul>
+			<p>You may consult the <a href="https://gfse.github.io/SpecIF-Pages/Manuals/01_Quick-Start-Guide_EN.html">Quick Start Guide.</a></p>
+			<p>If you experience unexpected or faulty behavior of the software, please open a <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">new issue</a>.</p>
+			<h2>Introduction</h2>
+			<p>SpecIF is the 'Specification Integration Facility'. It combines partial specifications from different tools in a semantic net for</p>
+			<ul>
+				<li>searching, navigating and auditing partial results in a common context as well as</li>
+				<li>exchanging model information between organizations and tools.</li>
+			</ul>
+			<p>The <a href="https://specif.de" target="_blank">SpecIF Homepage</a> provides further information.</p>
+			<p>
+				The software code developed on <a href="https://github.com/GfSE/SpecIF-Viewer" target="_blank">github.com</a>
+				is a reference implementation and has not been designed for high data volume and other production requirements.
+				This installation is provided for your convenience is neither intended to be highly available nor scalable.
+				You may use the <a href="https://github.com/GfSE/SpecIF-Viewer/releases" target="_blank">latest release</a> of the software for your own installation.
+				Any contribution to this collaborative effort is highly welcome!
+			</p>
+			<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>
+			<h2>Features</h2>
+			<table class="stdInlineWithBorder">
+				<thead>
+					<tr>
+						<th width="75%" style="text-align: left;">Feature</th>
+						<th>Editor</th>
+						<th>Viewer</th>
+						<th>HTML</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Display SpecIF data embedded in an HTML-file</td>
+						<td></td>
+						<td></td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Import 'specif' and 'specif.zip' file with schema and consistency check</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import 'reqif' and 'reqifz' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import ArchiMate Open-Exchange file <em>(so far, diagrams must be added manually)</em></td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import 'BPMN-XML' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import SysML Metadata Interchange (XMI) file <em>(experimental)</em></td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Import from an URL or the local file system</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Merge models of different tools and notations</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Browse the content ('resources') along any supplied hierarchy</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Create, clone and update resource with an input form derived from the respective resource class</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Move single node or subtree in the hierarchy by drag'n'drop</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Edit properties for review status and comment according to the Stakeholder Request Clarification (SRC) process by prostep IVIP</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Inspect the semantic net ('statements')</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Create statement according to the eligible subject and object classes per statement class</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Delete selected resource or statement</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Filter using text fragments ('full text search'), resource classes or enumerated property values</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Report model-based statistics, such as used resource classes or used property enumerated values</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+						<td style="text-align: center;">&check;</td>
+					</tr>
+					<tr>
+						<td>Export 'specif.zip' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export 'specif.html' file with embedded SpecIF data</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export 'reqifz' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export 'Turtle' file <em>(experimental)</em></td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export MS - Excel 'XLSX' file <em>(experimental)</em></td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export 'ePub' file</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Export MS-Word OOXML file</td>
+						<td style="text-align: center;">&check;</td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="col-md-6" style="padding-right: 16px; padding-left: 16px; max-width:768px;">
+			<h2>Compatibility</h2>
+			<ul>
+				<li>Mozilla Firefox</li>
+				<li>Google Chromium and Chrome</li>
+				<li>Microsoft Edge</li>
+				<li>Opera</li>
+				<li>Apple Safari <em>(beware of performance issues in case of bigger models)</em></li>
+				<li>Microsoft Internet Explorer and first generation Edge are not any more supported</li>
+			</ul>
+			<h2>Support</h2>
+			<p>
+				In case you discover a conceptual inconsistency, a software bug or a flaw in documentation,
+				we appreciate if you open an <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">issue</a>
+				... or simply send an e-mail with a concise description and test-data to
+				<a href="mailto:maintenance@specif.de">maintenance(at)specif.de</a>.
+				We are highly interested to supply high-quality concepts and useful software.
+			</p>
+			<h2>Credits and License Information</h2>
+			<p>
+				The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software
+				and we gratefully thank the contributors for their effort.
+			</p>
+			<!--	<p>	Our policy is to donate 12% of our revenues made with
+				the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.
+			</p>	-->
+			<table class="stdInlineWithBorder">
+				<thead>
+					<tr>
+						<th width="15%">Library</th>
+						<th>Author</th>
+						<th>Description</th>
+						<th>License</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>AJV</td>
+						<td><a href="https://github.com/epoberezkin" target="_blank">Evgeny Poberezkin</a></td>
+						<td>Another JSON Schema Validator ... <a href="https://github.com/epoberezkin/ajv" target="_blank">more</a></td>
+						<td><a href="https://github.com/epoberezkin/ajv/blob/master/LICENSE" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>jqTree</td>
+						<td><a href="https://github.com/mbraak" target="_blank">Marco Braak</a></td>
+						<td>
+							A tree with collapsible branches and drag\'n\'drop support
+							for rearranging chapters and paragraphs ... <a href="http://mbraak.github.io/jqTree/" target="_blank">more</a>
+						</td>
+						<td><a href="https://github.com/mbraak/jqTree/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>
+					</tr>
+					<tr>
+						<td>markdown-it</td>
+						<td><a href="https://github.com/Kirill89" target="_blank">Kirill</a>,&nbsp;<a href="https://github.com/puzrin" target="_blank">Vitaly Puzrin</a>,&nbsp;<a href="https://github.com/rlidwka" target="_blank">Alex Kocharin</a></td>
+						<td>Markdown parser, done right. 100% CommonMark support, extensions, syntax plugins & high speed ... <a href="https://markdown-it.github.io/" target="_blank">more</a></td>
+						<td><a href="https://github.com/jonschlinkert/remarkable/blob/master/LICENSE" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>JSZip</td>
+						<td><a href="https://github.com/Stuk" target="_blank">Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso</a></td>
+						<td>A library for creating, reading and editing .zip files ... <a href="https://github.com/Stuk/jszip" target="_blank">more</a></td>
+						<td><a href="https://github.com/Stuk/jszip/blob/master/LICENSE.markdown" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>FileSaver</td>
+						<td><a href="http://eligrey.com/" target="_blank">Eli Grey</a></td>
+						<td>Save files to the local file system ... <a href="https://github.com/eligrey/FileSaver.js/" target="_blank">more</a></td>
+						<td><a href="https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>BPMN-Viewer</td>
+						<td></td>
+						<td>A BPMN 2.0 rendering toolkit and web modeler ... <a href="https://bpmn.io/toolkit/bpmn-js/" target="_blank">more</a></td>
+						<td><a href="https://github.com/bpmn-io/bpmn-js/blob/develop/LICENSE" target="_blank">bpmn.io</a></td>
+					</tr>
+					<tr>
+						<td>vis.js Network</td>
+						<td></td>
+						<td>
+							Display networks consisting of nodes and edges ...
+							<a href="https://visjs.github.io/vis-network/docs/network/" target="_blank">more</a>
+						</td>
+						<td>
+							<a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache 2.0</a> or
+							<a href="http://opensource.org/licenses/MIT" target="_blank">MIT</a>
+						</td>
+					</tr>
+					<tr>
+						<td>js-xlsx</td>
+						<td></td>
+						<td>Excel parser and writer ... <a href="https://github.com/SheetJS/js-xlsx" target="_blank">more</a></td>
+						<td><a href="https://github.com/SheetJS/js-xlsx/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>
+					</tr>
+					<!--			<tr>
+							<td>DataTables</td>
+							<td></td>
+							<td>DataTables is a highly flexible tool adding advanced interaction controls to any HTML table ...
+								<a href="http://www.datatables.net" target="_blank">more</a></td>
+							<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>
+						</tr>
+						<tr>
+							<td>Font Awesome</td>
+							<td></td>
+							<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow,
+								and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>
+							<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>
+						</tr> -->
+					<tr>
+						<td>jQuery</td>
+						<td></td>
+						<td>
+							jQuery makes things like HTML document traversal and manipulation, event handling, animation
+							and Ajax much simpler ... <a href="https://jquery.com/" target="_blank">more</a>
+						</td>
+						<td><a href="https://jquery.org/license/" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>Bootstrap Icons</td>
+						<td></td>
+						<td>
+							Free, high quality, open source icon library with over 1,800 icons.
+							Use them with or without Bootstrap in any project ... <a href="https://icons.getbootstrap.com/" target="_blank">more</a>
+						</td>
+						<td><a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank">MIT</a></td>
+					</tr>
+					<tr>
+						<td>Bootstrap</td>
+						<td></td>
+						<td>
+							Front-end component library for responsive, mobile-first projects on the web ...
+							<a href="http://getbootstrap.com/" target="_blank">more</a>
+						</td>
+						<td><a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank">MIT</a></td>
+					</tr>
+					<!--				<tr>
+								<td>diff-match-patch</td>
+								<td></td>
+								<td>A library for text comparison, matching and patching ...
+									<a href="https://code.google.com/p/google-diff-match-patch/" target="_blank">more</a></td>
+								<td><a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache 2.0</a></td>
+							</tr> -->
+				</tbody>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

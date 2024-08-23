@@ -3,12 +3,12 @@
     (C)copyright enso managers gmbh (http://www.enso-managers.de)
     Author: se@enso-managers.de, Berlin
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
-     Attention: 
+     Attention:
     - Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
-*/ 
+*/
 
 const LIB: any = {};
 
@@ -19,10 +19,6 @@ interface INodeWithPosition extends SpecifNode {
 // For example, ioXLS uses incomplete links which are late attached using hookStatements:
 interface IIncompleteStatement extends SpecifStatement {
     resourceToLink: string; // is the title of a resource
-}
-interface IFileWithContent extends SpecifFile {
-    blob?: Blob;
-    dataURL?: string;
 }
 interface IFieldOptions {
     tagPos?: string;  // 'left', 'none' ('above')
@@ -83,7 +79,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     return fG;
 }
 function setTextValue( tag:string, val:string ):void {
-    val = LIB.noCode(val).unescapeJSON() || '';
+    val = LIB.noCode(val || '').unescapeJSON();
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
     if (el && el.nodeName && el.nodeName.toLowerCase() == 'div') {
@@ -333,23 +329,23 @@ class CCheckDialogInput {
             val = textValue(cPs.label);
             // Perform the test depending on the type:
             switch (cPs.dataType.type) {
-                case SpecifDataTypeEnum.String:
+                case XsDataType.String:
                     //    case 'xhtml':
                     ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
                     break;
-                case SpecifDataTypeEnum.Double:
+                case XsDataType.Double:
                     ok = val.length < 1
                         || RE.Real(cPs.dataType.fractionDigits).test(val)
                         && !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
                         && !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
                     break;
-                case SpecifDataTypeEnum.Integer:
+                case XsDataType.Integer:
                     ok = val.length < 1
                         || RE.Integer.test(val)
                         && !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
                         && !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
                     break;
-                case SpecifDataTypeEnum.DateTime:
+                case XsDataType.DateTime:
                     ok = val.length < 1 || LIB.isIsoDateTime(val);
                 // no need to check enumeration
             };
@@ -376,11 +372,13 @@ class xhrMessage {
     asString():string {
         return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.responseText : ")")
     }
-    log(): void {
+    log() {
         console.log(this.asString());
+        return this;  // make it chainable
     }
-    warn(): void {
+    warn() {
         console.warn(this.asString());
+        return this;  // make it chainable
     }
 }
 /*LIB.logMsg = (xhr: xhrMessage): void =>{
@@ -527,9 +525,15 @@ LIB.makeKey = (el: any): SpecifKey => {
     // and support the case where a full key has already been used:
     return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
 }
-/* LIB.makeKeyL = (L: any[]): SpecifKeys => {
-    return LIB.forAll(L, (el: any): SpecifKey => { return LIB.makeKey(el) });
-} */
+LIB.replacePrefix = (newPrefix: string, id: string) => {
+    return id.replace(
+        RE.isolatePrefix,
+        // @ts-ignore - match and $1 must be present, even if not used.
+        (match, $1, $2) => {
+            return newPrefix + $2;
+        }
+    );
+}
 LIB.containsAllKeys = (refL: SpecifKeys, newL: SpecifKeys): boolean => {
     // return true, if all elements of newL are contained in refL;
     // sequence does not matter:
@@ -587,22 +591,23 @@ LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean =>{
     if (refE.type != newE.type) return false;
     // Perhaps we must also look at the title ..
     switch (refE.type) {
-        case SpecifDataTypeEnum.Double:
+        case XsDataType.Double:
             if (refE.fractionDigits != newE.fractionDigits) return false;
             // no break;
-        case SpecifDataTypeEnum.Integer:
+        case XsDataType.Integer:
             if (refE.minInclusive != newE.minInclusive || refE.maxInclusive != newE.maxInclusive) return false;
             break;
-        case SpecifDataTypeEnum.String:
+        case XsDataType.String:
             if (refE.maxLength != newE.maxLength) return false;
     };
     if (!Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration)) return true;
     if (Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
         || refE.enumeration.length != newE.enumeration.length) return false;
     // refE and newE have a property 'enumeration' with equal length:
-    for (var i = newE.enumeration.length - 1; i > -1; i--)
+    for (var i = newE.enumeration.length - 1; i > -1; i--) {
         // assuming that the values don't matter:
         if (LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0) return false;
+    };
     // the list of enumerated values *is* equal,
     // finally the multiple flag must be equal:
     return LIB.equalBoolean(refE.multiple, newE.multiple)
@@ -811,6 +816,10 @@ LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLang
     let langV = LIB.languageValueOf(val, opts);
     return (langV ? langV['text'] : '');
 }
+LIB.selectTargetLanguage = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | undefined => {
+    // if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+    return LIB.makeMultiLanguageValue(LIB.languageTextOf(val, opts), opts)
+}
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     // for display, any vocabulary term is translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
@@ -822,33 +831,43 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     return val as string
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
-    // Return the values of a resource's (or statement's) property with a title listed in pNs;
+    // Return the values of all resource's (or statement's) properties with a title listed in pNs;
     // replace references to enumerated values by the corresponding values:
     // ToDo: return the class's default value, if available.
 //    console.debug('valuesByTitle',dta,itm,pN);
+    let valL: SpecifValues = [];
     if (itm.properties) {
         let dT: SpecifDataType,
             pC: SpecifPropertyClass;
         for (var p of itm.properties) {
             pC = LIB.itemByKey(dta.propertyClasses, p['class']);
-            if (pC && pNs.includes(pC.title)) {
-                dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
-                if (dT) {
-                    return dT.enumeration? 
-                        p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value })
-                        : p.values
+            for (var pN of pNs) {
+                if (pC && pC.title==pN) {
+                    dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
+                    if (dT) {
+                        valL = valL.concat( dT.enumeration ?
+                            p.values.map((v) => { return LIB.itemById(dT.enumeration, v).value })
+                            : p.values
+                        )
+                    }
                 }
             }
         }
     };
-    return [];
+    return valL;
+}
+LIB.valueByTitle = (el: SpecifInstance, ti: string, dta: SpecIF | CSpecIF | CCache, opts?:any): string => {
+    // Return the first value of el's property with title ti:
+    let lOpts = Object.assign( { targetLanguage: 'default' }, opts ),
+        pVL = LIB.valuesByTitle(el, [ti], dta);
+    return pVL.length > 0 ? LIB.displayValueOf(pVL[0], lOpts) : undefined;
 }
 LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] => {
     // List the enumerated values of a dataType.
-    // - If a dataType is handed in, take it.
+    // - If a fully specified dataType is handed in, take it.
     // - Otherwise look it up from the list of dataTypes.
-    // @ts-ignore - when dTk.type exists, it is assumed that dTk is a dataType
-    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', 'all')), dTk),
+    // @ts-ignore - when dTk.type exists, it is assumed that dTk is a fully specified dataType
+    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', app.projects.selected.dataTypes)), dTk),
         oL = [];
     if (dT.enumeration)
         for (var v of dT.enumeration) {
@@ -944,7 +963,9 @@ LIB.itemByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):any => {
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     // Return the index of item in L referenced by key k:
     //  - If an item in list (L) has no specified revision, a reference key may not specify a revision.
-    //  - If k has no revision, the item in L having the latest revision applies.
+    //  - If L has multiple elements with same id, where one of them has no revision, indexByKey cannot identify a unique item.
+    //  - If k has no revision, the item in L having the latest revision (not 'replaced' by any other) applies.
+    //  - If there are >1 latest revisions (>1 branches), the more recent one prevails (ToDo: acceptable rule ??)
     //  - If k has a revision, the item in L having an an equal or the next lower revision applies.
     //  - The uniqueness of keys has been checked, before.
     // Note that referenceIndex does the inverse: it returns the index of the list item which is referencing k.
@@ -961,12 +982,56 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     );
     if (itemsWithEqId.length < 1) return -1; // no element with the specified id
 
+    if (itemsWithEqId.length == 1) {
+        if (!k.revision || itemsWithEqId[0].rev == k.revision)
+            return itemsWithEqId[0].idx
+        else
+            return -1; // revisions don't match (this should not occur)
+    };
+
+    // itemsWithEqId.length is >1.
+    for (let itm of itemsWithEqId) {
+        // this constraint has been checked during import, but let us ckeck again to detect any error which may have happened, since:
+        if( !itm.rev )
+            console.error("Item with id '" + k.id + "' occurs more than once, where at least one does not have a specified revision.");
+    };
+
+    if (k.revision) {
+        // Find the element with equal revision:
+        let itemsWithEqRev = itemsWithEqId.filter((e: any) => { return e.rev == k.revision });
+        if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
+        if (itemsWithEqRev.length == 1) return itemsWithEqRev[0].idx;
+        throw Error("There are >1 items with the same id '" + k.id + "' and revision '" + k.revision + "'.");
+    }
+    else {
+        // Look for the latest revision in itemsWithEqId;
+        // expected is a single revision which is not replaced by another:
+
+        // Get a list with all those items which are not replaced by another:
+        let itemsNotReplaced = itemsWithEqId.filter(
+            (i: any) => {
+                for (let itm of itemsWithEqId) {
+                    if (Array.isArray(L[itm.idx].replaces) && L[itm.idx].replaces.includes(i.rev))
+                        return false;
+                }
+                return true;
+            }
+        );
+        if (itemsNotReplaced.length == 1)
+            return itemsNotReplaced[0].idx; // the newest revision of a single branch
+        if (itemsNotReplaced.length < 1)
+            throw Error("There is a cyclic reference within " + JSON.stringify(L) + "'.");
+
+        console.info("There are multiple branches; no item returned for " + JSON.stringify(k) + ".");
+        return -1;  // could not determine the newest revision
+    };
+
+/*
     if (itemsWithEqId.length == 1 && !itemsWithEqId[0].rev) {
         // a single item without revision has been found:
         if (k.revision) return -1; // revisions don't match (this should not occur)
         return itemsWithEqId[0].idx // both the found element and the key have no revision
     };
-
     // The elements in itemsWithEqId have a revision:
     // If there are more than one and the constraint checker was happy, they must have a revision.
     if (k.revision) {
@@ -981,7 +1046,7 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     // The key has no revision and so the latest shall be returned.
     // Sort revisions in the order of creation; the latest first:
     itemsWithEqId.sort((laurel: any, hardy: any) => { return hardy.changedAt - laurel.changedAt });
-    return itemsWithEqId[0].idx; // return the index of the latest revision
+    return itemsWithEqId[0].idx; // return the index of the latest revision */
 }
 LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
     // Return the item in L with key k 
@@ -1069,8 +1134,95 @@ LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void 
         el.properties.unshift(prp);
     else
         el.properties = [prp];
+};
+LIB.addClassesTo = (term: string, dta: SpecIF): SpecifClass | undefined => {
+    // Add an element (e.g. class) to it's list, if not yet defined:
+    // ToDo: Check for revision! It can happen that a class is considered available, but a reference with revision fails.
+
+    // 1. Get the class corresponding to the term plus all required ones:
+    // @ts-ignore - yes, the result can be undefined:
+    let items = app.ontology.generateSpecifClasses({ terms: [term], delta: true, referencesWithoutRevision: true /*, adoptOntologyDataTypes: true */ }),
+        item: SpecifClass;
+    console.debug("Adding classes for '" + term + "':", items);
+
+    // ToDo: For avoiding duplicates, the checking for the id is not sufficient;
+    // if the existing element has an equal id, but different content,
+    // the resulting SpecIF data-set is not consistent.
+
+    // 2. Create it, if not yet available:
+    for (var Ln of ['dataTypes', 'propertyClasses', 'resourceClasses', 'statementClasses']) {
+        // add the type, but avoid duplicates:
+        // @ts-ignore - index is ok:
+        LIB.cacheL(dta[Ln], items[Ln]);
+
+        // obtain the requested class;
+        // there should be exactly one element in 'items':
+        let idx = LIB.indexBy(dta[Ln], 'title', term);
+        if (idx > -1)
+            item = dta[Ln][idx];
+    };
+    if (!item)
+        console.error('No class found for term ' + term + '.');
+    return item;
+};
+LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
+    // Return a list with classes, the ancestors first and the requested class last.
+    // Applies to resourceClasses and statementClasses;
+    // classes are always cached, so there is no need for a call with promise.
+    let resL: SpecifClass[] = [],
+        cK = simpleClone(clK);  // avoid side-effect in calling routine
+    do {
+        let c = LIB.itemByKey(L, cK);
+        if (c) {
+            // The propoerties of the extending (parent's) class first:
+            // @ts-ignore - checking for extends, because it doesn't exist on all elements
+            cK = c['extends'];
+            resL.unshift(c);
+        }
+        else {
+            console.error('Programming Error: Did not find extending class ' + cK.id);
+            cK = undefined;
+        };
+    } while (cK);
+    return resL;
 }
-LIB.cmp = ( i:string, a:string ):number =>{
+LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
+    // Applies to resourceClasses and statementClasses;
+    // classes are always cached, so there is no need for a call with promise.
+    let resL: any = [];
+    for (var clk of toGet) {
+        resL.push(extendClass(clk))
+    };
+    return resL;
+
+    function extendClass(k: SpecifKey) {
+        let rC: any = {};
+        LIB.getClassesWithParents(cL, k)
+            // A list with classes is returned, the ancestors first and the requested class last.
+            // - Starting with most general, copy to and potentially overwrite the attributes of rC
+            // - Also the list of eligible subjectClasses and objectClasses are overwritten,
+            //   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
+            // - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
+            .forEach(
+                (c: SpecifItem) => {
+                    for (let att in c) {
+                        //	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                        // @ts-ignore - indexing an object with a string is perfectly OK
+                        if (["propertyClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                            // @ts-ignore - indexing an object with a string is perfectly OK
+                            LIB.cacheL(rC[att], c[att])
+                        else
+                            // @ts-ignore - indexing an object with a string is perfectly OK
+                            rC[att] = c[att]
+                    }
+                }
+            );
+        delete rC['extends'];
+        return rC
+    }
+}
+
+LIB.cmp = (i: string, a: string): number => {
     if( !i ) return -1;
     if( !a ) return 1;
     i = i.toLowerCase();
@@ -1091,10 +1243,20 @@ LIB.forAll = ( L:any[], fn:(el:any,idx:number)=>any ):any[] =>{
     // return a new list with the results from applying the specified function to all items of input list L;
     // differences when compared to Array.map():
     // - tolerates missing L
+    // - appends not only items, but also lists (if the supplied function returns a list)
     // - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
     if(!L) return [];
     var nL:any[] = [];
-    L.forEach( (el,idx)=>{ var r=fn(el,idx); if(r) nL.push(r) } );
+    L.forEach((el, idx) => { 
+		var r = fn(el, idx); 
+		if (r) {
+			if(Array.isArray(r))
+			//	nL = nL.concat(r)
+                nL.push(...r)
+			else
+				nL.push(r);
+		};
+	});
     return nL;
 }
 
@@ -1107,14 +1269,35 @@ LIB.addIcon = (str: string, ic: string): string =>{
 LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
     // add or update the item e in a list L,
     // where the list can have string elements or objects with id:
-    let n = typeof (e)=='string' ? L.indexOf(e) : LIB.indexById( L, e.id );
+    let n = typeof (e) == 'string' ? L.indexOf(e) : LIB.indexById(L, e.id);
+    if (e.predecessor) {
+        let p = typeof (e.predecessor) == 'string' ? L.indexOf(e.predecessor) : LIB.indexById(L, e.predecessor.id);
+        delete e.predecessor;
+        if (p > -1) {
+            // predecessor found; 
+            // move or insert the element:
+            if (n > -1)
+                L.splice(n, 1);
+            L.splice(p + 1, 0, e);
+            return p + 1;
+        }
+    };
+    if (n > -1) {
+        L[n] = e;
+        return n;
+    }
+    else
+        L.push(e);
+    return L.length - 1;
+
+/*    let n = typeof (e)=='string' ? L.indexOf(e) : LIB.indexById( L, e.id );
     // add, if not yet listed:
     if (n < 0) {
         // insert. if not found:
         if (e.predecessor) {
             n = typeof (e.predecessor) == 'string' ? L.indexOf(e.predecessor) : LIB.indexById(L, e.predecessor.id);
+            delete e.predecessor;
             if (n > -1) {
-                delete e.predecessor;
                 L.splice(n + 1, 0, e);
                 return n+1;
             }
@@ -1124,7 +1307,7 @@ LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
     };
     // update, if found:
     L[n] = e;
-    return n;
+    return n; */
 }
 LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
     // add or update the items es in a list L:
@@ -1192,7 +1375,7 @@ interface String {
     baseName: Function;
     fileExt: Function;
 }
-String.prototype.toCamelCase = function():string {
+String.prototype.toCamelCase = function() {
     let str = this.replace(/[^a-z\d \:\.]/ig, ''), parts, res = '';
     // Check for separators in the sequence of priority:
     if (str.includes(':'))
@@ -1368,7 +1551,10 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
     // process the remainder (the text after the last tag) or the whole text if there was no tag:
     out += str.escapeXML();
     return out;
-} 
+}
+/*LIB.escapeFileName = (str: string): string => {
+    return str.replace()
+} */
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function (): string {
     return this.replace(/[.*+?^${}()|[\]\\]/g, '\$&')   // $& means the whole matched string
@@ -1461,8 +1647,9 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
     return this as string;
 };
 String.prototype.fileExt = function():string {
-    // return the file extension only:
-    return this.substring(this.lastIndexOf('.') +1);
+    // return the file extension excluding '.':
+    let idx = this.lastIndexOf('.');
+    return idx<0? '' : this.substring(idx+1);
 /*    // see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504
     return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2); */
 };
@@ -1472,7 +1659,11 @@ String.prototype.baseName = function(): string {
 };
 String.prototype.fileName = function():string {
     // return the filename without extension:
-    return this.substring( 0, this.lastIndexOf('.') )
+    let idx = this.lastIndexOf('.');
+    return this.substring(0, idx < 0 ? this.length : idx);
+};
+LIB.addFileExtIfMissing = (fn: string, ext: string): string => {
+    return fn == fn.fileName() ? fn + ext : fn;
 };
 LIB.addTimezoneIfMissing = (dt:string):string => {
     if (typeof(dt)=='string') {
@@ -1548,7 +1739,7 @@ LIB.str2ab = (str: string): ArrayBuffer => {
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-LIB.blob2dataURL = (file: IFileWithContent, fn: Function, timelag?: number): void => {
+LIB.blob2dataURL = (file: SpecifFile, fn: Function, timelag?: number): void => {
     if (!file || !file.blob) return;
     const reader = new FileReader();
     // @ts-ignore - yes, result can be 'null'
@@ -1561,7 +1752,7 @@ LIB.blob2dataURL = (file: IFileWithContent, fn: Function, timelag?: number): voi
     else
         reader.readAsDataURL(file.blob);
 };
-LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void => {
+LIB.blob2text = (file: SpecifFile, fn: Function, timelag?: number): void => {
     if (!file || !file.blob) return;
     const reader = new FileReader();
     // @ts-ignore - yes, result can be 'null'
@@ -1574,6 +1765,11 @@ LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void =
     else
         reader.readAsText(file.blob);
 };
+LIB.validXML = (xml: string): boolean => {
+    let parser = new DOMParser();
+    let xmlDoc = parser.parseFromString(xml, "text/xml");
+    return xmlDoc.getElementsByTagName('parsererror').length < 1
+}
 LIB.uriBack2slash = (str: string): string => {
 	// Sometimes a Windows path is given containing '\' -> transform it to web-style ('/');
     // replace back-slashes to slashes in all object and img tags:
@@ -1629,8 +1825,8 @@ LIB.attachment2mediaType = ( fname:string ):string|undefined =>{
 LIB.localDateTime = (iso:string):string =>{
 //    if( typeof(iso)=='string' ) {
         // ToDo: calculate offset of time-zone ... or use one of the libraries ..
-        if( iso.length>11 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
-        return (iso.substr(0,10));
+        if( iso.length>11 ) return (iso.substring(0,10)+' '+iso.substring(11,16)+'h');
+        return (iso.substring(0,10));
 //    };
 //    return '';
 }
@@ -1702,7 +1898,7 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
     if (LIB.isKey(key)) {
         let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
         //       |                            get propertyClass
-        //         get dataType
+        //        get dataType
         if (dT)
             return dT
         else
@@ -1710,7 +1906,7 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
     };
     // else:
     // happens, if filter replaces an enumeration property by its value - property has no class in this case:
-    return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
+    return { type: XsDataType.String } as SpecifDataType; // by default
 }
 LIB.iterateNodes = (tree: SpecifNode[] | SpecifNode, eFn: Function, lFn?: Function): boolean => {
     // Iterate a SpecIF hierarchy or a branch of a hierarchy.
@@ -1782,19 +1978,21 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
         return (opts && opts.lookupTitles ?
             (opts.targetLanguage ?
                 app.ontology.localize(item.title, opts)
-                : (opts.targetNamespace ?
+              : app.ontology.changeNamespace(item.title, opts)
+            /*    : (opts.targetNamespaces && opts.targetNamespaces.length>0 ?
                     app.ontology.changeNamespace(item.title, opts)
                     : item.title
-                )
+                ) */
             )
             : item.title);
     throw Error("Programming error: Input parameter 'item' is not defined");
 }
-LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
+LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string | undefined => {
     // Return the item's class title,
     // where item can be a resource, a statement or a property:
     let iC = LIB.itemByKey(cL, iCkey);
-    return LIB.titleOf(iC, opts);
+    if( iC )
+        return LIB.titleOf(iC, opts);
 }
 LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
     // Has the class of res a title listed in pNs?
@@ -1863,7 +2061,8 @@ LIB.typeOf = (rK: SpecifResource, dta: SpecIF): string => {
 // also see: https://www.partow.net/programming/hashfunctions/index.html
 function simpleHash(str: string): number {
     for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
-    return r
+    // add offset to avoid negative numbers; r is 10 characters long:
+    return 10000000000 + r
 }
 function simpleClone(o: any): any {
     // "deep" clone
@@ -1925,13 +2124,13 @@ function getUrlParams(opts?: any): any {
 
     function parse(h: string): any {
         if (!h) return {};
-        if (h.charAt(0) == '/') h = h.substr(1);    // remove leading slash
+        if (h.charAt(0) == '/') h = h.substring(1);    // remove leading slash
         var pO = {};
         h.split(opts.separator).forEach(
             (p: any) => {
                 p = p.split('=');
                 // remove enclosing quotes from the value part:
-                if (p[1] && ['"', "'"].includes(p[1][0])) p[1] = p[1].substr(1, p[1].length - 2);
+                if (p[1] && ['"', "'"].includes(p[1][0])) p[1] = p[1].substring(1, p[1].length - 1);
                 // look for specific tokens, only:
                 if (CONFIG.urlParamTags.includes(p[0]))
                     // @ts-ignore - indexing is ok:
@@ -2010,7 +2209,7 @@ function getUrlParams(opts?: any): IUrlParams {
     let p = document.URL.split(opts.start);
     if( !p[1] ) return {};
     p = decodeURI(p[1]);
-    if( p[0]=='/' ) p = p.substr(1);    // remove leading slash
+    if( p[0]=='/' ) p = p.substring(1);    // remove leading slash
     return parse( p );
 
     function parse( h:string ):object {
@@ -2020,7 +2219,7 @@ function getUrlParams(opts?: any): IUrlParams {
         h.forEach( (p)=>{
             p = p.split('=');
             // remove enclosing quotes from the value part:
-            if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substr(1,p[1].length-2);
+            if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substring(1,p[1].length-1);
             // look for specific tokens, only:
             if( CONFIG.urlParamTags.includes(p[0]) )
                 pO[p[0]] = p[1];

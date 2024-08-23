@@ -55,8 +55,7 @@ moduleManager.construct({
 	name: CONFIG.reports
 }, function(self:IModule) {
 	"use strict";
-	var prj: CProject,
-		cData: CCache;
+	var selPrj: CProject;
 	self.list = [];  // the list of reports
 
 	// Standard module interface methods:
@@ -86,14 +85,13 @@ moduleManager.construct({
 	// standard module entry:
 	self.show = function(options:any) {
 //		console.debug('reports.show');
-		prj = app.projects.selected;
-		cData = prj.cache;
+		selPrj = app.projects.selected;
 		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:
 		let opts = Object.assign(
 			{
-				targetLanguage: prj.language,
+				targetLanguage: selPrj.language,
 				lookupTitles: true,
 				lookupValues: true
 			},
@@ -119,8 +117,8 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: prj.id,
-				view: self.view.substr(1)	// remove leading hash
+				project: selPrj.id,
+				view: self.view.substring(1)	// remove leading hash
 			}); 
 
 		app.busy.set();
@@ -131,12 +129,12 @@ moduleManager.construct({
 				var rCR: Report = {
 						title: app.ontology.localize("SpecIF:Resource", { targetLanguage: browser.language, plural: true }),
 						category: FilterCategory.resourceClass,
-						pid: prj.id,
+						pid: selPrj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("resourceClass", prj.resourceClasses)
+				selPrj.cache.get("resourceClass", selPrj.resourceClasses)
 				.forEach(
 					(rC) => {
 						// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
@@ -162,12 +160,12 @@ moduleManager.construct({
 				var sCR: Report = {
 						title: app.ontology.localize("SpecIF:Statement", { targetLanguage: browser.language, plural: true }),
 						category: FilterCategory.statementClass,
-						pid: prj.id,
+						pid: selPrj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("statementClass", prj.statementClasses)
+				selPrj.cache.get("statementClass", selPrj.statementClasses)
 				.forEach(
 					(sC) => {
 						// Add a counter for each statementClass
@@ -210,18 +208,18 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC, dT;
-			//	cData.get("resourceClass", prj.resourceClasses).forEach(
-				prj.readExtendedClasses("resourceClass", prj.resourceClasses).forEach(
+			//	selPrj.cache.get("resourceClass", selPrj.resourceClasses).forEach(
+				LIB.getExtendedClasses(selPrj.cache.get("resourceClass", "all"), selPrj.resourceClasses).forEach(
 					(rC: SpecifResourceClass) => {
 						rC.propertyClasses.forEach(
 							(pck) => {
-								pC = cData.get("propertyClass", [pck])[0] as SpecifPropertyClass;
-								dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
+								pC = selPrj.cache.get("propertyClass", [pck])[0] as SpecifPropertyClass;
+								dT = selPrj.cache.get("dataType", [pC.dataType])[0] as SpecifDataType;
 								if( dT.enumeration ) {
 									var aVR: Report = {
 											title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
 											category: FilterCategory.enumValue,
-											pid: prj.id,	// project-id
+											pid: selPrj.id,	// project-id
 											rCk: LIB.keyOf(rC), 	// resourceClass key
 											pCk: pck, 	// propertyClass key
 											scaleMin: 0,
@@ -266,14 +264,14 @@ moduleManager.construct({
 				else throw Error("Did not find a report panel for resourceClass with id:"+rCk.id);
 
 				// b) A report (histogram) for each enumerated property:
-				let rC = prj.readExtendedClasses("resourceClass", [rCk])[0] as SpecifResourceClass,
+				let rC = LIB.getExtendedClasses(selPrj.cache.get("resourceClass","all"), [rCk])[0] as SpecifResourceClass,
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
 					rp: SpecifProperty,  // resource property
 					i: number;
 				rC.propertyClasses.forEach((pCk) => {
-					pC = cData.get("propertyClass", [pCk])[0] as SpecifPropertyClass;
-					dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
+					pC = selPrj.cache.get("propertyClass", [pCk])[0] as SpecifPropertyClass;
+					dT = selPrj.cache.get("dataType", [pC.dataType])[0] as SpecifDataType;
 					if (dT.enumeration && dT.enumeration.length > 0) {
 						// find the report panel:
 						i = findEnumPanel(self.list, rCk, pCk);
@@ -316,10 +314,10 @@ moduleManager.construct({
 
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
-			(cData.get("hierarchy", prj.hierarchies) as SpecifNodes)
+			(selPrj.cache.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
-						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+						return LIB.typeOf(h.resource, selPrj.cache) != CONFIG.resClassUnreferencedResources
 					}
 				),
 			(nd: SpecifNode) => {
@@ -330,7 +328,7 @@ moduleManager.construct({
 
 				pend++;
 				// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
-				prj.readItems( 'resource', [nd.resource], {reload:false,timelag:10} )	
+				selPrj.readItems( 'resource', [nd.resource], {reload:false,timelag:10} )	
 				.then(
 					(resL) => {
 						evalResource(resL[0] as SpecifResource);
@@ -339,7 +337,7 @@ moduleManager.construct({
 					handleError
 				);
 				pend++;
-				prj.readStatementsOf(nd.resource, {asSubject:true} )
+				selPrj.readStatementsOf(nd.resource, {asSubject:true} )
 				.then(
 					(staL) => {
 //						console.debug('staL', staL);

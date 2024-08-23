@@ -201,8 +201,8 @@ function LanguageTextsDe() {
 //	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Anmelden';
 //	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Abmelden';
 	self.BtnProfile = 'Profil';
-	self.BtnBack = 'Zurück';
-	self.BtnCancel = 'Abbrechen';
+	self.BtnBack = self.LblPreviousStep;
+	self.BtnCancel =
 	self.BtnCancelImport = 'Abbrechen';
 	self.BtnApply = 'Anwenden';
 	self.BtnDelete = self.IcoDelete+'&#160;Löschen';

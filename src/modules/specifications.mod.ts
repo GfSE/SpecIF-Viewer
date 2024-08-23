@@ -23,6 +23,7 @@ class CPropertyToShow implements SpecifProperty {
 	replaces?: string[];
 	revision?: string;
 	// ToDo: Check use of default values - here it is used differently
+	// @ts-ignore - values is initialized in the constructor
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
@@ -46,8 +47,11 @@ class CPropertyToShow implements SpecifProperty {
 		if (this.dT.enumeration) {
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
+			// Replace identifiers of enumerated values by their value as defined in the dataType:
 			// ToDo: Check use of default values
-			this.values = this.getEnumValues();
+		//	this.values = this.getEnumValues();
+			// @ts-ignore - this.value is initialized above with other elements of prp
+			this.values = this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value );
 		};
 
 		// Get the propertyClass' permissions:
@@ -67,20 +71,15 @@ class CPropertyToShow implements SpecifProperty {
 			}
 		}
 	}
-	private getEnumValues() {
+/*	private getEnumValues() {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
-		var oL: SpecifValues = [];
-		for( var v of this.values ) {
-			oL.push(LIB.itemById(this.dT.enumeration, v).value);
-		};
-//		console.debug('#2', simpleClone(oL));
-		return oL
-	}
+		return this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value)
+	} */
 	private allValues(opts: any): string {
 		// Return all values in the language specified;
 		// it is assumed that the values in case of an enumeration have already been looked up:
 		var str = '';
-		if (this.dT.type == SpecifDataTypeEnum.String) {
+		if (this.dT.type == XsDataType.String) {
 			let lV;
 			if (opts && opts.targetLanguage) {
 				this.values.forEach(
@@ -110,6 +109,7 @@ class CPropertyToShow implements SpecifProperty {
 				targetLanguage: this.selPrj.language,
 				clickableElements: false,
 				linkifyURLs: false,
+				renderFiles: false,
 				// some environments escape the tags on export, e.g. camunda / in|flux:
 				unescapeHTMLTags: false,
 				// markup to HTML:
@@ -123,19 +123,22 @@ class CPropertyToShow implements SpecifProperty {
 		let ct: string;
 //		console.debug('*',this,this.dT);
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				ct = this.allValues(opts);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
-				ct = this.renderFile(ct, opts);   // show the diagrams
+				if (opts.renderFiles)
+					ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
-			//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
-				if (app.ontology.propertyClassIsFormatted(this.title))
+				//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+				//	if (app.ontology.propertyClassIsFormatted(this.title))
+				// Assuming that pC.format has been defined during import (xSpecif)
+				if (this.pC.format == SpecifTextFormat.Xhtml)
 					ct = ct.makeHTML(opts);
 				ct = this.titleLinks(ct, opts);
 				break;
-			case SpecifDataTypeEnum.DateTime:
+			case XsDataType.DateTime:
 				ct = opts.localDateTime? LIB.localDateTime(this.values[0]) : this.values[0];   // multiple values not yet supported
 				break;
 			default:
@@ -191,9 +194,9 @@ class CPropertyToShow implements SpecifProperty {
 						ti = this.cData.instanceTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
-						// disregard link targets which aren't diagrams nor model elements:
+					/*	// disregard link targets which aren't diagrams nor model elements:
 						rC = LIB.itemByKey(this.cData.resourceClasses, cR['class']);
-						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching  */
 
 						// the titleLink content equals a resource's title, remember the first occurrence:
 						target = cR;
@@ -298,9 +301,9 @@ class CPropertyToShow implements SpecifProperty {
 				let f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1)),
 					f2 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u2));
 
-				if (f1.hasContent()) {
+				if (f1 && f1.hasContent()) {
 
-					if (f2.hasContent()) {
+					if (f2 && f2.hasContent()) {
 						// take f1 to download and f2 to display:
 
 //						console.debug('tagId',tagId(u2));
@@ -347,7 +350,10 @@ class CPropertyToShow implements SpecifProperty {
 					w1 = getAttr("width", $1),
 					h1 = getAttr("height", $1);
 
-				let e = u1? u1.fileExt() : undefined;
+			//	u1 = addFilePath(u1);
+				if (!u1) console.warn('No image or link found in ' + $0);
+
+				let e = u1 ? u1.fileExt() : undefined;
 				if (!e) return $0     // no change, if no extension found
 
 				// $3 is the description between the tags <object></object>:
@@ -356,25 +362,23 @@ class CPropertyToShow implements SpecifProperty {
 				e = e.toLowerCase();
 //				console.debug('toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
 
-			//	u1 = addFilePath(u1);
-				if (!u1) console.warn('no image or link found in '+$0);
 				let f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
 				// this is for example the case for *.specif.html files:
-				if (!f1.hasContent() && u1 && CONFIG.applExtensions.includes(e)) {
-					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
+				if ((!f1 || !f1.hasContent()) && u1 && CONFIG.applExtensions.includes(e)) {
+					for (var i = 0, I = CONFIG.imgExtensions.length; (!f1 || !f1.hasContent()) && i < I; i++) {
 						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
 						f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 					};
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files.
 
-				if (f1.canBeRenderedAsImage()) {
-					// it is an image, show it:
-					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('toGUI 2a found: ', f1, u1 );
-					if (f1.hasContent()) {
+				if (f1 && f1.hasContent()) {
+					if (f1.canBeRenderedAsImage()) {
+						// it is an image, show it:
+						// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
+	//					console.debug('toGUI 2a found: ', f1, u1 );
 						hasImg = true;
 						// Create the DOM element to which the image will be added:
 						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
@@ -387,13 +391,8 @@ class CPropertyToShow implements SpecifProperty {
 						// Add the image as innerHTML:
 						f1.renderImage(opts);
 					}
-					else {
-						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
-					};
-				}
-				else if (f1.canBeDownloaded()) {
-					// it is an office file, show an icon plus filename:
-					if (f1.hasContent()) {
+					else if (f1.canBeDownloaded()) {
+						// it is an office file, show an icon plus filename:
 						hasImg = true;
 
 						// Add the download link:
@@ -408,32 +407,32 @@ class CPropertyToShow implements SpecifProperty {
 						d = '<div id="' + tagId(u1) + '" ' + CONFIG.fileIconStyle + '></div>';
 					}
 					else {
-						d = '<div class="notice-danger" >File missing: ' + d + '</div>'
-					};
+					/*	switch (e) {
+							case 'ole':
+								// It is an ole-file, so add a preview image;
+								// in case there is no preview image, the browser will display d holding the description
+								// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
+								// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
+								// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+								if (f1.hasContent()) {
+									hasImg = true;
+								//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
+									d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
+								}
+								else {
+									d = '<div class="notice-danger" >File missing: ' + d + '</div>'
+								};
+								// ToDo: Offer a link for downloading the file
+								break;
+							default:  */
+								// last resort is to take the filename:
+								d = '<span>' + d + '</span>';
+							// ToDo: Offer a link for downloading the file
+					//	};
+					}
 				}
 				else {
-				/*	switch (e) {
-						case 'ole':
-							// It is an ole-file, so add a preview image;
-							// in case there is no preview image, the browser will display d holding the description
-							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
-							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
-							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
-							if (f1.hasContent()) {
-								hasImg = true;
-							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
-								d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
-							}
-							else {
-								d = '<div class="notice-danger" >File missing: ' + d + '</div>'
-							};
-							// ToDo: Offer a link for downloading the file
-							break;
-						default:  */
-							// last resort is to take the filename:
-							d = '<span>' + d + '</span>';
-						// ToDo: Offer a link for downloading the file
-				//	};
+					d = '<div class="notice-danger" >File missing: ' + d + '</div>'
 				};
 
 				// finally add the link and an enclosing div for the formatting:
@@ -515,7 +514,7 @@ class CResourceToShow {
 
 		this.id = el.id;
 		this['class'] = el['class'];
-		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = LIB.getExtendedClasses(this.cData.get("resourceClass","all"), [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
 		this.language = el.language || this.selPrj.language;
 		this.order = el.order;
@@ -538,14 +537,14 @@ class CResourceToShow {
 		if (a > -1) {  // found!
 			// .. in case of a title a single value is expected, so select it:
 			this.title = this.other.splice(a, 1)[0];
-			/*	}
-				else {
-					// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-					// there is no title propertyClass;
-					// then create a property without class.
-					// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-					// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-					this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+	/*	}
+		else {
+			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+			// there is no title propertyClass;
+			// then create a property without class.
+			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
 		};
 
 		// b) Check the configured descriptions:
@@ -668,6 +667,7 @@ class CResourceToShow {
 				unescapeHTMLTags: true,
 				// ToDo: Make it a user option:
 				makeHTML: true,
+				renderFiles: true,
 				lookupTitles: true,
 				lookupValues: true,
 				targetLanguage: this.language,
@@ -880,7 +880,7 @@ class CResourcesToShow {
 		return rL	// return rendered resource list
 	}
 }
-class CFileWithContent implements IFileWithContent {
+class CFileWithContent implements SpecifFile {
 	// @ts-ignore - presence of 'id' is checked by the schema on import
 	id: string;
 	// @ts-ignore - presence of 'title' is checked by the schema on import
@@ -895,7 +895,7 @@ class CFileWithContent implements IFileWithContent {
 	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
 	changedAt: string;
 	changedBy?: string;
-	constructor(f: IFileWithContent) {
+	constructor(f: SpecifFile) {
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
 	}
@@ -906,7 +906,7 @@ class CFileWithContent implements IFileWithContent {
 		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
-		return this.hasBlob() || this.hasDataURL();
+		return this.title && this.title.length>0 && (this.hasBlob() || this.hasDataURL());
 	}
 	canBeRenderedAsImage(): boolean {
 		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())
@@ -1098,16 +1098,35 @@ class CFileWithContent implements IFileWithContent {
 				Array.from(svg.locs,
 					(loc) => {
 						loc.innerHTML = svg.img;
+						addViewBoxIfMissing(loc);
 						if (opts && opts.clickableElements) registerClickEls(loc)
 					}
 				)
+			}
+		}
+		// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+		// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
+		// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
+		// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
+		function addViewBoxIfMissing(svg: any): void {
+			for (var el of svg.childNodes) {
+				//					console.debug('svg',svg,el,el.outerHTML);
+				// look for '<svg .. >' tag with its properties, often but not always the first child node:
+				if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
+					if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
+
+					// no viewbox property, so add it:
+					let w = el.getAttribute('width').replace(/px$/, ''),
+						h = el.getAttribute('height').replace(/px$/, '');
+					el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
+					return;
+				}
 			}
 		}
 		// see http://tutorials.jenkov.com/svg/scripting.html
 		function registerClickEls(svg:any): void {
 			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
 //			console.debug('registerClickEls',svg);
-			addViewBoxIfMissing(svg);
 
 			// now collect all clickable elements:
 			svg.clkEls = [];
@@ -1160,7 +1179,7 @@ class CFileWithContent implements IFileWithContent {
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
-							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
+							dsc += d.get({ unescapeHTMLTags: true, makeHTML: d.pC.format == SpecifTextFormat.Xhtml, renderFiles: true })
 						});
 						// display details only, if there is a description - so no titles without description:
 						if (dsc.stripCtrl().stripHTML()) {
@@ -1206,27 +1225,6 @@ class CFileWithContent implements IFileWithContent {
 					};
 				};
 				return id	// no corresponding diagram found
-			}
-			// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
-			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
-			// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
-			// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-			function addViewBoxIfMissing(svg:any): void {
-				let el;
-				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
-					el = svg.childNodes[i];
-//					console.debug('svg',svg,el,el.outerHTML);
-					// look for '<svg .. >' tag with its properties, often but not always the first child node:
-					if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
-						if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
-
-						// no viewbox property, so add it:
-						let w = el.getAttribute('width').replace(/px$/, ''),
-							h = el.getAttribute('height').replace(/px$/, '');
-						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
-						return;
-					}
-				}
 			}
 		}
 	}
@@ -1346,7 +1344,7 @@ moduleManager.construct({
 							function toSpecIF(mNd: jqTreeNode): SpecifNode {
 								// transform from jqTree node to SpecIF node:
 								var nd: INodeWithPosition = {
-									//	id: LIB.genID('N-'),
+									//	id: LIB.genID(CONFIG.prefixN),
 									id: mNd.id,
 									resource: mNd.ref,
 									changedAt: chd
@@ -1502,17 +1500,27 @@ moduleManager.construct({
 
 		// Replace the tree:
 		self.tree.saveState();
-		self.tree.set( LIB.forAll( spc, toJqTree) );
+		self.tree.set( LIB.forAll(spc, toJqTreeWithoutRoot) );
 		self.tree.numberize();
 		self.tree.restoreState();
 		return;
 
 		// -----------------
-		function toJqTree( iE:SpecifNode ) {
+		function toJqTreeWithoutRoot(iE: SpecifNode) {
+			let r: SpecifResource = LIB.itemByKey(self.cData.resources, iE.resource),
+				ty = LIB.valueByTitle(r, CONFIG.propClassType, self.cData);
+			if (ty == CONFIG.hierarchyRoot)
+				// return the subordinated trees without root:
+				return LIB.forAll(iE.nodes, toJqTree);
+			// else return the whole tree:
+			return toJqTree(iE);
+        }
+		function toJqTree(iE: SpecifNode) {
 			// transform SpecIF hierarchy to jqTree:
 			let r:SpecifResource = LIB.itemByKey( self.cData.resources, iE.resource );
 //			console.debug('toJqTree',iE.resource,r);
-			var oE:jqTreeNode = {
+			// @ts-ignore - all relevant attributes are specified:
+			var oE: jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				name: self.cData.instanceTitleOf(r, Object.assign({}, opts, {neverEmpty:true})),
@@ -1530,7 +1538,8 @@ moduleManager.construct({
 		self.selPrj = app.projects.selected;
 
 		if (!(self.selPrj && self.selPrj.isLoaded()))
-			throw Error("No selected project on entry of spec.show()");
+			console.warn("No selected project on entry of spec.show()");
+			// ToDo: Disable the 'Edit' button, if no project is loaded/selected to *avoid* getting here ...
 
 		self.cData = self.selPrj.cache;
 
@@ -1540,8 +1549,7 @@ moduleManager.construct({
 	//	$('#specNotice').empty();
 
  		let uP = opts.urlParams,
-			fNd = self.tree.firstNode(),
-			nd: jqTreeNode;
+			fNd = self.tree.firstNode();
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
 		opts.targetLanguage = self.selPrj.language;
@@ -1563,7 +1571,8 @@ moduleManager.construct({
 			// each might be coming from a different source (in future):
 			self.selPrj.readItems('hierarchy', self.selPrj.hierarchies, {reload:true} )
 			.then( 
-				(rsp:SpecifNode)=>{
+				(rsp: SpecifNodes) => {
+					let nd: jqTreeNode;
 //					console.debug('load',rsp);
 					// undefined parameters will be replaced by default value:
 					self.updateTree( opts, rsp );
@@ -1574,10 +1583,12 @@ moduleManager.construct({
 						nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
 					};
 					// node has priority over item (usually only one of them is specified ;-):
+					// @ts-ignore - that's why the existence of nd is checked ..
 					if (!nd && uP && uP[CONFIG.keyItem] ) {
 						nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
 					};
 					// if none is specified, take the node which is already selected:
+					// @ts-ignore - that's why the existence of nd is checked ..
 					if( !nd ) nd = self.tree.selectedNode;
 					// no or unknown resource specified; select first node:
 					if( !nd ) nd = self.tree.selectFirstNode();
@@ -1661,14 +1672,14 @@ moduleManager.construct({
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			self.tree.openNode()
 			// opening a node triggers an event, by which 'self.refresh' will be called.
-		}
+	/*	}
 		else {
-			if( self.tree.selectedNode.children.length>0 ) {
+		//	if( self.tree.selectedNode.children.length>0 ) {
 //				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
 				self.tree.toggleNode();
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
-			}
+		//	} */
 		};
 		if( self.selectedView() != '#'+CONFIG.objectList ) 
 			moduleManager.show({ view: '#'+CONFIG.objectList })
@@ -1680,7 +1691,7 @@ moduleManager.construct({
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
-			newId = LIB.genID('R-');
+			newId = LIB.genID(CONFIG.prefixR);
 		app.projects.selected.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:
@@ -1710,7 +1721,7 @@ moduleManager.construct({
 				cssClass: 'btn-success', 
 				action: function (thisDlg) {
 					// 1. get comment text
-					newC.properties[0].value = textValue(txtLbl).substr(0,dT.maxLength);
+					newC.properties[0].value = textValue(txtLbl).substring(0,dT.maxLength);
 //					newC.title = ....	// an instance-specific name (or title)
 
 //					console.info( 'saving comment', newC );
@@ -1861,7 +1872,7 @@ moduleManager.construct({
 			if( nd && !opts.urlParams)
 				setUrlParams({
 					project: selPrj.id,
-					view: self.view.substr(1),	// remove leading hash
+					view: self.view.substring(1),	// remove leading hash
 					node: nd.id
 					// item: nd.ref.id
 				}); 
@@ -1872,7 +1883,8 @@ moduleManager.construct({
 			for( var i=CONFIG.objToGetCount-1; nd && i>-1; i-- ) {
 				oL.push( nd.ref );  // nd.ref is the key of a resource to show
 				nL.push( nd );
-				nd = nd.getNextNode()   // get next visible tree node
+			//	nd = nd.getNextNode()   // get next visible tree node (up until jqtree v1.6.3)
+				nd = nd.getNextVisibleNode();  // starting jqtree v1.8.0
 			};
 
 			return selPrj.readItems( 'resource', oL ) as Promise<SpecifResource[]>
@@ -2188,7 +2200,8 @@ moduleManager.construct({
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
 		opts.targetLanguage = selPrj.language;
-		opts.lookupTitles = true;
+		opts.lookupTitles =
+		opts.lookupValues = true;
 		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
 		//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
@@ -2210,7 +2223,7 @@ moduleManager.construct({
 		if (nd && !opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
-				view: self.view.substr(1),	// without leading hash
+				view: self.view.substring(1),	// without leading hash
 				node: nd.id
 				//	item: nd.ref.id
 			});
@@ -2230,7 +2243,7 @@ moduleManager.construct({
 
 					// Obtain the titles (labels) of all resources in the list.
 					// The titles may not be defined in a tree node and anyways don't have the icon, 
-					// therefore obtain the title from the referenced resources.
+					// therefore obtain the title from the referenced resources:
 					return selPrj.readItems('resource', net.resources)
 				}
 			)
@@ -2255,7 +2268,7 @@ moduleManager.construct({
 					if (!modeStaDel)
 						// Only show the 'mentions' relations in regular mode.
 						// Don't show them in deletion mode, because they cannot be deleted like real statements;
-						// remember that the former are internal links within a text property:
+						// remember that a 'mentions' relation is derived from an internal link within a text property:
 						stL.forEach(cacheNet);
 					//				console.debug('local net',stL,net);
 					renderStatements(net);
@@ -2279,12 +2292,16 @@ moduleManager.construct({
 			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, Object.assign({}, opts, { addIcon: true, neverEmpty: true }))) }] })
 		}
 		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
-			// cache the minimal representation of a statement;
-			// s is a statement;
-			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
+			// cache the minimal representation of a statement s, where:
+			// - a statement of v1.1 and later has no native title attribute, so any of the last two terms of the OR condition applies
+			// - a statement of v1.1 and later may have a property 'type', which is preferred over the class' title.
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] })
+			let ti =
+					LIB.titleOf(s, opts)   // just fpr the 'mentions' relations derived by getMentionsRels which have no class
+					|| LIB.valueByTitle(s, CONFIG.propClassType, cacheData, opts)
+					|| LIB.classTitleOf(s['class'], cacheData.statementClasses, opts);
+			N.add({ statements: [{ id: s.id, title: ti, subject: s.subject.id, object: s.object.id }] })
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2356,7 +2373,7 @@ moduleManager.construct({
 											// considering only text-properties except enumerated values,
 											// because it is not expected that type information references instance data
 											// and also we would need to explicitly look up the enumerated value, first:
-											if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+											if (dT && dT.type == XsDataType.String && !dT.enumeration) {
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
 												if (refPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
@@ -2378,7 +2395,7 @@ moduleManager.construct({
 									refR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
 										dT = LIB.dataTypeOf(p['class'], cacheData);
-										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+										if (dT && dT.type == XsDataType.String && !dT.enumeration) {
 											// add, if the selected resource's title appears in the iterated resource's property ..
 											// and if it is not yet listed:
 											if (selPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
@@ -2398,7 +2415,7 @@ moduleManager.construct({
 									/*	if (staL.length > 1)
 											cacheData.put(
 												'statementClass',
-												app.standards.get('statementClass', LIB.makeKey("SC-mentions"))
+												[app.standards.get('statementClass', LIB.makeKey("SC-mentions"))]
 											);  */
 									resolve(staL)
 								};
@@ -2502,7 +2519,7 @@ moduleManager.construct({
 //		console.debug('renderStatements',net);
 
 		let graphOptions = new CGraphOptions({
-				canvas: self.view.substr(1),	// without leading hash
+				canvas: self.view.substring(1),	// without leading hash
 				titleProperties: CONFIG.titleProperties,
 				onDoubleClick: (evt: any) => {
 //					console.debug('Double Click on:',evt);

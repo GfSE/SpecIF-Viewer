@@ -201,7 +201,7 @@ function LanguageTextsEn() {
 //	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Login';
 //	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Logout';
 	self.BtnProfile = 'Profile';
-	self.BtnBack = 'Back';
+	self.BtnBack = self.LblPreviousStep;
 	self.BtnCancel = 'Cancel';
 	self.BtnCancelImport = 'Abort';
 	self.BtnApply = 'Apply';
