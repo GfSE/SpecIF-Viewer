@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\specifications.mod.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\modules\\specifications.mod.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\sysml2specIF.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\modules\\sysml2specIF.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
     },
@@ -39,6 +43,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "specifications.mod.ts",
+              "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\specifications.mod.ts",
+              "RelativeDocumentMoniker": "src\\modules\\specifications.mod.ts",
+              "ToolTip": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\specifications.mod.ts",
+              "RelativeToolTip": "src\\modules\\specifications.mod.ts",
+              "ViewState": "AQIAAKsAAAAAAAAAAAAgwMwAAAAbAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2024-08-23T12:33:00.7Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "sysml2specIF.ts",
               "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\sysml2specIF.ts",
               "RelativeDocumentMoniker": "src\\modules\\sysml2specIF.ts",
@@ -51,7 +68,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "cache.mod.ts",
               "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\cache.mod.ts",
               "RelativeDocumentMoniker": "src\\modules\\cache.mod.ts",
@@ -59,12 +76,11 @@
               "RelativeToolTip": "src\\modules\\cache.mod.ts",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2024-07-17T23:14:47.781Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-07-17T23:14:47.781Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "helper.ts",
               "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\helper.ts",
               "RelativeDocumentMoniker": "src\\modules\\helper.ts",
@@ -72,12 +88,11 @@
               "RelativeToolTip": "src\\modules\\helper.ts",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2024-07-17T23:14:38.011Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-07-17T23:14:38.011Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "standards.ts",
               "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\modules\\standards.ts",
               "RelativeDocumentMoniker": "src\\modules\\standards.ts",
@@ -85,12 +100,11 @@
               "RelativeToolTip": "src\\modules\\standards.ts",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2024-07-17T23:14:33.394Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-07-17T23:14:33.394Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "definitions.ts",
               "DocumentMoniker": "C:\\Users\\OD\\Documents\\GitHub\\SpecIF-Viewer\\src\\config\\definitions.ts",
               "RelativeDocumentMoniker": "src\\config\\definitions.ts",
@@ -98,8 +112,7 @@
               "RelativeToolTip": "src\\config\\definitions.ts",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2024-07-17T23:14:25.051Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-07-17T23:14:25.051Z"
             }
           ]
         }
