@@ -136,33 +136,39 @@ class COntology {
         return this.data && this.data.id && this.data.hierarchies.length > 0 && this.checkConstraintsOntology();
     }
 
-    private getTermResources(ctg: string, term: string): SpecifResource[] {
+    private getTermResources(ctg: string, term: string, opts?:any): SpecifResource[] {
         // Get the resources defining a given term; there should be just one resource per term
         ctg = ctg.toLowerCase();
+    //    let self = this;
         return this.data.resources
             .filter(
                 (r) => {
-                    // find the property with title CONFIG.propClassTerm:
-                    let valL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
+                    // find the properties with title CONFIG.propClassTerm and "SpecIF:TermStatus":
+                    let stat = this.valueByTitle(r, "SpecIF:TermStatus"),
+                        valL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
+                    if (valL.length > 1)
+                        console.warn("Ontology: Term "+r.id+" has multiple values ("+valL.toString()+")");
                     // return the resource representing the specified term;
                     // the term does not have different languages:
                     return (
                         valL.length > 0
-                        // restrict the result list to resources defining the specified term (usually one):
+                        // restrict the result list to resources defining the specified term (should be one):
                         && LIB.languageTextOf(valL[0], { targetLanguage: "default" }) == term
+                        // restrict to eligible terms, if specified in opts:
+                        && (!opts || !opts.eligibleOnly || this.eligibleLifecycleStatus.includes(stat))
                         // restrict the result list to the specified category of terms:
                         && (ctg == 'all' || LIB.classTitleOf(r['class'], this.data.resourceClasses).toLowerCase().includes(ctg))
                     )
                 }
             )
     }
-    getTermResource(ctg: string, term: string): SpecifResource | undefined {
+    getTermResource(ctg: string, term: string, opts?: any): SpecifResource | undefined {
         // Get the resource defining a given term:
-        let resL = this.getTermResources(ctg, term);
+        let resL = this.getTermResources(ctg, term, opts);
         // Just one result is expected (a term should be unique):
         if (resL.length > 1)
-            console.warn("Multiple resources describe term '" + term + "': " + resL.map((r: SpecifResource) => { return r.id }).toString());
-        //    console.warn('Multiple definitions of the term found: ', resL.map((r) => { return r.id }).toString());
+            console.warn("Ontology: Multiple resources describe term '" + term + "': " + resL.map((r: SpecifResource) => { return r.id }).toString());
+        //    console.warn('Ontology: Multiple definitions of the term found: ', resL.map((r) => { return r.id }).toString());
         if (resL.length > 0)
             return resL[0];
         // return /// undefined
@@ -208,7 +214,7 @@ class COntology {
         // Translate an ontology term to the selected local language:
 
         if (RE.vocabularyTerm.test(term)) {
-            let tR = this.getTermResource('all', term);
+            let tR = this.getTermResource('all', term, {eligibleOnly:true});
             if (tR) {
                 // return the name in the local language specifed:
                 let lnL = [];
@@ -230,7 +236,7 @@ class COntology {
 
                 if (lnL.length > 0) {
                     let newT = LIB.languageTextOf(lnL[0], opts);
-                    //    console.info('Local term assigned: ' + term + ' → ' + newT);
+                    //    console.info('Ontology: Local term assigned: ' + term + ' → ' + newT);
                     return newT;
                 }
             }
@@ -279,7 +285,7 @@ class COntology {
                 for (let t of termL) {
                     if (this.valueByTitle(t, "SpecIF:TermStatus") == status) {
                         let newT = this.valueByTitle(t, CONFIG.propClassTerm);
-                        console.info('Global term assigned: ' + name + ' → ' + newT);
+                        console.info('Ontology: Global term assigned: ' + name + ' → ' + newT);
                         return newT;
                     }
                 }
@@ -323,10 +329,10 @@ class COntology {
                 return term;
 
             if (synL.length > 1)
-                console.warn('Multiple equivalent terms are released: ', synL.map((r:SpecifResource) => { return r.id }).toString());
+                console.warn('Ontology: Multiple equivalent terms are released: ', synL.map((r:SpecifResource) => { return r.id }).toString());
 
             let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
-            console.info('Preferred term assigned: ' + term + ' → ' + newT);
+            console.info('Ontology: Preferred term assigned: ' + term + ' → ' + newT);
             return newT;
         };
         // else, return the input value:
@@ -371,7 +377,7 @@ class COntology {
         let self = this;
 
         if (!opts.targetNamespaces || opts.targetNamespaces.length<1 ) {
-        //    console.warn("Cannot change namespace; no target namespace specified.");
+        //    console.warn("Ontology: Cannot change namespace; no target namespace specified.");
             return term
         };
 
@@ -381,12 +387,12 @@ class COntology {
                 return term;
         };
 
-        let tR = this.getTermResource('all',term);
+        let tR = this.getTermResource('all',term, {eligibleOnly:true});
 
         if (tR) {
             // Look for a synonym relation pointing to a term with the specified target namespace;
             // go through all termCategories one-by-one to allow early return in case of a hit.
-        //    console.warn("No namespace specified or ontology does not include the specified namespace: " + term);
+        //    console.warn("Ontology: No namespace specified or ontology does not include the specified namespace: " + term);
             let
                 v = findSynonymStatementOf(tR['class']),
                 // Collect all synonyms (relation is bi-directional):
@@ -404,10 +410,10 @@ class COntology {
                 return term;
 
             if (synL.length > 1)
-                console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((r:SpecifResource) => { return r.id }).toString());
+                console.warn('Ontology: Multiple equivalent terms have the desired namespace: ', synL.map((r:SpecifResource) => { return r.id }).toString());
 
             let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
-            console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
+            console.info('Ontology: Term with desired namespace assigned: ' + term + ' → ' + newT);
             return newT
         };
         // else, return the input value:
@@ -709,7 +715,7 @@ class COntology {
                             value: evL[0]
                         } as SpecifEnumeratedValue
                     else
-                        console.warn("Property value term '" + o.id + "' is undefined")
+                        console.warn("Ontology: Property value term '" + o.id + "' is undefined")
                     // return undefined
                 }
             ),
@@ -844,7 +850,7 @@ class COntology {
 //        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
 
         // Delete all properties from pCL which are already defined in an extending class;
-        // this is a little more complicated than usual, because the resourceClass to generate is not yet listed in this.generated.sCL:
+        // this is a little more complicated than usual, because the resourceClass to generate is not yet listed in this.generated.rCL:
         if (eC) {
             eCk = LIB.makeKey(eC.id);
             if (Array.isArray(eC.propertyClasses) && eC.propertyClasses.length > 0 && pCL.length > 0) {
@@ -934,7 +940,7 @@ class COntology {
                 sL = this.statementsByTitle(el, (pfx == CONFIG.prefixRC ? ["SpecIF:isSpecializationOfResource"] : ["SpecIF:isSpecializationOfStatement"]), { asSubject: true });
 
             if (sL.length > 1) {
-                console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
+                console.warn('Ontology: Term ' + el.id + ' has more than one extended class; the first found prevails.');
                 // see: https://stackoverflow.com/questions/31547315/is-it-an-antipattern-to-set-an-array-length-in-javascript
                 sL.length = 1;
             };
@@ -1035,7 +1041,7 @@ class COntology {
             dsc: SpecifLanguageText;
 
         if (dscL.length > 1)
-            console.info("Only the fist value of the description property will be used for the class generated from "
+            console.info("Ontology: Only the fist value of the description property will be used for the class generated from "
                 + r.id + " with title " + prep.title + ".");
 
         if (dscL.length > 0) {
@@ -1128,7 +1134,7 @@ class COntology {
                 title: ti
             }
         };
-        console.error("No item with id '" + termId+"' found in the Ontology or it has no value");
+        console.error("Ontology: No item with id '" + termId+"' found in the Ontology or it has no value");
     }
     private getModelElementClasses(): string[] {
         // Return a list of all model element types by title;
@@ -1219,14 +1225,14 @@ class COntology {
                             }
                         };
                         if (noNs)
-                            console.warn("No namespace found for " + r.id)
+                            console.warn("Ontology: No namespace found for " + r.id)
                     }
                     else
-                        console.warn("No namespace given for " + r.id)
+                        console.warn("Ontology: No namespace given for " + r.id)
                 }
             }
         }
         else
-            console.warn("No statementClass 'SpecIF:isNamespace' defined")
+            console.warn("Ontology: No statementClass 'SpecIF:isNamespace' defined")
     }
 }

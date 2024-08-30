@@ -257,7 +257,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 						// Create a multiLanguageText only if the propertyClass is declared accordingly.
 						// - For the time being by checking whether the ontology term has a multiLanguage property
 						// - Later with a boolean attribute 'multiLanguage' of the propertyClass itself
-						let term = app.ontology.getTermResource('propertyClass',this.pC.title);
+						let term = app.ontology.getTermResource('propertyClass', this.pC.title, { eligibleOnly: true });
 						if (term && app.ontology.valueByTitle(term, "SpecIF:multiLanguage")=='true') {
 							// Update just the current language:
 							if (this.values.length > 0 && LIB.multiLanguageValueHasContent(this.values[0])) {

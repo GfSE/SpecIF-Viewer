@@ -12,7 +12,7 @@ const CONFIG:any = {};
     CONFIG.imgURL = './assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
     CONFIG.QuickStartGuideEn = "https://gfse.github.io/SpecIF-Pages/Manuals/01_Quick-Start-Guide_EN.html";
-    CONFIG.QuickStartGuideDe = "https://gfse.github.io/SpecIF-Pages/downloads/SpecIF-Einfuehrung.pdf";
+    CONFIG.QuickStartGuideDe = "https://gfse.github.io/SpecIF-Pages/files/SpecIF-Einfuehrung.pdf";
 
     CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.passwordAnonymous = ''; // as configured in the server

@@ -25,7 +25,8 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 	//	idResourceClassCollection = "RC-Collection",
 		idResourceClassPackage = app.ontology.getClassId("resourceClass", "uml:Package"),
 	//	idResourceClassFolder = "RC-Folder",
-		idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
+	//	idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
+		idResourceClassDefault = app.ontology.getClassId("resourceClass", "uml:Class"),
 
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
@@ -142,8 +143,11 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 
 		// ====== Postprocessing ======
 		// 4. Find stereotypes and specialized classes for the model elements:
-		//    - traverse the tree of specialization to the top to find a class as derived from the ontology
-		//    - assign the class to the model element
+		//    - traverse the tree of specialization to the top to find a class
+		//      with a name which is an ontology term for resources ...
+		//      and assign the corresponding class to the model element.
+		//    - look for the stereotype and if it is an ontology term for resources
+		//      create a property titled dcterms:type.
 		specializations = specializations
 			.filter(validateStatement);
 		spD.resources
@@ -151,24 +155,32 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				(me) => {
 					if (me["class"].id == idResourceClassDefault) {
 						let rC: SpecifResourceClass;
-						//	prpL: SpecifProperty[];
-						// --- Case 1: Look for	a stereotype to assign a corresponding resourceClass ---
+
+						// --- 1. Look for the generalizing class in the set of resourceClasses generated from the ontology ---
+						rC = generalizingResourceClassOf(me);
+						if (rC && rC.id != idResourceClassDefault) {
+							me["class"] = LIB.makeKey(rC.id);
+							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
+						};
+
+						// --- 2. Look for	a stereotype to assign a corresponding resourceClass ---
 						let sTy = classStereotypes.get(me.id);
 						if (sTy) {
-							// First, check whether it is an ontology term = if a resource class with that name exists:
-							rC = LIB.itemByTitle(spD.resourceClasses, sTy);
-							if (rC) {
-								me["class"] = LIB.makeKey(rC.id);
-								console.info("Cameo Import: Reassigning class '" + rC.id + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
-								return;
-							};
 
 							// In SpecIF, an InterfaceBlock is the transferred state (data object in case of information);
 							// .. in case an uml:InterfaceBlock is not itself an ontology term with a corresponding resourceClass:
 							if (sTy == "sysml:InterfaceBlock") {
 								me["class"] = LIB.makeKey(idResourceClassState);
 								console.info("Cameo Import: Reassigning class '" + idResourceClassState + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
+								return;
 							};
+
+						/*	// Otherwise, check whether it is an ontology term = if a resource class with that name exists:
+							rC = LIB.itemByTitle(spD.resourceClasses, sTy);
+							if (rC) {
+								me["class"] = LIB.makeKey(rC.id);
+								console.info("Cameo Import: Reassigning class '" + rC.id + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
+							}; */
 
 							// Find or create a type property:
 							let prp = LIB.propByTitle(me, CONFIG.propClassType, spD);
@@ -176,18 +188,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 								prp.values = [[{ text: sTy }]];
 								console.info("Cameo Import: Assigning stereotype '" + sTy + "' to  model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle,spD));
 							};
-							return;
 						};
-
-						// --- Case 2: Look for the generalizing class in the set of resourceClasses generated from the ontology ---
-						rC = generalizingResourceClassOf(me);
-						if (rC && rC.id != idResourceClassDefault ) {
-							me["class"] = LIB.makeKey(rC.id);
-							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + LIB.valueByTitle(me, CONFIG.propClassTitle, spD));
-							return;
-						};
-
-						// --- Case 3: Look for generalization in the ontology as loaded during startup: ---
 					};
 					return;
 

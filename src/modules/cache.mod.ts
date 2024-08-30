@@ -2169,7 +2169,7 @@ class CProject implements SpecifProject {
 				} */
 				function Folders(): SpecifResource[] {
 					// Create the resource for the folder of the glossary:
-					let term = app.ontology.getTermResource('resourceClass',CONFIG.resClassGlossary);
+					let term = app.ontology.getTermResource('resourceClass', CONFIG.resClassGlossary, { eligibleOnly: true });
 					if (term) {
 						let fL: SpecifResource[] = [{
 							id: "FolderGlossary-" + apx,

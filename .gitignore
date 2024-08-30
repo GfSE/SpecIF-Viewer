@@ -1,6 +1,6 @@
-.vs
 node_modules
 build/
 dist/
 scratch/
 coverage
+.vs

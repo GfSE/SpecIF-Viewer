@@ -1215,15 +1215,21 @@ LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
             .forEach(
                 (c: SpecifItem) => {
                     for (let att in c) {
-                        //	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                    /*  perhaps sufficient (older version)  
+                        if (["propertyClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                            LIB.cacheL(rC[att], c[att]);
+                        else
+                            rC[att] = simpleClone(c[att]); */
+
                         // @ts-ignore - indexing an object with a string is perfectly OK
                         if (["propertyClasses"].includes(att)) {
-                            if (Array.isArray(c[att]))
+                            if (Array.isArray(c[att])) {
                                 if (Array.isArray(rC[att]))
                                     // @ts-ignore - indexing an object with a string is perfectly OK
                                     LIB.cacheL(rC[att], c[att]);
                                 else
-                                    rC[att] = c[att];
+                                    rC[att] = simpleClone(c[att]);
+                            };
                         }
                         else
                             // @ts-ignore - indexing an object with a string is perfectly OK
