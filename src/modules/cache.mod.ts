@@ -2416,9 +2416,9 @@ class CProject implements SpecifProject {
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.0', id: 'reqif' },
-							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
+							{ title: 'MS Excel® <em>(experimental)</em>', id: 'xlsx' },
 							//	{ title: 'RDF', id: 'rdf' },
-							{ title: 'Turtle (experimental)', id: 'turtle' },
+							{ title: 'Turtle <em>(experimental)</em>', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
 							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						]

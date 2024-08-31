@@ -25,8 +25,8 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 	//	idResourceClassCollection = "RC-Collection",
 		idResourceClassPackage = app.ontology.getClassId("resourceClass", "uml:Package"),
 	//	idResourceClassFolder = "RC-Folder",
-	//	idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
-		idResourceClassDefault = app.ontology.getClassId("resourceClass", "uml:Class"),
+		idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
+	//	idResourceClassDefault = app.ontology.getClassId("resourceClass", "uml:Class"),
 
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
