@@ -133,11 +133,11 @@ interface SpecifProject {
      */
     statementClasses: SpecifKeys;
     /**
-     * Memorize the hierarchies of the project
+     * Memorize the nodes of the project
      * @type {SpecifKeys}
      * @memberof SpecifProject
      */
-    hierarchies: SpecifKeys;
+    nodes: SpecifKeys;
 }
 
 /**
@@ -265,7 +265,7 @@ interface SpecIF {
      * @type {SpecifNodes}
      * @memberof SpecIF
      */
-    hierarchies: SpecifNodes;
+    nodes: SpecifNodes;
     /**
      * 
      * @type {Array<SpecifFile>}
@@ -845,6 +845,18 @@ interface SpecifPropertyClass {
      * @memberof SpecifPropertyClass
      */
     multiple?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SpecifPropertyClass
+     */
+    multiLanguage?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SpecifPropertyClass
+     */
+    required?: boolean;
     /**
      * 
      * @type {SpecifPermissionVector}

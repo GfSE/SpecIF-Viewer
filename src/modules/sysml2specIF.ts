@@ -139,7 +139,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 		spD.title = [{ text: modDoc.getAttribute("name") }];
 
 		// 3. Analyse the package structure and create a hierarchy of folders:
-		parseElements(modDoc, { package: '', nodes: spD.hierarchies });
+		parseElements(modDoc, { package: '', nodes: spD.nodes });
 
 		// ====== Postprocessing ======
 		// 4. Find stereotypes and specialized classes for the model elements:

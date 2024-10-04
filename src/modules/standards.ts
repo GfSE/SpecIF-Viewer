@@ -41,7 +41,7 @@ class CStandards {
 		['file', "files"],
 		['resource', "resources"],
 		['statement', "statements"],
-		['hierarchy', "hierarchies"]
+		['hierarchy', "nodes"]
 	])
 	iterateLists(fn: Function): number {
 		// Perform the function fn for each list defined above:

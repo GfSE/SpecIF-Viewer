@@ -32,9 +32,9 @@ class CCache {
 	propertyClasses: SpecifPropertyClass[] = [];
 	resourceClasses: SpecifResourceClass[] = [];
 	statementClasses: SpecifStatementClass[] = [];
-	resources: SpecifResource[] = [];   		// list of resources as referenced by the hierarchies
+	resources: SpecifResource[] = [];   		// list of resources as referenced by the nodes
 	statements: SpecifStatement[] = [];
-	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
+	nodes: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
 	files: SpecifFile[] = [];
 	constructor(opts:any) {
 		this.cacheInstances = opts.cacheInstances;
@@ -192,7 +192,7 @@ class CCache {
 					return LIB.uncacheL(this[app.standards.listName.get(ctg)], itemL);
 				return true;
 			case 'node':
-				itemL.forEach((el):void => { delNodes(this.hierarchies, el) })
+				itemL.forEach((el):void => { delNodes(this.nodes, el) })
 				return true;
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
@@ -225,7 +225,7 @@ class CCache {
 		// (1) If there is a node with the same id and there is neither predecessor nor parent,
 		//    replace that node:
 		if (!e.predecessor && !e['parent'] && LIB.iterateNodes(
-			this.hierarchies,
+			this.nodes,
 			// continue searching until found:
 			(nd: SpecifNode) => { return nd.id != e.id },
 			// replace the node with equal id:
@@ -237,7 +237,7 @@ class CCache {
 			}
 		))
 			// the node has been replaced, either at root level or further down:
-			return LIB.indexByKey(this.hierarchies, e) > -1;
+			return LIB.indexByKey(this.nodes, e) > -1;
 
 		// (2) Delete the node, if it exists somewhere to prevent
 		//    that there are multiple nodes with the same id;
@@ -246,7 +246,7 @@ class CCache {
 
 		// (3) Insert the node, if the predecessor exists somewhere:
 		if (e.predecessor && LIB.iterateNodes(
-			this.hierarchies,
+			this.nodes,
 			// continue searching until found:
 			(nd: SpecifNode) => { return nd.id != e.predecessor },
 			// insert the node after the predecessor:
@@ -260,11 +260,11 @@ class CCache {
 			}
 		))
 			// the node has been inserted, either at root level or further down:
-			return LIB.indexByKey(this.hierarchies, e) > -1;
+			return LIB.indexByKey(this.nodes, e) > -1;
 
 		// (4) Insert the node, if the parent exists somewhere:
 		if (e['parent'] && LIB.iterateNodes(
-			this.hierarchies,
+			this.nodes,
 			// continue searching until found:
 			(nd: SpecifNode) => {
 				if (nd.id == e['parent']) {
@@ -286,7 +286,7 @@ class CCache {
 			return false; // isn't a hierarchy root, because a parent has been found
 
 		// (5) insert the node as first root element, otherwise:
-		this.hierarchies.unshift(e);
+		this.nodes.unshift(e);
 		return true; // is a hierarchy root
 	}
 	instanceTitleOf(el: SpecifInstance, opts: any): string {
@@ -477,7 +477,7 @@ class CProject implements SpecifProject {
 	propertyClasses: SpecifKeys = [];
 	resourceClasses: SpecifKeys = [];
 	statementClasses: SpecifKeys = [];
-	hierarchies: SpecifKeys = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
+	nodes: SpecifKeys = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
 	cache: CCache;
@@ -530,9 +530,9 @@ class CProject implements SpecifProject {
 			projectName: LIB.languageTextOf(this.title, { targetLanguage: this.language }),
 			fileName: LIB.languageTextOf(this.title, { targetLanguage: this.language })
 		};
-		// Memorize the classes and hierarchies associated with this project - the cache holds all;
+		// Memorize the classes and hierarchy roots associated with this project - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
-		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
+		["nodes", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
 			(list) => {
 				// @ts-ignore - indexing by string is perfectly ok.
 				for (var p of spD[list]) this[list].push({ id: p.id });
@@ -664,15 +664,15 @@ class CProject implements SpecifProject {
 
 		return new Promise(
 			(resolve, reject) => {
-				// Get the memorized hierarchies of this project - except the folder with unreferenced resources:
+				// Get the memorized nodes of this project - except the folder with unreferenced resources:
 				this.readItems(
 					'hierarchy',
-					this.hierarchies.filter((n: SpecifKey) => { return !n.id.includes("FolderUnreferencedResources-"); }),
+					this.nodes.filter((n: SpecifKey) => { return !n.id.includes("FolderUnreferencedResources-"); }),
 					opts
 				)
 				.then(
 					(hL) => {
-						exD.hierarchies = hL as SpecifNode[];
+						exD.nodes = hL as SpecifNode[];
 //						console.debug('1', simpleClone(exD));
 						return this.readItems('resource', LIB.referencedResources(this.cache.resources, hL), opts)
 						// ToDo: This doesn't make sense - cannot call 'readItems' to access a backemd, if needed ...
@@ -684,7 +684,7 @@ class CProject implements SpecifProject {
 						exD.resources = rL as SpecifResource[];
 //						console.debug('2', simpleClone(exD));
 
-						// In a first step collect all statements relating two resources which are referenced in a hierarchy:
+						// In a first step collect all statements relating two resources which are referenced in a node tree:
 						return this.readItems('statement', flt, opts);
 
 						function flt(s:SpecifStatement) {
@@ -1084,7 +1084,7 @@ class CProject implements SpecifProject {
 
 							// Adopt a resource, only if it's class belongs to a certain collection of class-titles and is not excluded from deduplication.
 							// The folders are excluded from consolidation, because it may happen that there are
-							// multiple folders with the same name but different description in different locations of the hierarchy.
+							// multiple folders with the same name but different description in different locations of the node tree.
 							// The title of the resource class signifies the main (abstract) type for model integration,
 							// whereas the property with a class title CONFIG.propClassType (dcterms:type) is used to store the type of the original notation.
 
@@ -1176,7 +1176,7 @@ class CProject implements SpecifProject {
 							.then(finalize, aDO.reject);
 					};
 					pend++;
-					self.createItems('hierarchy', newD.hierarchies)
+					self.createItems('hierarchy', newD.nodes)
 						.then(finalize, aDO.reject);
 
 					if (Array.isArray(newD.files)) {
@@ -1226,15 +1226,15 @@ class CProject implements SpecifProject {
 		}
 	}
 	private memorizeScope(ctg: string, itm: SpecifItem | INodeWithPosition): void {
-		// Memorize the keys (without revision) of the project's classes and hierarchies,
+		// Memorize the keys (without revision) of the project's classes and nodes,
 		// so that its scope is known when exporting the project.
 		// For example, even classes which are not used (have no instances) shall be included.
 		// The key-list per category can be used to retrieve all items within the project scope from cache or server.
 	/*	let self = this;
 		function isRoot(nd: INodeWithPosition): boolean {
-			// Return true, if the node is placed in the hierarchies folder as one of the root elements:
+			// Return true, if the node is placed in the nodes folder as one of the root elements:
 			return (!nd.parent
-				&& (!nd.predecessor || LIB.indexByKey(self.hierarchies, LIB.makeKey(nd.predecessor)) > -1)
+				&& (!nd.predecessor || LIB.indexByKey(self.nodes, LIB.makeKey(nd.predecessor)) > -1)
 			);
 		} */
 		switch (ctg) {
@@ -1254,9 +1254,9 @@ class CProject implements SpecifProject {
 			/*	for (var el of itmL) {
 					// all nodes to become hierarchy root elements shall be memorized in the selected project:
 					if (isRoot(el as INodeWithPosition))
-						LIB.cacheE(this.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }));
+						LIB.cacheE(this.nodes, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }));
 				}; */
-				LIB.cacheE(this.hierarchies, ((itm as INodeWithPosition).predecessor ? { id: itm.id, predecessor: LIB.makeKey((itm as INodeWithPosition).predecessor) } : LIB.makeKey(itm.id)));
+				LIB.cacheE(this.nodes, ((itm as INodeWithPosition).predecessor ? { id: itm.id, predecessor: LIB.makeKey((itm as INodeWithPosition).predecessor) } : LIB.makeKey(itm.id)));
 		}
 	}
 	createItems(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): Promise<void> {
@@ -1418,7 +1418,7 @@ class CProject implements SpecifProject {
 					case 'hierarchy':
 					case 'node':
 						// the sequence of list items may have changed:
-						self.hierarchies = self.cache.get('hierarchy', 'all').map( h => LIB.makeKey(h.id));
+						self.nodes = self.cache.get('hierarchy', 'all').map( h => LIB.makeKey(h.id));
 				//		break;
 				//	case 'resource':
 				//	case 'statement':
@@ -1471,7 +1471,7 @@ class CProject implements SpecifProject {
 							case 'resourceClass':
 							case 'statementClass':	return aCIsInUse(ctg,itm);
 							case 'class':			return pCIsInUse(self.cache.resources,itm)
-														|| pCIsInUse(self.cache.hierarchies,itm)
+														|| pCIsInUse(self.cache.nodes,itm)
 														|| pCIsInUse(self.cache.statements,itm);
 						};
 						return false
@@ -1617,7 +1617,7 @@ class CProject implements SpecifProject {
 		// there is no purpose of an orphaned hierarchy root:
 		// - hierarchy roots are used by ReqIF
 		// - they are kept on import, but not displayed in SpecIF
-		let childless = this.cache.get("hierarchy", this.hierarchies)
+		let childless = this.cache.get("hierarchy", this.nodes)
 			.filter(
 				h => !Array.isArray(h.nodes) || h.nodes.length < 1
 			)
@@ -1632,7 +1632,7 @@ class CProject implements SpecifProject {
 	private deduplicate(opts:any): void {
 		// Uses the cache.
 		// ToDo: Deduplication is done in the cache --> this can lead to inconsistencies with the memorized items of a project.
-		//       Example: On import, there are two diagrams with the same title on root level. Deduplication deletes one, but the memorized hierarchies are not affected.
+		//       Example: On import, there are two diagrams with the same title on root level. Deduplication deletes one, but the memorized nodes are not affected.
 		// ToDo: update the server.
 		if (!opts || !opts.deduplicate) return;
 
@@ -1782,9 +1782,9 @@ class CProject implements SpecifProject {
 						// 1. Find all resp. folders (e.g. process folder):
 						let fldL: SpecifNode[] = [],
 							resL: any[] = [];
-//						console.debug('createFolderWithResourcesByType',dta.hierarchies,opts);
+//						console.debug('createFolderWithResourcesByType',dta.nodes,opts);
 						LIB.iterateNodes(
-							dta.get("hierarchy", self.hierarchies),
+							dta.get("hierarchy", self.nodes),
 							(nd: SpecifNode): boolean => {
 								// get the referenced resource:
 								let res = dta.get("resource", [nd.resource])[0] as SpecifResource,
@@ -1827,7 +1827,7 @@ class CProject implements SpecifProject {
 												app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 												{
 													resources: Folders(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-													hierarchies: Nodes(r2c, resL)
+													nodes: Nodes(r2c, resL)
 												}
 											);
 											// use the adopt function to eliminate duplicate types:
@@ -1858,7 +1858,7 @@ class CProject implements SpecifProject {
 											app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
 											{
 												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-												hierarchies: Nodes(r2c, resL)
+												nodes: Nodes(r2c, resL)
 											}
 										);
 										// use the update function to eliminate duplicate types:
@@ -1920,8 +1920,8 @@ class CProject implements SpecifProject {
 					apx = simpleHash(self.id),
 					tim = new Date().toISOString(),
 
-					// Get the hierarchies without the folder listing the unreferenced resources:
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
+					// Get the nodes without the folder listing the unreferenced resources:
+					hL = (dta.get("hierarchy", self.nodes) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
@@ -1977,7 +1977,7 @@ class CProject implements SpecifProject {
 							app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 							{
 								resources: Folders(),
-								hierarchies: Nodes(resL)
+								nodes: Nodes(resL)
 							}
 						);
 //						console.debug('glossary',newD);
@@ -2046,7 +2046,7 @@ class CProject implements SpecifProject {
 					apx = simpleHash(self.id),
 					tim = new Date().toISOString(),
 					lastContentH: SpecifNode,
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
+					hL = (dta.get("hierarchy", self.nodes) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
@@ -2054,12 +2054,12 @@ class CProject implements SpecifProject {
 								// Remember the last hierarchy with original content:
 								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResources], dta, opts))
 									lastContentH = nd;
-								// Include all original hierarchies, i.e. those except the generated ones:
+								// Include all original nodes, i.e. those except the generated ones:
 								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResources], dta, opts);
 							}
 						);
 
-//				console.debug('createFolderWithGlossary',self.hierarchies);
+//				console.debug('createFolderWithGlossary',self.nodes);
 				LIB.iterateNodes(
 					hL,
 					(nd: SpecifNode): boolean => {
@@ -2101,7 +2101,7 @@ class CProject implements SpecifProject {
 									app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 									{
 										resources: Folders(),
-										hierarchies: FolderNodes(lastContentH)
+										nodes: FolderNodes(lastContentH)
 									}
 								);
 								//									console.debug('glossary',newD);
@@ -2149,7 +2149,7 @@ class CProject implements SpecifProject {
 			/*	function extractByType(fn) {
 					var L=[], el;
 					LIB.iterateNodes( 
-						self.hierarchies,
+						self.nodes,
 						(nd)=>{
 							el = fn(nd);
 							if( el ) { Array.isArray(el)? L.concat(el) : L.push( el ) };
@@ -2240,12 +2240,12 @@ class CProject implements SpecifProject {
 	readStatementsOf(res: SpecifKey, opts?: any): Promise<SpecifStatement[]> {
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
-		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
+		//   it is possible that a resource is deleted (from all nodes), but not it's statements.
 		//   --> set 'showComments' to false
 		// - All comments referring to the selected resource shall be shown;
 		//   the resource must be listed in the hierarchy, but the comment is not.
 		//   --> set 'showComments' to true
-		// - It is assumed that the hierarchies contain only model-elements shown on a visible diagram,
+		// - It is assumed that the nodes contain only model-elements shown on a visible diagram,
 		//   so only stetements are returned for visible resources.
 		// - In addition, only statements are returned which are shown on a visible diagram.
 		//   (perhaps both checks are not necessary, as visible statements only referto visible resources ...)
@@ -2426,7 +2426,7 @@ class CProject implements SpecifProject {
 						[
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
 						];
-				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
+				// add an option to generate class definitions, if there is a SpecIF ontology found in the nodes:
 				if( moduleManager.isReady('ioOntology') && hasOntology() )
 					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
 
@@ -2451,8 +2451,8 @@ class CProject implements SpecifProject {
 				return $(form)
 
 				function hasOntology(): boolean {
-					// Returns true, if one of the hierarchies is an ontology:
-					let hL = self.cache.get("hierarchy", self.hierarchies) as SpecifNode[];
+					// Returns true, if one of the nodes is an ontology:
+					let hL = self.cache.get("hierarchy", self.nodes) as SpecifNode[];
 					for (var h of hL) {
 						let rL = self.cache.get("resource", [h.resource]) as SpecifResource[];
 						if (rL.length>0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], self.cache))
@@ -3129,7 +3129,7 @@ class CProject implements SpecifProject {
 			});
 	}
 	private substituteRef(L: SpecifNodes, rK: SpecifKey, dK: SpecifKey): void {
-		// For all hierarchies, replace any reference to dK by rK;
+		// For all nodes, replace any reference to dK by rK;
 		// eliminate double entries in the same folder (together with the children):
 		LIB.iterateNodes(
 			L,
@@ -3236,8 +3236,8 @@ class CProject implements SpecifProject {
 			if (LIB.references(st.object, replacedE)) st.object = LIB.makeKey(replacingE.id);
 		});
 
-		// 2. Replace the references in all hierarchies:
-		this.substituteRef(prj.hierarchies, LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+		// 2. Replace the references in all nodes:
+		this.substituteRef(prj.nodes, LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 
 		// 3. Make sure all statementClasses allowing replacedE.class also allow replacingE.class (the class of the adopted resource):
 		if (replacingE['class'] && replacedE['class'] && !LIB.equalKey(replacingE['class'], replacedE['class']))
@@ -3547,7 +3547,7 @@ function Project(): IProject {
 					return;
 				case 'resource': itemL = newD.resources; uDO.notify(i18n.MsgLoadingObjects,50); break;
 				case 'statement': itemL = newD.statements; uDO.notify(i18n.MsgLoadingRelations,70); break;
-				case 'hierarchy': itemL = newD.hierarchies; uDO.notify(i18n.MsgLoadingHierarchies,80); break;
+				case 'hierarchy': itemL = newD.nodes; uDO.notify(i18n.MsgLoadingHierarchies,80); break;
 				default: return null //should never arrive here
 			};
 			itemL.forEach( (itm)=>{
@@ -3566,7 +3566,7 @@ function Project(): IProject {
 				let i=null, rA=null, nA=null, rV=null, nV=null;
 				// 1) Are the property values equal?
 				// Skipped, if the new instance does not have any property (list is empty or not present).
-				// Statements and hierarchies often have no properties.
+				// Statements and nodes often have no properties.
 				// Resources without properties are useless, as they do not carry any user payload (information).
 				// Note that the actual property list delivered by the server depends on the read privilege of the user.
 				// Only the properties, for which the current user has update privilege, will be compared.
@@ -3696,14 +3696,14 @@ function Project(): IProject {
 				// ToDo: Update the smallest possible subtree in case addition or deletion of a single child is not sufficient.
 
 					function newIds(h) {
-						// new and updated hierarchy entries must have a new id (server does not support revisions for hierarchies):
+						// new and updated hierarchy entries must have a new id (server does not support revisions for nodes):
 						h.children.forEach( (ch)=>{
 							ch.id = LIB.genID(CONFIG.prefixN);
 							newIds(ch)
 						})
 					}
 					function treeChanged(a,n) {
-						// Equal hierarchies?
+						// Equal nodes?
 						// All children (nodes in SpecIF terms) on all levels must have the same sequence.
 						return nodesChanged(a.children,n.children)
 
@@ -3838,7 +3838,7 @@ function Project(): IProject {
 		return rDO;
 	}
 	function loadAll( ctg:string ) {
-		// Cycle through all hierarchies and load the instances of the specified ctg:
+		// Cycle through all nodes and load the instances of the specified ctg:
 		// The loaded data is cached.
 		switch( ctg ) {
 			case 'resource': 	var fn=loadObjsOf; break;
@@ -3846,15 +3846,15 @@ function Project(): IProject {
 			default: return null
 		};
 		var dO = $.Deferred(),
-			pend = self.cache.hierarchies.length;
-		for( var i=self.cache.hierarchies.length-1; i>-1; i-- ) {
-			fn( self.cache.hierarchies[i] )
+			pend = self.cache.nodes.length;
+		for( var i=self.cache.nodes.length-1; i>-1; i-- ) {
+			fn( self.cache.nodes[i] )
 				.done(()=>{
 					if(--pend<1) dO.resolve()
 				})
 				.fail( dO.reject )
 		};
-		if( self.cache.hierarchies.length<1 ) dO.resolve();
+		if( self.cache.nodes.length<1 ) dO.resolve();
 		return dO;
 	}
 	function autoLoad( aU ) {

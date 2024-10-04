@@ -261,13 +261,13 @@ moduleManager.construct({
 		//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
 
-		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
+		// Iterate all nodes of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0,
 			hitCnt = 0,
 			visited: SpecifId[] = []; // list all evaluated resources
 		LIB.iterateNodes(
-			// iterate all hierarchies except the one for unreferenced resources:
-			(selPrj.cache.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+			// iterate all nodes except the one for unreferenced resources:
+			(selPrj.cache.get("hierarchy", selPrj.nodes) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
 						return LIB.typeOf(h.resource, selPrj.cache) != CONFIG.resClassUnreferencedResources
@@ -278,14 +278,14 @@ moduleManager.construct({
 //				console.debug('doFilter',pend,nd.resource);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
-				// - A resource will be listed several times, if it appears several times in the hierarchies.
+				// - A resource will be listed several times, if it appears several times in the nodes.
 				selPrj.readItems('resource', [nd.resource])
 					.then(
 						(rL) => {
 							let hit = match(new CResourceToShow(rL[0] as SpecifResource));
 //							console.debug('doFilter iterateNodes',self.filters,pend,rL[0],hit);
 							// list a hit, but only once:
-							// (even if the resource is referenced multiple times in the hierarchies)
+							// (even if the resource is referenced multiple times in the nodes)
 							if (hit && !visited.includes(hit.id)) {
 								hitCnt++;
 								visited.push(hit.id);

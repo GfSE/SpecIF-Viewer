@@ -2,11 +2,12 @@
   "ExpandedNodes": [
     "",
     "\\src",
-    "\\src\\assets\\stylesheets",
+    "\\src\\assets",
+    "\\src\\assets\\javascripts",
     "\\src\\config",
     "\\src\\modules",
     "\\src\\types"
   ],
-  "SelectedNode": "\\src\\modules\\importAny.mod.ts",
+  "SelectedNode": "\\src\\types\\specif.types.ts",
   "PreviewInSolutionExplorer": false
 }

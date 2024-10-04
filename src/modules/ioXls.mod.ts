@@ -349,7 +349,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				};
 				// 4. Add the hierarchy tree (folder) to the file's root node:
 				// @ts-ignore - hTree is defined
-				specifData.hierarchies[0].nodes.push(hTree);
+				specifData.nodes[0].nodes.push(hTree);
 				return;
 
 				function createRes(ws: Worksheet, row: number): void {
@@ -817,7 +817,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	});
 
 	// 2. Create the specification (hierarchy root) for the file:
-	specifData.hierarchies.push({
+	specifData.nodes.push({
 		id: CONFIG.prefixH + pN.toSpecifId(),
 		resource: LIB.makeKey(CONFIG.prefixR + pN.toSpecifId() ),
 		nodes: [],
@@ -853,7 +853,7 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 	// @ts-ignore - 'XLSX' is loaded at runtime
 	const wb = XLSX.utils.book_new();
 
-	// Fill all resources in a table according to the hierarchies.
+	// Fill all resources in a table according to the nodes.
 	let selPrj = app.projects.selected,
 		cData = selPrj.cache,
 		pend = 0,
@@ -869,21 +869,21 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			)
 		];
 	LIB.iterateNodes(
-		// Iterate all hierarchies except the one for unreferenced resources:
-		(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+		// Iterate all nodes except the one for unreferenced resources:
+		(cData.get("hierarchy", selPrj.nodes) as SpecifNodes)
 			.filter(
 				(h: SpecifNode) => {
 					return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
 				}
 			),
-		// ... and extract the property values of the resources referenced in the hierarchies;
+		// ... and extract the property values of the resources referenced in the nodes;
 		// where every resource results in a line of the table:
 		(nd: SpecifNode) => {
 			pend++;
 			//				console.debug('2xlsx',pend,nd.resource);
 			// Read asynchronously, so that the cache has the chance to reload from the server.
 			// - The sequence may differ from the hierarchy one's due to varying response times.
-			// - A resource will be listed several times, if it appears several times in the hierarchies.
+			// - A resource will be listed several times, if it appears several times in the nodes.
 			selPrj.readItems('resource', [nd.resource])
 				.then(
 					(rL: SpecifResource[]) => {

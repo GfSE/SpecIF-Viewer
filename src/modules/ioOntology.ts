@@ -96,15 +96,15 @@ class COntology {
         // Store as is:
         this.data = dta;
 
-        // Keep only the hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
+        // Keep only the nodes having a property of "dcterms:type" with value "W3C:Ontology";
         // there is a side-effect on the data handed-in, but in case of the SpecIF Viewer/Editor, this isn't harmful.
-        dta.hierarchies = dta.hierarchies.filter(
-            (h: SpecifNode) => {
-                let r = LIB.itemByKey(dta.resources, h.resource);
+        this.data.nodes = (dta.nodes).filter(
+            (n: SpecifNode) => {
+                let r = LIB.itemByKey(dta.resources, n.resource);
                 return this.valueByTitle(r, CONFIG.propClassType) == "W3C:Ontology";
             }
         );
-        if (dta.hierarchies.length < 1) {
+        if (dta.nodes.length < 1) {
             message.show("No ontology found.", { severity: 'warning' });
             this.data = undefined;
             return;
@@ -133,7 +133,7 @@ class COntology {
         this.options = {};
     }
     isValid() {
-        return this.data && this.data.id && this.data.hierarchies.length > 0 && this.checkConstraintsOntology();
+        return this.data && this.data.id && this.data.nodes.length > 0 && this.checkConstraintsOntology();
     }
 
     private getTermResources(ctg: string, term: string, opts?:any): SpecifResource[] {
@@ -486,7 +486,7 @@ class COntology {
             "id": "",
             "$schema": "https://specif.de/v1.1/schema.json",
             "title": [],
-        //    "description": [],
+            "description": undefined,
             "generator": app.title,
             "generatorVersion": CONFIG.appVersion,
             "createdAt": new Date().toISOString(),
@@ -501,7 +501,7 @@ class COntology {
             "resources": [],
             "statements": [],
             "files": [],
-            "hierarchies": []
+            "nodes": []
         }
     }
     generateSpecifClasses(opts?: any): SpecIF {
@@ -616,7 +616,7 @@ class COntology {
                     "resourceClasses": this.generated.rCL,
                     "statementClasses": this.generated.sCL,
                     "resources": this.generated.rL,
-                    "hierarchies": this.generated.hL
+                    "nodes": this.generated.hL
                 }
             )
         }
@@ -638,7 +638,7 @@ class COntology {
 
         let cL: SpecifClass[] = [],  
             // 1. Find the terms of the classes listed in rCIdL:
-            idL = LIB.referencedResourcesByClass(this.data.resources, this.data.hierarchies, rCIdL) as SpecifResource[];
+            idL = LIB.referencedResourcesByClass(this.data.resources, this.data.nodes, rCIdL) as SpecifResource[];
 
         if (idL.length > 0) {
             let tL = idL
@@ -834,6 +834,7 @@ class COntology {
             {
                 dataType: this.options.referencesWithoutRevision ? LIB.makeKey(dT.id) : LIB.makeKey(dT),  // the reference to the dataType
                 format: this.valueByTitle(r, "SpecIF:TextFormat"),  // one or none of 'plain' or 'xhtml'
+                required: this.valueByTitle(r, "SpecIF:isRequired"),
                 multiple: LIB.isTrue(this.valueByTitle(r, "SpecIF:multiple")) ? true : undefined,
                 values: (defaultVL.length > 0 && (dT.type != XsDataType.Boolean || defaultVL[0]=="true") ? defaultVL : undefined)
             }
@@ -1037,7 +1038,7 @@ class COntology {
         // - take the resource's title as title
         // - and a derivative of the title as distinctive portion of the id.
         let prep = this.makeIdAndTitle(r, prefix),
-            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data),
+            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data) as SpecifLanguageText[],
             dsc: SpecifLanguageText;
 
         if (dscL.length > 1)
@@ -1054,7 +1055,7 @@ class COntology {
             id: prep.id,
             revision: this.valueByTitle(r, "SpecIF:Revision") || r.revision,
             title: prep.title,
-            // @ts-ignore - doesn't matter if dsc is undefined
+            // @ts-ignore - is defined
             description: dsc, 
             changedAt: r.changedAt
         } as SpecifClass;

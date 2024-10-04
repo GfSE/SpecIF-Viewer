@@ -104,8 +104,8 @@ moduleManager.construct({
 			// 3. Collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
 			LIB.iterateNodes(
-				// iterate all hierarchies except the one for unreferenced resources:
-				(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+				// iterate all nodes except the one for unreferenced resources:
+				(cData.get("hierarchy", selPrj.nodes) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
 						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
@@ -322,9 +322,12 @@ moduleManager.construct({
 				object: LIB.makeKey(dir.secondAs == 'object' ? self.selectedCandidate.resource.id : selRes.id),
 				changedAt: new Date().toISOString()
 			};
-		if (self.selectedStatementClass.propertyClasses && self.selectedStatementClass.propertyClasses.length > 0) {
+		if (app.me.userName != CONFIG.userNameAnonymous)
+			sta.changedBy = app.me.userName;
+
+	/*	if (self.selectedStatementClass.propertyClasses && self.selectedStatementClass.propertyClasses.length > 0) {
 			// show a dialog to edit the property values:
-		};
+		}; */
 		return selPrj.createItems(
 			'statement',
 			[sta]

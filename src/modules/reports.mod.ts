@@ -313,8 +313,8 @@ moduleManager.construct({
 			visited: SpecifId[] = []; // list all evaluated resources
 
 		LIB.iterateNodes(
-			// iterate all hierarchies except the one for unreferenced resources:
-			(selPrj.cache.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+			// iterate all nodes except the one for unreferenced resources:
+			(selPrj.cache.get("hierarchy", selPrj.nodes) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
 						return LIB.typeOf(h.resource, selPrj.cache) != CONFIG.resClassUnreferencedResources

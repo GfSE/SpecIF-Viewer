@@ -22,7 +22,7 @@ moduleManager.construct({
 	const importModes = [{
 			id: 'create',
 			title: 'Create a new project with the given id',
-			desc: 'All types, objects, relations and hierarchies will be created as specified.',
+			desc: 'All types, objects, relations and nodes will be created as specified.',
 			label: i18n.BtnCreate
 		},{
 			id: 'clone',
@@ -125,10 +125,10 @@ moduleManager.construct({
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
 		urlP:any,				// the latest URL parameters
-		urlOntology = (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
-				CONFIG.ontologyURL
-				: '../../SpecIF/vocabulary/Ontology.specif'  // local 
-			),
+		urlOntology = ( window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+			CONFIG.ontologyURL
+			: '../../SpecIF/vocabulary/Ontology.specif'  // local 
+		),
 		importing = false,
 		cacheLoaded = false,
 		allValid = false;

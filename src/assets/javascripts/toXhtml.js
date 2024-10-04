@@ -94,7 +94,7 @@ function toXhtml( data, options ) {
 	
 	// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
 	const firstHierarchySection = xhtml.sections.length;  // index of the next section number
-	data.hierarchies.forEach(
+	data.nodes.forEach(
 		(h, i) => {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
@@ -238,10 +238,10 @@ function toXhtml( data, options ) {
 		// the first occurrence is returned.
 		// - 'hi' is an offset where to start searching.
 		let y, ndId;
-		for( var m=0, M=data.hierarchies.length; m<M; m++ ) {
-			// for all hierarchies starting with the current one 'hi', the index of the top-level loop:
+		for( var m=0, M=data.nodes.length; m<M; m++ ) {
+			// for all nodes starting with the current one 'hi', the index of the top-level loop:
 			y = (m+hi) % M;  
-			ndId = nodeByRef( data.hierarchies[y] );
+			ndId = nodeByRef( data.nodes[y] );
 			if( ndId ) return ndId		// return node id
 		};
 		return;	// not found

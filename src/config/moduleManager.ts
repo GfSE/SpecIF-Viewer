@@ -162,7 +162,6 @@ class ViewControl {
 class Browser {
 	language: string;
 	supportsHtml5History: boolean;
-	supportsCORS: boolean;
 	supportsFileAPI: boolean;
 	constructor() {
 		this.language = navigator.language; // || navigator.userLanguage;
@@ -170,9 +169,6 @@ class Browser {
 
 		this.supportsHtml5History = Boolean(window.history && window.history.pushState);
 		if (!this.supportsHtml5History) console.info("Browser does not support HTML5 History");
-
-		this.supportsCORS = $.support.cors;
-		if (!this.supportsCORS) console.info("Browser does not support CORS");
 
 		this.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
 /*		this.supportsHtml5Storage = function() {
@@ -256,11 +252,11 @@ var app:IApp,
 						app.busy = new State({
 							showWhenSet: ['#spinner'],
 							hideWhenSet: ['.pageActions', '.contentActions']
-						//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
+						//	hideWhenSet: ['.pageActions', '.contentActions', '.elementActions']
 						});
 
-						// Make sure page divs are resized, if the browser window is changed in size:
-						bindResizer();
+						// Adapt the display in case the window is being resized:
+						window.onresize = doResize;
 					}
 				}
 			);
@@ -861,11 +857,4 @@ function doResize(): void {
 	// hack to adjust the iframe on the about page;
 	// no idea why there is a space after the iframe causing a scroll-bar for the enclosing div:
 	$('#aboutFrame').outerHeight(pH - 8);
-}
-function bindResizer(): void {
-	// adapt the display in case the window is being resized:
-	$(window).resize(() => {
-		//		console.debug('resize'); 
-		doResize();
-	});
 }

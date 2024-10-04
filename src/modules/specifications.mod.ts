@@ -1492,11 +1492,11 @@ moduleManager.construct({
 	}  */
 
 	self.updateTree = ( opts:any, spc?:SpecifNodes ):void => {
-		// Load the SpecIF hierarchies to a jqTree,
+		// Load the SpecIF nodes to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
 		// undefined parameters are replaced by default values:
-		if( !spc ) spc = self.cData.hierarchies;
+		if( !spc ) spc = self.cData.nodes;
 //		console.debug( 'updateTree', simpleClone(spc), simpleClone(self.cData), opts );
 
 		// Replace the tree:
@@ -1568,9 +1568,9 @@ moduleManager.construct({
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
 		if (self.cData.length("hierarchy")>0 ) {
-			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
+			// ToDo: Get the nodes one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			self.selPrj.readItems('hierarchy', self.selPrj.hierarchies, {reload:true} )
+			self.selPrj.readItems('hierarchy', self.selPrj.nodes, {reload:true} )
 			.then( 
 				(rsp: SpecifNodes) => {
 					let nd: jqTreeNode;
@@ -1578,7 +1578,7 @@ moduleManager.construct({
 					// undefined parameters will be replaced by default value:
 					self.updateTree( opts, rsp );
 
-					// all hierarchies have been loaded;
+					// all nodes have been loaded;
 					// try to select the requested node:
 					if (uP && uP[CONFIG.keyNode] ) {
 						nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
@@ -2441,7 +2441,7 @@ moduleManager.construct({
 			let res: SpecifResource, isNotADiagram: boolean, noDiagramFound = true;
 			// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
 			return LIB.iterateNodes(
-				cacheData.get('hierarchy', selPrj.hierarchies),
+				cacheData.get('hierarchy', selPrj.nodes),
 				(nd: SpecifNode): boolean => {
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;

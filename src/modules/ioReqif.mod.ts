@@ -412,9 +412,9 @@ moduleManager.construct({
 					// ToDo: Sort properties according to the propertyClasses
 					separatedHC.objects.push( r );
 			}
-		// First, collect all resources referenced by the hierarchies,
+		// First, collect all resources referenced by the nodes,
 		// ignore the hierarchy roots here, they are handled further down:
-		pr.hierarchies.forEach( (h) =>{
+		pr.nodes.forEach( (h) =>{
 			if( h.nodes )
 				h.nodes.forEach( (n) =>{
 					iterate( n, prepObj )
@@ -423,8 +423,8 @@ moduleManager.construct({
 //		console.debug( 'after collecting referenced resources: ', xml, separatedHC );
 
 		// Then, have a look at the hierarchy roots:
-		pr.hierarchies.forEach( (h) =>{
-			// The resources referenced at the lowest level of hierarchies (the 'roots')
+		pr.nodes.forEach( (h) =>{
+			// The resources referenced at the lowest level of nodes (the 'roots')
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
@@ -518,8 +518,8 @@ moduleManager.construct({
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
 		
-		// 8. Transform hierarchies to SPECIFICATIONs:
-		pr.hierarchies.forEach( (h) =>{
+		// 8. Transform nodes to SPECIFICATIONs:
+		pr.nodes.forEach( (h) =>{
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
 				// @ts-ignore - index is ok:
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class'].id+'</SPECIFICATION-TYPE-REF></TYPE>'

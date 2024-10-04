@@ -542,9 +542,9 @@ moduleManager.construct({
 		return spD;
 
 		function add2Hierarchy(termId:string, folderName:string) {
-			if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
+			if (spD.nodes.length == 1 && spD.nodes[0].nodes) {
 				//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
-				let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey(folderName));
+				let fld = LIB.itemByKey(spD.nodes[0].nodes, LIB.makeKey(folderName));
 				if (fld && fld.nodes)
 					LIB.cacheE(
 						fld.nodes,

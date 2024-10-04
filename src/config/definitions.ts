@@ -7,12 +7,12 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.s.15",
-    CONFIG.specifVersion = "1.1";
+    CONFIG.appVersion = "1.2.s.15",
+    CONFIG.specifVersion = "1.2";
     CONFIG.imgURL = './assets/images';
-    CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
+    CONFIG.ontologyURL = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
+    CONFIG.QuickStartGuideDe =
     CONFIG.QuickStartGuideEn = "https://gfse.github.io/SpecIF-Pages/Manuals/01_Quick-Start-Guide_EN.html";
-    CONFIG.QuickStartGuideDe = "https://gfse.github.io/SpecIF-Pages/files/SpecIF-Einfuehrung.pdf";
 
     CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.passwordAnonymous = ''; // as configured in the server
@@ -270,3 +270,4 @@ const tagsHtml = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|
 
     RE.AmpersandPlus = new RegExp('&(.{0,8})', 'g');
     RE.XMLEntity = new RegExp('&(amp|gt|lt|apos|quot|#x[\\da-fA-F]{1,4}|#\\d{1,5});/', '');
+    RE.versionFromPath = /\/(?:v|specif-)(\d+\.\d+)\//;

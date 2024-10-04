@@ -250,7 +250,7 @@ function toOxml( data, options ) {
 			);
 
 			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
-			data.hierarchies.forEach(
+			data.nodes.forEach(
 				(h,i) => {
 					oxml.sections.push(
 						renderHierarchy( h, i, opts )
@@ -483,7 +483,7 @@ function toOxml( data, options ) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
 				let ndId;
-				for (var h of data.hierarchies) {
+				for (var h of data.nodes) {
 					ndId = ndByRef(h);
 					if (ndId) return ndId;		// return node id
 				};

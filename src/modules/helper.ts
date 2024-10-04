@@ -748,6 +748,9 @@ LIB.classifyProperties = (el: SpecifResource, data: SpecIF): void => {
     return clPr;
 } */
 
+LIB.versionOf = (spD: SpecIF | CSpecIF):string => {
+    return spD.specifVersion || RE.versionFromPath.exec(spD['$schema'])[1];
+}
 LIB.hasContent = (pV: string): boolean => {
     // must be a string with the value of the selected language.
     if (typeof (pV) != "string"
@@ -1883,7 +1886,7 @@ LIB.httpGet = (params:any):void =>{
 LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
     // Check whether a resource is referenced by the hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
-    if (!H) H = app.projects.selected.cache.hierarchies;
+    if (!H) H = app.projects.selected.cache.nodes;
     return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork

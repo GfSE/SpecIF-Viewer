@@ -22,6 +22,7 @@ class CSpecifItemNames {
 	rs: string;
 	sts: string;
 	r: string;
+	nds: string;
 	frct: string;
 	minI: string;
 	maxI: string;
@@ -83,7 +84,8 @@ class CSpecifItemNames {
 				this.sts = 'statements';
 				this.r = 'resource';
 		};
-		if (typeof(ver)=='string' && ver.startsWith('0.')) {
+
+		if (typeof (ver) == 'string' && ver.startsWith('0.')) {
 			// for all versions <1.0:
 			this.frct = 'accuracy';
 			this.minI = 'min';
@@ -94,6 +96,16 @@ class CSpecifItemNames {
 			this.frct = 'fractionDigits';
 			this.minI = 'minInclusive';
 			this.maxI = 'maxInclusive'
+		};
+
+		let verL = ver.split('.');
+		if (verL[0] < 1 || verL[0] == 1 && verL[1] < 2) {
+			// for all versions < 1.2:
+			this.nds = 'hierarchies';
+		}
+		else {
+			// for all versions > 1.1:
+			this.nds = 'nodes';
 		};
 	}
 }
@@ -119,9 +131,9 @@ class CSpecIF implements SpecIF {
 	resourceClasses: SpecifResourceClass[] = [];
 	statementClasses: SpecifStatementClass[] = [];
 	files: SpecifFile[] = [];
-	resources: SpecifResource[] = [];   		// list of resources as referenced by the hierarchies
+	resources: SpecifResource[] = [];   		// list of resources as referenced by the nodes
 	statements: SpecifStatement[] = [];
-	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of the project.
+	nodes: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of the project.
 
 	constructor() {
 	}
@@ -184,8 +196,10 @@ class CSpecIF implements SpecIF {
 					if (spD['$schema'] && !spD['$schema'].includes('v1.0')) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
-						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
-								: 'https://specif.de/v' + /\/(?:v|specif-)(\d+\.\d+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
+						import( (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ) ?
+							'https://specif.de/v' + LIB.versionOf(spD) + '/CCheck.mjs'
+							: '../../SpecIF-Schema/check/CCheck.mjs'
+						)
 						.then(modChk => {
 							// 2. Get the specified schema file:
 							getSchema();
@@ -259,8 +273,12 @@ class CSpecIF implements SpecIF {
 				}
 				function getSchema() {
 					LIB.httpGet({
+						// Get the schema locally, if started locally in the debug phase:
 						// @ts-ignore - 'specifVersion' is defined for versions <1.0
-						url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
+						url: ( window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+							(spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema')
+							: '../../SpecIF-Schema/schema/schema.json'
+						),
 						responseType: 'arraybuffer',
 						withCredentials: false,
 						done: handleResult,
@@ -290,7 +308,7 @@ class CSpecIF implements SpecIF {
 			opts.normalizeTerms = false;
 
 		let self = this,
-			names = new CSpecifItemNames(spD.specifVersion);
+			names = new CSpecifItemNames(LIB.versionOf(spD));
 
 		console.info("References are imported *without* revision to ascertain that updates of the referenced element do not break the link. "
 					+"(References without revision always relate to the latest revision of the referenced element.)");
@@ -310,7 +328,7 @@ class CSpecIF implements SpecIF {
 			this.files = LIB.forAll(spD.files, f2int);
 			this.resources = LIB.forAll( spD[names.rs], r2int );
 			this.statements = LIB.forAll(spD[names.sts], s2int );
-			this.hierarchies = LIB.forAll( spD.hierarchies, h2int );
+			this.nodes = LIB.forAll( spD[names.nds], h2int );
 
 			// Transform data with schema <v1.1.
 			// dataType.type: 'xs:enumeration' and 'xhtml' --> 'xs:string';
@@ -368,8 +386,6 @@ class CSpecIF implements SpecIF {
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			if (iE.replaces) oE.replaces = iE.replaces;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
-			if (iE.createdAt) oE.createdAt = iE.createdAt;
-			if (iE.createdBy) oE.createdBy = iE.createdBy;
 	//		console.debug('item 2int',iE,oE);
 			return oE
 		}
@@ -463,6 +479,7 @@ class CSpecIF implements SpecIF {
 			else {
 				throw "The dataType " + oE.dataType.id + " for propertyClass " + oE.id + " has not been found.";
 			};
+			if (iE.required) oE.required = true;
 
 			// The default values:
 			dT = LIB.itemByKey(self.dataTypes, oE.dataType);  // here we need the transformed dataType
@@ -998,6 +1015,546 @@ class CSpecIF implements SpecIF {
 		// a clone is delivered.
 		// if opts.targetLanguage has no value, all available languages are kept.
 
+		//		console.debug('toExt', this, opts );
+		// transform internal data to SpecIF:
+		return new Promise(
+			(resolve, reject) => {
+				let self = this,
+					pend = 0;
+				let spD: SpecIF = Object.assign(
+					app.ontology.makeTemplate(),
+					{
+						id: this.id,
+						title: LIB.selectTargetLanguage(this.title, opts)
+					}
+				);
+
+				/*	// Add a resource as hierarchyRoot, if needed.
+					// - If none of the nodes are a root, a common root is added for all.
+					// - If at least one hierarchy has a root, all others get their own root.
+					// It is assumed,
+					// - that in general SpecIF data do not have a hierarchy root with meta-data.
+					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+					// - the ReqIF import transformation adds a property titled 'dcterms:type' with value CONFIG.hierarchyRoot to each hierarchy root.
+	
+						function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+							for (var h of dta.nodes) {
+								let r = LIB.itemByKey(dta.resources, h.resource);
+								if (!r) {
+									throw Error("Hierarchy '"+h.id+"' is corrupt");
+								};
+								let ty = LIB.valueByTitle(r, CONFIG.propClassType, dta),
+									rC = LIB.itemByKey(dta.resourceClasses, r['class']);
+								console.debug('aHierarchyHasNoRoot',h,ty,rC);
+								// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
+								// or by the title of the resourceClass:
+								if ((!ty || ty != CONFIG.hierarchyRoot )
+									&& (rC.title != CONFIG.hierarchyRoot))
+									return true;
+							};
+							return false;
+						}
+						console.debug('has root:', spD.nodes, aHierarchyHasNoRoot(this));
+	
+						let spD = this;
+						if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
+			
+							console.info("Added a hierarchyRoot");
+							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true, delta: true });
+							['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
+								// @ts-ignore - indexing is fine
+								(li) => { spD[li] = oC[li] }
+							);
+	
+							var res: SpecifResource = {
+								id: CONFIG.prefixR + simpleHash(spD.id),
+								class: LIB.makeKey("RC-Folder"),
+								properties: [{
+									class: { id: "PC-Name" },
+									values: [LIB.makeMultiLanguageValue(spD.title)]
+								}, {
+									class: { id: "PC-Type"},
+									values: [LIB.makeMultiLanguageValue(CONFIG.resClassOutline)]
+								}],
+								changedAt: spD.createdAt || new Date().toISOString()
+							};
+							// Add a description property only if it has a value:
+							if (spD.description)
+								LIB.addProperty(res, {
+									class: { id: "PC-Description"},
+									values: [spD.description]
+								});
+							spD.resources.push(r2ext(res));
+							// create a new root instance:
+							spD.nodes = [{
+								id: CONFIG.prefixH + res.id,
+								resource: LIB.keyOf(res),
+								// .. and add the previous nodes as children:
+								nodes: spD.nodes,
+								changedAt: res.changedAt
+							}];
+						};  */
+
+				// Add a resource as hierarchyRoot, if needed.
+				// - all top nodes get a hierarchy root, unless they *are* a hierarchy root 
+				// It is assumed,
+				// - that in general SpecIF data do not have a hierarchy root with meta-data.
+				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+				// - the ReqIF import transformation adds a property titled 'dcterms:type' with value CONFIG.hierarchyRoot to each hierarchy root.
+				function nodeIsNoRoot(r: SpecifResource): boolean {
+					let valL = LIB.valuesByTitle(r, [CONFIG.propClassType], self);
+					return valL.length < 1 || LIB.languageTextOf(valL[0], { targetLanguage: "default" }) != CONFIG.hierarchyRoot
+				}
+				if (opts && opts.createHierarchyRootIfMissing) {
+					for (var i = this.nodes.length - 1; i > -1; i--) {
+						let r = LIB.itemByKey(this.resources, this.nodes[i].resource);
+						if (nodeIsNoRoot(r)) {
+							// A hierarchy has no root element (as needed for ReqIF);
+							// add any needed classes, so that one or more hierarchy roots can be added later in h2ext:
+							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */, referencesWithoutRevision: true, delta: true });
+							['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
+								// @ts-ignore - indexing is fine
+								(li) => { LIB.cacheL(spD[li], oC[li]) }
+							);
+							break;  // once is sufficient
+						}
+					}
+				};
+
+				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+				if (LIB.multiLanguageValueHasContent(this.description))
+					spD.description = LIB.selectTargetLanguage(this.description, opts);
+
+				if (this.language)
+					spD.language = this.language;
+
+				if (this.rights && this.rights.title && this.rights.url)
+					spD.rights = this.rights;
+
+				if (app.me && app.me.email) {
+					spD.createdBy = {
+						familyName: app.me.lastName,
+						givenName: app.me.firstName,
+						email: app.me.email
+					};
+					if (app.me.organization)
+						spD.createdBy.org = { organizationName: app.me.organization };
+				}
+				else {
+					if (this[names.crBy] && this[names.crBy].email) {
+						spD.createdBy = {
+							familyName: this[names.crBy].familyName,
+							givenName: this[names.crBy].givenName,
+							email: this[names.crBy].email
+						};
+						if (this[names.crBy].org && this[names.crBy].org.organizationName)
+							spD.createdBy.org = this[names.crBy].org;
+					};
+					// else: don't add createdBy without data
+				};
+
+				// Now start to assemble the SpecIF output:
+				LIB.cacheL(spD.dataTypes, LIB.forAll(this.dataTypes, dT2ext));
+				LIB.cacheL(spD.propertyClasses, LIB.forAll(this.propertyClasses, pC2ext));
+				LIB.cacheL(spD.resourceClasses, LIB.forAll(this.resourceClasses, rC2ext));
+				LIB.cacheL(spD.statementClasses, LIB.forAll(this.statementClasses, sC2ext));
+				for (var f of this.files) {
+					pend++;
+					f2ext(f)
+						.then(
+							(oF: SpecifFile) => {
+								spD.files.push(oF);
+								if (--pend < 1) finalize();
+							},
+							reject
+						);
+				};
+				LIB.cacheL(spD.resources, LIB.forAll((this.resources), r2ext));
+				LIB.cacheL(spD.statements, LIB.forAll(this.statements, s2ext));
+				LIB.cacheL(spD.nodes, LIB.forAll(this.nodes, h2ext));
+
+				if (pend < 1) finalize();  // no files, so finalize right away
+				return;
+
+				function finalize() {
+					// ToDo: schema and consistency check (if we want to detect any programming errors)
+					//					console.debug('specif.toExt exit',spD);
+					resolve(spD);
+				}
+
+				// common for all items:
+				function i2ext(iE: any) {
+					var oE: any = {
+						id: iE.id,
+						changedAt: iE.changedAt
+					};
+					// most items must have a title, but resources and statements come without:
+					if (iE.title) oE.title = LIB.titleOf(iE, opts);
+					// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+					if (LIB.multiLanguageValueHasContent(iE.description)) oE.description = LIB.makeMultiLanguageValue(LIB.languageTextOf(iE.description, opts));
+					if (iE.revision) oE.revision = iE.revision;
+					if (iE.replaces) oE.replaces = iE.replaces;
+					if (iE.changedBy && iE.changedBy != CONFIG.userNameAnonymous) oE.changedBy = iE.changedBy;
+					return oE;
+				}
+				// a data type:
+				function dT2ext(iE: SpecifDataType) {
+					var oE: SpecifDataType = i2ext(iE);
+					oE.type = iE.type;
+					switch (iE.type) {
+						case XsDataType.Double:
+							if (iE.fractionDigits) oE.fractionDigits = iE.fractionDigits;
+						case XsDataType.Integer:
+							if (typeof (iE.minInclusive) == 'number') oE.minInclusive = iE.minInclusive;
+							if (typeof (iE.maxInclusive) == 'number') oE.maxInclusive = iE.maxInclusive;
+							break;
+						case XsDataType.String:
+							if (iE.maxLength) oE.maxLength = iE.maxLength;
+					};
+					// Look for enumerated values;
+					// every dataType except xs:boolean may have enumerated values:
+					if (iE.enumeration) {
+						if (iE.type == XsDataType.String && opts.targetLanguage)
+							// reduce to the language specified:
+							oE.enumeration = iE.enumeration.map(
+								(v: any) => {
+									let txt = LIB.languageTextOf(v.value, opts);
+									if (opts.lookupValues) txt = app.ontology.localize(txt, opts);
+									return { id: v.id, value: LIB.makeMultiLanguageValue(txt) }
+								}
+							)
+						else
+							oE.enumeration = iE.enumeration;
+					};
+					//	if (iE.multiple) oE.multiple = true;  ... not any more in future
+
+					return oE
+				}
+				// a property class:
+				function pC2ext(iE: SpecifPropertyClass) {
+					var oE: SpecifPropertyClass = i2ext(iE);
+					if (iE.values) oE.values = iE.values;  // default values
+					oE.dataType = iE.dataType;
+
+					// ToDo: Consider whether it is best to use the incoming dataTypes
+					let dT = LIB.itemByKey(self.dataTypes, iE.dataType);
+
+					/* With SpecIF, he 'multiple' property should be defined at dataType level
+					*  and can be overridden at propertyType level.
+					*  	dT.multiple 	pT.multiple 	pT.multiple		effect
+					*  ---------------------------------------------------------
+					*	undefined		undefined 		undefined		false
+					* 	false			undefined		undefined		false
+					* 	true			undefined		undefined		true
+					* 	undefined		false			undefined		false
+					* 	false			false			undefined		false
+					* 	true 			false			false			false
+					* 	undefined		true 			true			true
+					* 	false			true 			true			true
+					* 	true 			true 			undefined		true
+					*  Include the property only, if is different from the dataType's:
+					if (iE.multiple && !dT.multiple) oE.multiple = true;  */
+
+					// in future only with propertyClasses:
+					if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
+					else if (dT.multiple) oE.multiple = true;
+					if (iE.format) oE.format = iE.format;
+					if (iE.required) oE.required = true;
+
+					// ToDo: select language, if opts.targetLanguage is defined
+					if (iE.values) oE.values = iE.values;
+					if (iE.unit) oE.unit = iE.unit;
+
+					return oE
+				}
+				// common for all instance classes:
+				function aC2ext(iE: any) {
+					var oE = i2ext(iE);
+					if (iE.icon) oE.icon = iE.icon;
+					if (iE.instantiation) oE.instantiation = iE.instantiation;
+					// @ts-ignore - index is ok:
+					if (iE['extends']) oE['extends'] = iE['extends'];
+					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
+					return oE
+				}
+				// a resource class:
+				function rC2ext(iE: SpecifResourceClass) {
+					var oE: SpecifResourceClass = aC2ext(iE) as SpecifResourceClass;
+					// Include "isHeading" in SpecIF only if true:
+					if (iE.isHeading) oE.isHeading = true;
+					// resourceClasses must have a list of propertyClasses with at least one element:
+					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0 || LIB.isKey(oE['extends']))
+						return oE;
+					// else (shouldn't arrive here, at all):
+					console.error('Skipping resourceClass with id="' + iE.id + '" on export, because it does not specify any propertyClasses.');
+					// return undefined ... and the element will not be listed in the list of resourceClasses
+				}
+				// a statement class:
+				function sC2ext(iE: SpecifStatementClass) {
+					var oE: SpecifStatementClass = aC2ext(iE) as SpecifStatementClass;
+					if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
+					if (iE.subjectClasses && iE.subjectClasses.length > 0) oE.subjectClasses = iE.subjectClasses;
+					if (iE.objectClasses && iE.objectClasses.length > 0) oE.objectClasses = iE.objectClasses;
+					return oE
+				}
+				// a property:
+				function p2ext(iE: SpecifProperty) {
+					if (opts.showEmptyProperties || Array.isArray(iE.values) && iE.values.length > 0) {
+						// Skip certain properties;
+						// - if a hidden property is defined with value, it is suppressed only if it has this value
+						// - if the value is undefined, the property is suppressed in all cases
+						let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
+						if (Array.isArray(opts.skipProperties)) {
+							for (var sP of opts.skipProperties) {
+								if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
+							};
+						};
+
+						var oE: SpecifProperty = {
+							class: iE['class'],
+							values: []
+						};
+
+						// According to the schema, all property values are represented by a string
+						// and we want to store them as string to avoid inaccuracies by multiple transformations.
+						let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
+						if (dT.type == XsDataType.String && !dT.enumeration) {
+							// Special treatment of string values:
+							if (opts.targetLanguage) {
+								// Reduce all values to the selected language; is used for
+								// - generation of human readable documents
+								// - formats not supporting multiple languages (such as ReqIF):
+								let txt;
+								// Cycle through all values:
+								for (var v of iE.values) {
+									txt = LIB.languageTextOf(v, opts);
+									if (RE.vocabularyTerm.test(txt)) {
+										if (opts.lookupValues) txt = app.ontology.localize(txt, opts);
+									}
+									else {
+										if (pC.format == SpecifTextFormat.Xhtml) {
+											// Transform to HTML, if possible;
+											// especially for publication, for example using WORD format:
+											txt = txt
+												.replace(/^\s+/, "")  // remove any leading whiteSpace
+												.makeHTML(opts)
+												.replace(/<br ?\/>\n/g, "<br/>");
+											// replace filetypes of linked images:
+											if (opts.allDiagramsAsImage)
+												txt = refDiagramsAsImg(txt);
+										}
+										else {
+											// if it is e.g. a title, remove all formatting:
+											txt = txt
+												.replace(/^\s+/, "")   // remove any leading whiteSpace
+												.stripHTML();
+										};
+									};
+									oE.values.push(LIB.makeMultiLanguageValue(txt));
+								};
+								return oE;
+							};
+							// else, keep all languages and replace filetypes of linked images;
+							// this is the case when creating specif.html, where opts.allDiagramsAsImage without opts.targetLanguage is set:
+							if (opts.allDiagramsAsImage) {
+								let lL;
+								// Cycle through all values:
+								for (var v of iE.values) {
+									lL = [];
+									// Cycle through all languages of a value v:
+									for (var l of v as SpecifMultiLanguageText)
+										lL.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language } : { text: refDiagramsAsImg(l.text) });
+									oE.values.push(lL);
+								};
+								return oE;
+							}
+						};
+						// else, keep the complete data structure:
+						oE.values = iE.values;
+						//					console.debug('p2ext',iE,LIB.languageTextOf( iE.value, opts ),oE.value);
+						return oE;
+					};
+					// skip empty properties:
+					return;
+
+					function refDiagramsAsImg(val: string): string {
+						// Replace all links to application files like BPMN by links to SVG images:
+						let replaced = false;
+						// @ts-ignore - $0 is never read, but must be specified anyways
+						val = val.replace(RE.tagObject, ($0: string, $1: string, $2: string) => {
+							//								console.debug('#a', $0, $1, $2);
+							if ($1) $1 = $1.replace(RE.attrType, ($4: string, $5: string) => {
+								//								console.debug('#b', $4, $5);
+								// ToDo: Further application file formats ... once in use.
+								// Use CONFIG.applTypes ... once appropriate.
+								if (["application/bpmn+xml"].includes($5)) {
+									replaced = true;
+									return 'type="image/svg+xml"'
+								}
+								else
+									return $4;
+							});
+							// @ts-ignore - $6 is never read, but must be specified anyways
+							if (replaced) $1 = $1.replace(RE.attrData, ($6: string, $7: string) => {
+								//								console.debug('#c', $6, $7);
+								return 'data="' + $7.fileName() + '.svg"'
+							});
+							return '<object ' + $1 + $2;
+						});
+						return val;
+					}
+				}
+				// common for all instances:
+				function a2ext(iE: any) {
+					var oE = i2ext(iE);
+					//					console.debug('a2ext',iE,opts);
+					// resources and nodes usually have individual titles, and so we will not lookup:
+					// @ts-ignore - index is ok:
+					oE['class'] = iE['class'];
+					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
+
+					//	let pL = opts.showEmptyProperties ? normalizeProperties(iE, spD) : iE.properties;
+					let pL = iE.properties;
+					if (pL && pL.length > 0) oE.properties = LIB.forAll(pL, p2ext);
+					return oE;
+				}
+				// a resource:
+				function r2ext(iE: SpecifResource) {
+					var oE: SpecifResource = a2ext(iE);
+					// a resource title shall never be looked up (translated);
+					// for example in case of the vocabulary the terms would disappear:
+
+					//					console.debug('resource2ext',iE,oE);
+					return oE;
+				}
+				// a statement:
+				function s2ext(iE: SpecifStatement) {
+					/*	// Skip statements with an open end;
+						// At the end it will be checked, wether all referenced resources resp. statements are listed:
+						if (!iE.subject || iE.subject.id == CONFIG.placeholder
+							|| !iE.object || iE.object.id == CONFIG.placeholder
+						) return;  */
+
+					// The statements usually do use a vocabulary item (and not have an individual title),
+					// so we lookup, if so desired, e.g. when exporting to ePub:
+					var oE: SpecifStatement = a2ext(iE);
+
+					oE.subject = iE.subject;
+					oE.object = iE.object;
+
+					return oE;
+				}
+				// a hierarchy node:
+				function n2ext(iN: SpecifNode) {
+					//					console.debug( 'n2ext', iN );
+					// just take the non-redundant properties (omit 'title', for example):
+					let oN: SpecifNode = {
+						id: iN.id,
+						//	resource: iN.resource,
+						resource: { id: iN.resource.id },  // always reference the latest resource revision
+						changedAt: iN.changedAt
+					};
+
+					if (iN.nodes && iN.nodes.length > 0)
+						oN.nodes = LIB.forAll(iN.nodes, n2ext);
+					if (iN.revision)
+						oN.revision = iN.revision;
+					return oN
+				}
+				function h2ext(iN: SpecifNode) {
+					// Add a hierarchy root, if it is needed and it not present:
+					let r = LIB.itemByKey(self.resources, iN.resource);
+					if (opts && opts.createHierarchyRootIfMissing && nodeIsNoRoot(r)) {
+						console.info("Adding hierarchy root to hierarchy with id '" + iN.id + "'");
+						// 1. Add the referenced resource;
+						// the ids of hierarchy root and resource must be constructed similary as the reqif2specif transformation:
+						let rId = LIB.replacePrefix(CONFIG.prefixHR, iN.id);
+						spD.resources.push({
+							id: rId,
+							class: LIB.makeKey("RC-Folder"),
+							properties: [{
+								class: LIB.makeKey("PC-Name"),
+								values: [[{ text: "Root for " + iN.id }]]
+							}, {
+								class: LIB.makeKey("PC-Type"),
+								values: [[{ text: CONFIG.hierarchyRoot }]]
+							}],
+							changedAt: new Date().toISOString()
+						})
+						// 2. Add the hierarchy root:
+						return {
+							id: CONFIG.prefixN + rId,
+							resource: LIB.makeKey(rId),
+							nodes: [n2ext(iN)],
+							changedAt: new Date().toISOString()
+						}
+					};
+					// else don't add anything:
+					return n2ext(iN)
+				}
+				// a file:
+				function f2ext(iE: SpecifFile): Promise<SpecifFile> {
+					return new Promise(
+						(resolve, reject) => {
+							//							console.debug('f2ext',iE,opts)
+
+							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type)) {
+								/*	var oE: SpecifFile = {
+										id: iE.id,
+										title: iE.title,
+										type: iE.type,
+										changedAt: iE.changedAt
+									};
+									if (iE.revision) oE.revision = iE.revision;
+									if (iE.changedBy) oE.changedBy = iE.changedBy;
+									if (iE.blob) oE.blob = iE.blob;
+									if (iE.dataURL) oE.dataURL = iE.dataURL;
+									resolve(oE); */
+								resolve(iE);
+							}
+							else {
+								// Transform to an image:
+								// Remember to also replace any referencing links in property values!
+								switch (iE.type) {
+									case 'application/bpmn+xml':
+										// Read and render BPMN as SVG:
+										LIB.blob2text(iE, (txt: string) => {
+											bpmn2svg(txt).then(
+												(result) => {
+													let nFileName = iE.title.fileName() + '.svg';
+													resolve({
+														//	blob: new Blob([result.svg], { type: "image/svg+xml; charset=utf-8" }),
+														blob: new Blob([result.svg], { type: "image/svg+xml" }),
+														id: 'F-' + simpleHash(nFileName),
+														title: nFileName,
+														type: 'image/svg+xml',
+														changedAt: iE.changedAt
+													} as SpecifFile)
+												},
+												reject
+											)
+										});
+										break;
+									default:
+										console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
+										resolve({
+											id: 'F-' + simpleHash(iE.title),
+											title: iE.title,
+											changedAt: iE.changedAt
+										} as SpecifFile)
+								}
+							}
+						}
+					)
+				}
+			}
+		)
+	}
+	private toExt_v11(opts?: any): Promise<SpecIF> {
+		// transform self.cache to SpecIF following defined options;
+		// a clone is delivered.
+		// if opts.targetLanguage has no value, all available languages are kept.
+
 //		console.debug('toExt', this, opts );
 		// transform internal data to SpecIF:
 		return new Promise(
@@ -1012,74 +1569,8 @@ class CSpecIF implements SpecIF {
 						}
 					);
 
-			/*	// Add a resource as hierarchyRoot, if needed.
-				// - If none of the hierarchies are a root, a common root is added for all.
-				// - If at least one hierarchy has a root, all others get their own root.
-				// It is assumed,
-				// - that in general SpecIF data do not have a hierarchy root with meta-data.
-				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-				// - the ReqIF import transformation adds a property titled 'dcterms:type' with value CONFIG.hierarchyRoot to each hierarchy root.
-
-					function aHierarchyHasNoRoot(dta: SpecIF): boolean {
-						for (var h of dta.hierarchies) {
-							let r = LIB.itemByKey(dta.resources, h.resource);
-							if (!r) {
-								throw Error("Hierarchy '"+h.id+"' is corrupt");
-							};
-							let ty = LIB.valueByTitle(r, CONFIG.propClassType, dta),
-								rC = LIB.itemByKey(dta.resourceClasses, r['class']);
-							console.debug('aHierarchyHasNoRoot',h,ty,rC);
-							// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
-							// or by the title of the resourceClass:
-							if ((!ty || ty != CONFIG.hierarchyRoot )
-								&& (rC.title != CONFIG.hierarchyRoot))
-								return true;
-						};
-						return false;
-					}
-					console.debug('has root:', spD.hierarchies, aHierarchyHasNoRoot(this));
-
-					let spD = this;
-					if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
-		
-						console.info("Added a hierarchyRoot");
-						let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true, delta: true });
-						['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
-							// @ts-ignore - indexing is fine
-							(li) => { spD[li] = oC[li] }
-						);
-
-						var res: SpecifResource = {
-							id: CONFIG.prefixR + simpleHash(spD.id),
-							class: LIB.makeKey("RC-Folder"),
-							properties: [{
-								class: { id: "PC-Name" },
-								values: [LIB.makeMultiLanguageValue(spD.title)]
-							}, {
-								class: { id: "PC-Type"},
-								values: [LIB.makeMultiLanguageValue(CONFIG.resClassOutline)]
-							}],
-							changedAt: spD.createdAt || new Date().toISOString()
-						};
-						// Add a description property only if it has a value:
-						if (spD.description)
-							LIB.addProperty(res, {
-								class: { id: "PC-Description"},
-								values: [spD.description]
-							});
-						spD.resources.push(r2ext(res));
-						// create a new root instance:
-						spD.hierarchies = [{
-							id: CONFIG.prefixH + res.id,
-							resource: LIB.keyOf(res),
-							// .. and add the previous hierarchies as children:
-							nodes: spD.hierarchies,
-							changedAt: res.changedAt
-						}];
-					};  */
-
 				// Add a resource as hierarchyRoot, if needed.
-				// - all top hierarchies get a hierarchy root, unless they *are* a hierarchy root 
+				// - all top nodes get a hierarchy root, unless they *are* a hierarchy root 
 				// It is assumed,
 				// - that in general SpecIF data do not have a hierarchy root with meta-data.
 				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
@@ -1089,8 +1580,8 @@ class CSpecIF implements SpecIF {
 					return valL.length < 1 || LIB.languageTextOf(valL[0], { targetLanguage: "default" }) != CONFIG.hierarchyRoot
                 }
 				if (opts && opts.createHierarchyRootIfMissing) {
-					for (var i = this.hierarchies.length - 1; i > -1; i--) {
-						let r = LIB.itemByKey(this.resources, this.hierarchies[i].resource);
+					for (var i = this.nodes.length - 1; i > -1; i--) {
+						let r = LIB.itemByKey(this.resources, this.nodes[i].resource);
 						if (nodeIsNoRoot(r)) {
 							// A hierarchy has no root element (as needed for ReqIF);
 							// add any needed classes, so that one or more hierarchy roots can be added later in h2ext:
@@ -1154,7 +1645,7 @@ class CSpecIF implements SpecIF {
 				};
 				LIB.cacheL(spD.resources, LIB.forAll((this.resources), r2ext));
 				LIB.cacheL(spD.statements, LIB.forAll(this.statements, s2ext));
-				LIB.cacheL(spD.hierarchies, LIB.forAll(this.hierarchies, h2ext));
+				LIB.cacheL(spD.hierarchies, LIB.forAll(this.nodes, h2ext));
 
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
@@ -1178,8 +1669,6 @@ class CSpecIF implements SpecIF {
 					if (iE.revision) oE.revision = iE.revision;
 					if (iE.replaces) oE.replaces = iE.replaces;
 					if (iE.changedBy && iE.changedBy != CONFIG.userNameAnonymous) oE.changedBy = iE.changedBy;
-					if (iE.createdAt) oE.createdAt = iE.createdAt;
-					if (iE.createdBy && iE.createdBy != CONFIG.userNameAnonymous) oE.createdBy = iE.createdBy;
 					return oE;
 				}
 				// a data type:
@@ -1610,7 +2099,7 @@ class CSpecIF implements SpecIF {
 				};
 				spD.resources = LIB.forAll((this.resources), r2ext);
 				spD.statements = LIB.forAll(this.statements, s2ext);
-				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
+				spD.hierarchies = LIB.forAll(this.nodes, n2ext);
 
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
@@ -1633,8 +2122,6 @@ class CSpecIF implements SpecIF {
 					if (iE.revision) oE.revision = iE.revision;
 					if (iE.replaces) oE.replaces = iE.replaces;
 					if (iE.changedBy) oE.changedBy = iE.changedBy;
-					if (iE.createdAt) oE.createdAt = iE.createdAt;
-					if (iE.createdBy) oE.createdBy = iE.createdBy;
 					return oE;
 				}
 				// a data type:

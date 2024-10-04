@@ -30,7 +30,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
         + transformResources(specifData.resources)
         + transformStatements(specifData.statements)
         + transformFiles(specifData.files)
-        + transformHierarchies(specifData.hierarchies)
+        + transformHierarchies(specifData.nodes)
 		+ emptyLine();
 
     return resultTtlString
@@ -358,10 +358,10 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
             return '';
     };
 
-    function transformHierarchies(hierarchies: SpecifNodes) {
-        if (isArrayWithContent(hierarchies)){
+    function transformHierarchies(nodes: SpecifNodes) {
+        if (isArrayWithContent(nodes)){
             let hierarchyTtlString = '';
-            hierarchies.forEach(node => {
+            nodes.forEach(node => {
                 hierarchyTtlString += transformNode(node, { root: true });
             });
             return hierarchyTtlString;
