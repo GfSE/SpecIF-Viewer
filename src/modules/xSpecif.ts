@@ -1141,14 +1141,14 @@ class CSpecIF implements SpecIF {
 						spD.createdBy.org = { organizationName: app.me.organization };
 				}
 				else {
-					if (this[names.crBy] && this[names.crBy].email) {
+					if (this.createdBy && this.createdBy.email) {
 						spD.createdBy = {
-							familyName: this[names.crBy].familyName,
-							givenName: this[names.crBy].givenName,
-							email: this[names.crBy].email
+							familyName: this.createdBy.familyName,
+							givenName: this.createdBy.givenName,
+							email: this.createdBy.email
 						};
-						if (this[names.crBy].org && this[names.crBy].org.organizationName)
-							spD.createdBy.org = this[names.crBy].org;
+						if (this.createdBy.org && this.createdBy.org.organizationName)
+							spD.createdBy.org = this.createdBy.org;
 					};
 					// else: don't add createdBy without data
 				};

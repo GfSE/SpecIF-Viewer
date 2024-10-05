@@ -39,7 +39,7 @@ function reqif2Specif(reqifDoc,options) {
         // ReqIF hierarchy roots are SpecIF resources:
         .concat(extractResources("SPECIFICATIONS"));
     xhr.response.statements = extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS"));
-    xhr.response.nodes = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
+    xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
 
     // Get project title from hierarchy roots in case of default;
     // for example the ReqIF exports from Cameo do not have a TITLE:
