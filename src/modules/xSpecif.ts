@@ -274,8 +274,8 @@ class CSpecIF implements SpecIF {
 				function getSchema() {
 					LIB.httpGet({
 						// Get the schema locally, if started locally in the debug phase:
-						// @ts-ignore - 'specifVersion' is defined for versions <1.0
 						url: ( window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
 							(spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema')
 							: '../../SpecIF-Schema/schema/schema.json'
 						),

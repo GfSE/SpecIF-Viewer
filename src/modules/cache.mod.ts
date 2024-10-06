@@ -773,6 +773,8 @@ class CProject implements SpecifProject {
 								LIB.cacheE(pCL, pC);
 							}
 						};
+						// The multiLanguage attribute is set when iterating all property values to collect file references, below.
+
 //						console.debug('6', simpleClone(exD),pCL);
 						return this.readItems('propertyClass', pCL, opts);
 					}
@@ -800,34 +802,47 @@ class CProject implements SpecifProject {
 						exD.dataTypes = dTL as SpecifDataType[];
 
 						// Collect the files referenced by the resource properties of this project:
-						let fL: string[] = [],
+						let refL: string[] = [],
+							pC: SpecifPropertyClass,
 							dT: SpecifDataType;
 						for (var r of exD.resources) {
 							for (var p of r.properties) {
-								dT = LIB.dataTypeOf(p['class'], this.cache);
+								// dT = LIB.dataTypeOf(p['class'], this.cache);
+								pC = LIB.itemByKey(this.cache.propertyClasses, p["class"]);
+								dT = LIB.itemByKey(this.cache.dataTypes, pC.dataType);
 								// Only properties of type 'string' and an individual value may reference a file, not those with an enumerated value.
 								// If we wanted to allow file references in an enumerated value we would have to iterate through all dataTypes, as well.
-								if (dT && !dT.enumeration && dT.type == XsDataType.String) {
-									// Cycle through all values:
-									for (var v of p.values) {
-										// Cycle through all languages of a value:
-										for (var l of v) {
-											// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
-											let re = /data="([^"]+)"/g,
-												mL;
-											// Get multiple references in a single property:
-											// @ts-ignore - in case of XsDataType there is a property 'text'
-											while ((mL = re.exec(l.text)) !== null) {
-												// mL[1] is the file title
-												LIB.cacheE(fL, mL[1]);
+								if (pC && dT) {
+									if (!dT.enumeration && dT.type == XsDataType.String) {
+										// Cycle through all values:
+										for (var v of p.values) {
+											// 1. Take the opportunity and check for multiLanguage texts;
+											//    theoretically different properties can have just one, yet different language ... this is not considered, here.
+											//    At the same time, don't override an explicit 'false':
+											if (pC.multiLanguage==undefined && v.length > 1)
+												pC.multiLanguage = true;
+											// 2. Cycle through all languages of a value to collect the file references:
+											for (var l of v) {
+												// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
+												let re = /data="([^"]+)"/g,
+													mL;
+												// Get multiple references in a single property:
+												// @ts-ignore - in case of XsDataType there is a property 'text'
+												while ((mL = re.exec(l.text)) !== null) {
+													// mL[1] is the file title
+													LIB.cacheE(refL, mL[1]);
+												}
 											}
 										}
 									}
 								}
+								else {
+									console.error("A property of item '"+r.id+"' references non-existing propertyClass or dataType.");
+								}
 							}
 						};
-//						console.debug('8', simpleClone(exD),fL);
-						return this.readItems('file', (f: SpecifFile) => { return fL.includes(f.title) }, opts);
+//						console.debug('8', simpleClone(exD),refL);
+						return this.readItems('file', (f: SpecifFile) => { return refL.includes(f.title) }, opts);
 					}
 				)
 				.then(
