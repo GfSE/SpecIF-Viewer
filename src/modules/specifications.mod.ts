@@ -46,12 +46,12 @@ class CPropertyToShow implements SpecifProperty {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		if (this.dT.enumeration) {
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
-			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
+			this.enumIdL = prp.values.map(v => v.id);  // keep original values (the enumeration ids) for resourceEdit and filter
 			// Replace identifiers of enumerated values by their value as defined in the dataType:
 			// ToDo: Check use of default values
 		//	this.values = this.getEnumValues();
 			// @ts-ignore - this.value is initialized above with other elements of prp
-			this.values = this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value );
+			this.values = this.values.map((v) => LIB.itemById(this.dT.enumeration, v.id).value );
 		};
 
 		// Get the propertyClass' permissions:
@@ -73,7 +73,7 @@ class CPropertyToShow implements SpecifProperty {
 	}
 /*	private getEnumValues() {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
-		return this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value)
+		return this.values.map((v) => LIB.itemById(this.dT.enumeration, v.id).value)
 	} */
 	private allValues(opts: any): string {
 		// Return all values in the language specified;

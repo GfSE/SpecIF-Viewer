@@ -98,7 +98,7 @@ class CSpecifItemNames {
 			this.maxI = 'maxInclusive'
 		};
 
-		let verL = ver.split('.');
+		let verL = ver.split('.').map(n => parseInt(n));
 		if (verL[0] < 1 || verL[0] == 1 && verL[1] < 2) {
 			// for all versions < 1.2:
 			this.nds = 'hierarchies';
@@ -447,7 +447,6 @@ class CSpecIF implements SpecIF {
 						value: opts.normalizeTerms ? lv.map( normalizeLanguageText ) : lv
 					}
 				});
-		//	if (iE.multiple) oE.multiple = true;  ... in future no more with dataTypes
 
 //			console.debug('dataType 2int',iE);
 			return oE;
@@ -859,14 +858,15 @@ class CSpecIF implements SpecIF {
 				fmt: SpecifTextFormat; */
 
 			if (Array.isArray(prp.values)) {
-				// it is SpecIF v1.1 or later;
-				// for all items in the value list of property prp
+				// It is SpecIF v1.1 or later;
+				// for all items in the value list of property prp:
 				return prp.values
 					.map(
 						(val:SpecifValue) => {
 							if (val) {
 								if (dT.enumeration) {
-									return val;
+									// @ts-ignore
+									return val.id ? val : {id:val};  // val.id for versions 1.2 and later
 								};
 
 								switch (dT.type) {
@@ -1226,7 +1226,6 @@ class CSpecIF implements SpecIF {
 						else
 							oE.enumeration = iE.enumeration;
 					};
-					//	if (iE.multiple) oE.multiple = true;  ... not any more in future
 
 					return oE
 				}
@@ -1236,28 +1235,7 @@ class CSpecIF implements SpecIF {
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
 
-					// ToDo: Consider whether it is best to use the incoming dataTypes
-					let dT = LIB.itemByKey(self.dataTypes, iE.dataType);
-
-					/* With SpecIF, he 'multiple' property should be defined at dataType level
-					*  and can be overridden at propertyType level.
-					*  	dT.multiple 	pT.multiple 	pT.multiple		effect
-					*  ---------------------------------------------------------
-					*	undefined		undefined 		undefined		false
-					* 	false			undefined		undefined		false
-					* 	true			undefined		undefined		true
-					* 	undefined		false			undefined		false
-					* 	false			false			undefined		false
-					* 	true 			false			false			false
-					* 	undefined		true 			true			true
-					* 	false			true 			true			true
-					* 	true 			true 			undefined		true
-					*  Include the property only, if is different from the dataType's:
-					if (iE.multiple && !dT.multiple) oE.multiple = true;  */
-
-					// in future only with propertyClasses:
-					if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
-					else if (dT.multiple) oE.multiple = true;
+					if (iE.multiple) oE.multiple = true;
 					if (iE.format) oE.format = iE.format;
 					if (iE.required) oE.required = true;
 
@@ -1550,7 +1528,7 @@ class CSpecIF implements SpecIF {
 			}
 		)
 	}
-	private toExt_v11(opts?: any): Promise<SpecIF> {
+/*	private toExt_v11(opts?: any): Promise<SpecIF> {
 		// transform self.cache to SpecIF following defined options;
 		// a clone is delivered.
 		// if opts.targetLanguage has no value, all available languages are kept.
@@ -1585,7 +1563,12 @@ class CSpecIF implements SpecIF {
 						if (nodeIsNoRoot(r)) {
 							// A hierarchy has no root element (as needed for ReqIF);
 							// add any needed classes, so that one or more hierarchy roots can be added later in h2ext:
-							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */, referencesWithoutRevision: true, delta: true });
+							let oC = app.ontology.generateSpecifClasses({ 
+								terms: [CONFIG.resClassFolder], 
+							//	adoptOntologyDataTypes: true, 
+								referencesWithoutRevision: true, 
+								delta: true
+							});
 							['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
 								// @ts-ignore - indexing is fine
 								(li) => { LIB.cacheL(spD[li], oC[li]) }
@@ -1645,6 +1628,7 @@ class CSpecIF implements SpecIF {
 				};
 				LIB.cacheL(spD.resources, LIB.forAll((this.resources), r2ext));
 				LIB.cacheL(spD.statements, LIB.forAll(this.statements, s2ext));
+				// @ts-ignore - hierarchy is correct vor v1.1
 				LIB.cacheL(spD.hierarchies, LIB.forAll(this.nodes, h2ext));
 
 				if (pend < 1) finalize();  // no files, so finalize right away
@@ -1700,7 +1684,6 @@ class CSpecIF implements SpecIF {
 						else
 							oE.enumeration = iE.enumeration;
 					};
-				//	if (iE.multiple) oE.multiple = true;  ... not any more in future
 
 					return oE
 				}
@@ -1710,28 +1693,7 @@ class CSpecIF implements SpecIF {
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
 
-					// ToDo: Consider whether it is best to use the incoming dataTypes
-					let dT = LIB.itemByKey(self.dataTypes, iE.dataType);
-
-					/* With SpecIF, he 'multiple' property should be defined at dataType level
-					*  and can be overridden at propertyType level.
-					*  	dT.multiple 	pT.multiple 	pT.multiple		effect
-					*  ---------------------------------------------------------
-					*	undefined		undefined 		undefined		false
-					* 	false			undefined		undefined		false
-					* 	true			undefined		undefined		true
-					* 	undefined		false			undefined		false
-					* 	false			false			undefined		false
-					* 	true 			false			false			false
-					* 	undefined		true 			true			true
-					* 	false			true 			true			true
-					* 	true 			true 			undefined		true
-					*  Include the property only, if is different from the dataType's:
-					if (iE.multiple && !dT.multiple) oE.multiple = true;  */
-
-					// in future only with propertyClasses:
-					if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
-					else if (dT.multiple) oE.multiple = true;
+					if (iE.multiple) oE.multiple = true;
 
 					// ToDo: select language, if opts.targetLanguage is defined
 					if (iE.values) oE.values = iE.values;
@@ -1842,6 +1804,10 @@ class CSpecIF implements SpecIF {
 								return oE;
 							}
 						};
+						// else
+						if (Array.isArray(dT.enumeration)) {
+							oE.values = iE.values.map(v => v.id);  // for <v1.2, the pointers to enumerated values are not enclosed in an object with label id
+						};
 						// else, keep the complete data structure:
 						oE.values = iE.values;
 						//					console.debug('p2ext',iE,LIB.languageTextOf( iE.value, opts ),oE.value);
@@ -1902,11 +1868,11 @@ class CSpecIF implements SpecIF {
 				}
 				// a statement:
 				function s2ext(iE: SpecifStatement) {
-				/*	// Skip statements with an open end;
+					// Skip statements with an open end;
 					// At the end it will be checked, wether all referenced resources resp. statements are listed:
-					if (!iE.subject || iE.subject.id == CONFIG.placeholder
-						|| !iE.object || iE.object.id == CONFIG.placeholder
-					) return;  */
+				//	if (!iE.subject || iE.subject.id == CONFIG.placeholder
+				//		|| !iE.object || iE.object.id == CONFIG.placeholder
+				//	) return;
 
 					// The statements usually do use a vocabulary item (and not have an individual title),
 					// so we lookup, if so desired, e.g. when exporting to ePub:
@@ -1972,17 +1938,17 @@ class CSpecIF implements SpecIF {
 //							console.debug('f2ext',iE,opts)
 
 							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type) ) {
-							/*	var oE: SpecifFile = {
-									id: iE.id,
-									title: iE.title,
-									type: iE.type,
-									changedAt: iE.changedAt
-								};
-								if (iE.revision) oE.revision = iE.revision;
-								if (iE.changedBy) oE.changedBy = iE.changedBy;
-								if (iE.blob) oE.blob = iE.blob;
-								if (iE.dataURL) oE.dataURL = iE.dataURL;
-								resolve(oE); */
+							//	var oE: SpecifFile = {
+							//		id: iE.id,
+							//		title: iE.title,
+							//		type: iE.type,
+							//		changedAt: iE.changedAt
+							//	};
+							//	if (iE.revision) oE.revision = iE.revision;
+							//	if (iE.changedBy) oE.changedBy = iE.changedBy;
+							//	if (iE.blob) oE.blob = iE.blob;
+							//	if (iE.dataURL) oE.dataURL = iE.dataURL;
+							//	resolve(oE);
 								resolve(iE);
 							}
 							else {
@@ -2022,7 +1988,7 @@ class CSpecIF implements SpecIF {
 				}
 			}
 		)
-	}
+	} */
 	private toExt_v10(opts?: any): Promise<SpecIF> {
 		// transform self.cache to SpecIF v1.0 following defined options;
 		// a clone is delivered.
@@ -2099,6 +2065,7 @@ class CSpecIF implements SpecIF {
 				};
 				spD.resources = LIB.forAll((this.resources), r2ext);
 				spD.statements = LIB.forAll(this.statements, s2ext);
+				// @ts-ignore - hierarchy is correct vor v1.0
 				spD.hierarchies = LIB.forAll(this.nodes, n2ext);
 
 				if (pend < 1) finalize();  // no files, so finalize right away
@@ -2155,9 +2122,8 @@ class CSpecIF implements SpecIF {
 					}
 					else
 						oE.type = iE.type;
-					if (iE.multiple) oE.multiple = true;
 
-					return oE
+					return oE;
 				}
 				// a property class:
 				function pC2ext(iE: SpecifPropertyClass) {
@@ -2165,25 +2131,7 @@ class CSpecIF implements SpecIF {
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
 
-					let dT = LIB.itemByKey(spD.dataTypes, iE.dataType);
-
-					/* With SpecIF, he 'multiple' property should be defined at dataType level
-					*  and can be overridden at propertyType level.
-					*  	dT.multiple 	pT.multiple 	pT.multiple		effect
-					*  ---------------------------------------------------------
-					*	undefined		undefined 		undefined		false
-					* 	false			undefined		undefined		false
-					* 	true			undefined		undefined		true
-					* 	undefined		false			undefined		false
-					* 	false			false			undefined		false
-					* 	true 			false			false			false
-					* 	undefined		true 			true			true
-					* 	false			true 			true			true
-					* 	true 			true 			undefined		true
-
- 					*  Include the property only, if is different from the dataType's: */
-					if (iE.multiple && !dT.multiple) oE.multiple = true;
-					//	else if (iE.multiple == false && dT.multiple) oE.multiple = false
+					if (iE.multiple) oE.multiple = true;
 
 					if (iE.values) {
 						// @ts-ignore - 'value' in case of SpecIF v1.0:
@@ -2252,7 +2200,7 @@ class CSpecIF implements SpecIF {
 						oE.value = "";
 						for (var v of iE.values) {
 							// @ts-ignore - 'value' is ok for v1.0
-							oE.value += (oE.value.length>0? ", ":"") + v
+							oE.value += (oE.value.length>0? ", ":"") + v.id
 						};
 						return oE
 					};

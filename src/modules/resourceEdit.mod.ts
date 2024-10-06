@@ -49,7 +49,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			);
 
 //			console.debug('Enumeration', this, ti, entryL);
-			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple)
+			if (this.pC.multiple)
 				return makeCheckboxField(
 					ti,
 					entryL,
@@ -220,7 +220,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		if (this.dT.enumeration) {
 			let valL: string[];
 //			console.debug('xs:enumeration',p,pC,separatedValues,vals);
-			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple) {
+			if (this.pC.multiple) {
 //				console.debug( '*', p, checkboxValues(this.title ));
 				valL = checkboxValues(ti);
 			}
@@ -233,7 +233,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
 			// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
 			// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-			return { class: LIB.makeKey(this.pC.id), values: valL };
+			return { class: LIB.makeKey(this.pC.id), values: valL.map(v => { return { id: v } }) };
 		};
 
 		// Otherwise take the value itself:

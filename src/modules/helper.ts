@@ -613,8 +613,7 @@ LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean =>{
         if (LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0) return false;
     };
     // the list of enumerated values *is* equal,
-    // finally the multiple flag must be equal:
-    return LIB.equalBoolean(refE.multiple, newE.multiple)
+    return true
 }
 LIB.equalPC = (refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean =>{
     // return true, if reference and new propertyClass are equal.

@@ -805,7 +805,9 @@ class CProject implements SpecifProject {
 						for (var r of exD.resources) {
 							for (var p of r.properties) {
 								dT = LIB.dataTypeOf(p['class'], this.cache);
-								if (dT && dT.type == XsDataType.String) {
+								// Only properties of type 'string' and an individual value may reference a file, not those with an enumerated value.
+								// If we wanted to allow file references in an enumerated value we would have to iterate through all dataTypes, as well.
+								if (dT && !dT.enumeration && dT.type == XsDataType.String) {
 									// Cycle through all values:
 									for (var v of p.values) {
 										// Cycle through all languages of a value:

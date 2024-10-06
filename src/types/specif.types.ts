@@ -1279,7 +1279,7 @@ enum SpecifTextFormat {
  * First option for properties with dataType 'xs:string', second option for all others. Note that SpecIF represents *all* values including number and boolean as string.
  * @export
  */
-type SpecifValue = SpecifMultiLanguageText | string
+type SpecifValue = SpecifMultiLanguageText | string | { id: SpecifId }
 
 /**
  * If 'multiple' of the propertyClass is undefined or false, the array must contain one item. If the value is unknown, omit the whole property. By default, the class' value applies.
