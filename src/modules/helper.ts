@@ -747,7 +747,9 @@ LIB.classifyProperties = (el: SpecifResource, data: SpecIF): void => {
     return clPr;
 } */
 
-LIB.versionOf = (spD: SpecIF | CSpecIF):string => {
+LIB.versionOf = (spD: SpecIF | CSpecIF): string => {
+    // Get the schema version of a SpecIF package. 
+    // Applies to both the older versions <v1.0 and the recent ones.
     return spD.specifVersion || RE.versionFromPath.exec(spD['$schema'])[1];
 }
 LIB.hasContent = (pV: string): boolean => {
@@ -852,7 +854,7 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
                     dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
                     if (dT) {
                         valL = valL.concat( dT.enumeration ?
-                            p.values.map((v) => { return LIB.itemById(dT.enumeration, v).value })
+                            p.values.map((v) => { return LIB.itemById(dT.enumeration, v.id).value })
                             : p.values
                         )
                     }
