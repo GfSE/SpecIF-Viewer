@@ -91,8 +91,9 @@ class CPropertyToEdit extends CPropertyToShow  {
 						return makeTextField(
 							ti,
 							this.get(localOpts).escapeHTML(),
-							// - open an input text-area, if it is a description property
-							// - open an input line, otherwise
+							// Open
+							// - an input text-area, if it is a description property
+							// - an input line, otherwise
 							{
 								typ: app.ontology.propertyClassIsText(this.pC.title) ? 'area' : 'line',
 								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.includes(this.pC.title)) ? 'line' : 'area',
