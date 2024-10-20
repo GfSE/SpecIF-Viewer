@@ -21,14 +21,208 @@
 <script type="text/javascript">
 
 // This is a template for SpecIF apps: The filename is different, but the content is identical.
-// Thus, to create a new SpecIF app, just copy this file and rename it with the desired app title.
-// Both a filename with extension '.html' and a filename without extension are accepted.
-// A corresponding file named "filename.js" containing the main code will be loaded, see below.
- 
-let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec( window.location.href )[1];
-//  fileName = /.*\/([^.?#]*)(?:\.html)?(?:\?[^#]*)?(?:#.*)?$/.exec( window.location.href )[1];
+// Thus, to create a new SpecIF app
+// - copy this file and rename it with the desired app title
+// - in the moduleTree below, include the modules to load for the particular app.
 
-// Get four fundamental libraries in parallel, then initialize the moduleManager using 'moduleManager.init' ..
+    // App-specific code called by the moduleManager after initializing;
+    // the moduleTree defines the modules to load:
+    function SpecifApp() {
+        "use strict";
+
+        // construct main app:
+        var self = {};
+
+        // Define the module hierarchy; it will be used to load the modules and to control the views later on:
+        self.moduleTree = {
+            // Define
+            // - name: the modules to load as specified in 'moduleManager.js'
+            // - loadAs: name for execution (addressable javascript object)
+            // - the hierarchy of views using implicit actions hide/show or refresh
+            // - the explicit actions independent of any view
+
+            // Let's start at the top level:
+            // no name, thus no additional script file will be loaded at top level
+            view: '#app',
+            selector: '#pageSelector',			// DOM element to choose the view of a child (top level)
+            selectorType: 'btns',
+            children: [{
+                name: 'profileAnonymous',
+                loadAs: 'me'					// the name of the controller object to construct
+                // no view
+            }, {
+                name: 'cache',
+                loadAs: 'projects'
+                // no view
+                /*	children: [{
+                        name: 'serverPouch',
+                        loadAs: 'server'
+                        // no view
+                    }] */
+            }, {
+                name: 'importAny',
+                // no loadAs, so name will be used for the controller object
+                // This is a view of the parent:
+                view: '#' + CONFIG.importAny,	// uses implicit actions show/hide
+                viewClass: 'contentWide',		// whole width under control of the view
+                label: i18n.BtnImport,
+                selectedBy: '#selectImport',	// DOM element in parent's selector to choose this view
+                // no selector: the children don't have views
+                children: [{
+                    name: 'ioSpecif'
+                }, {
+                    name: 'ioArchimate'
+                }, {
+                    name: 'ioBpmn'
+                }, {
+                    name: 'ioSysml'
+                }, {
+                    name: 'ioReqif'
+                }, {
+                    name: 'ioXls'
+                    /*	}, {
+                            name: 'ioDdpSchema'
+                        },{
+                            name: 'ioRdf' */
+                }]
+            }, {
+                name: CONFIG.specifications,
+                loadAs: 'specs',					// the name of the controller object to construct
+                // This is a view of the parent:
+                view: '#' + CONFIG.specifications,	// uses implicit actions show/hide
+                label: i18n.BtnEdit,
+                selectedBy: '#selectSpecs',			// DOM element in parent's selector to choose this view
+                // To control the views of the children:
+                selector: '#specsSelector',			// DOM element to choose the view of a child (next level)
+                selectorType: 'tabs',
+                children: [{
+                    // nothing to load, code is contained in parent's file
+                    // Definitions as a view of the parent:
+                    view: '#' + CONFIG.objectList,	// uses implicit action refresh at parent level
+                    byDefault: true,				// select this view at the current level, if unspecified
+                    viewClass: 'content',
+                    label: i18n.TabDocument,
+                    selectedBy: '#selectDocument'	// DOM element in parent's selector to choose this view
+                }, {
+                    // nothing to load, code is contained in parent's file
+                    // Definitions as a view of the parent:
+                    view: '#' + CONFIG.relations,		// uses implicit action refresh at parent level
+                    viewClass: 'content',
+                    label: i18n.TabRelations,
+                    selectedBy: '#selectStatements',// DOM element in parent's selector to choose this view
+                    children: [{
+                        name: 'vicinityGraph'
+                        // no view
+                    }]
+                }, {
+                    name: CONFIG.objectFilter,
+                    // no loadAs, so name will be used for the controller object
+                    // Definitions as a view of the parent:
+                    view: '#' + CONFIG.objectFilter,	// uses implicit action refresh at parent level
+                    viewClass: 'contentWide',		// whole width under control of the view
+                    label: i18n.TabFilter,
+                    selectedBy: '#selectFilters'	// DOM element in parent's selector to choose this view
+                }, {
+                    name: CONFIG.reports,
+                    // no loadAs, so name will be used for the controller object
+                    // Definitions as a view of the parent:
+                    view: '#' + CONFIG.reports,		// uses implicit action refresh at parent level
+                    viewClass: 'contentWide',		// whole width under control of the view
+                    label: i18n.TabReports,
+                    selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
+                }, {
+                    name: CONFIG.resourceEdit,
+                    requires: [CONFIG.specifications]	// load as soon as the specified modules are ready
+                    // no loadAs, so name will be used for the controller object
+                    // no view; just a modal dialog will be used
+                    // no selector
+                    // The modal dialog will be called by pressing an item action button; 
+                    //   the function to call is added manually in view 'CONFIG.specifications'.
+                }, {
+                    name: CONFIG.resourceLink
+                    // as above
+                }]
+            }, {
+                action: 'app.export()',
+                label: i18n.BtnExport,
+                selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
+                // no selector: the children don't have views
+                children: [{
+                    name: 'toHtml'
+                }, {
+                    name: 'toEpub'
+                }, {
+                    name: 'toOxml'
+                }, {
+                    name: 'toTurtle'
+                }]
+            }, {
+                name: 'about',
+                view: '#about',
+                viewClass: 'contentWide',			// whole width under control of the view
+                label: i18n.IcoAbout,
+                selectedBy: '#selectAbout'			// DOM element in parent's selector to choose this view
+            }]
+        };
+
+        // IE does not support ()=>{..} --> "syntax error" at load time.
+        self.init = function () {
+            // must set it here, because the language files must be read first:
+            document.title = self.title = i18n.LblEditor;
+
+            // React on Browser Back/Forward buttons:
+            window.addEventListener("hashchange", self.show);
+            // Warn before leaving the page (browser back button or tab deletion ... or outgoing link):
+            window.onbeforeunload = function () {
+                return "You are about to leave this application - did you save any changes you made?";
+            };
+
+            moduleManager.load(self.moduleTree, { done: self.login });
+        };
+        self.login = function () {
+            console.info(self.title + " " + CONFIG.appVersion + " started!");
+            self.me.login()
+                .then(
+                    self.show,
+                    self.logout
+                )
+        };
+        self.show = function () {
+            var uP = getUrlParams(), v;
+            if (!self[CONFIG.projects].selected
+                || !self[CONFIG.projects].selected.isLoaded()
+                || uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self[CONFIG.projects].selected.id
+                || uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length > 0)
+                // - no project is loaded
+                // - a project id is found in the URL parameters and it differs from the one of the loaded project
+                // - an URL parameter 'import' has been found:
+                v = '#' + CONFIG.importAny
+            else
+                v = '#' + (uP[CONFIG.keyView] || CONFIG.specifications);
+            //		console.debug( 'app.show', uP, v );
+            moduleManager.show({ view: v, urlParams: uP });
+        };
+        self.export = function () {
+            if (self[CONFIG.projects].selected && self[CONFIG.projects].selected.isLoaded())
+                self[CONFIG.projects].selected.chooseFormatAndExport();
+            else
+                message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
+        };
+        /*	self.updateMe = function() {
+                self.me.beginUpdate();
+            }; */
+        self.logout = function () {
+            self.me.logout();
+            self.hide();
+        };
+        self.hide = function () {
+            // hide the app and show the login dialog:
+            // ToDo
+        };
+        self.init();
+        return self;
+    }
+
 	// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 	function getScript(url) {
 		var el = document.createElement('script');
@@ -39,11 +233,13 @@ let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec( window.location.href )[
 		el.src = url;
 		document.body.appendChild(el)
 	}
-let pend=4;
+
+// Get three fundamental libraries in parallel, then initialize the moduleManager using 'moduleManager.init' ..
+let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec(window.location.href)[1],
+    pend=3;
 getScript( 'https://code.jquery.com/jquery-3.7.1.min.js' );
 getScript( './config/definitions.js?'+ Date.now().toString() ); // with cache-busting
 getScript( './config/moduleManager.js?'+ Date.now().toString() );
-getScript( './modules/'+fileName+'.js?'+ Date.now().toString() );
 
 </script>
 <noscript>

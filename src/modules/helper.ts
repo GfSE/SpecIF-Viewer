@@ -57,7 +57,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val || '') //.unescapeJSON();  // dateTime properties can be undefined ... perhaps others as well.
+    val = LIB.noCode(val || ''); //.unescapeJSON();  // dateTime properties can be undefined ... perhaps others as well.
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
@@ -79,7 +79,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     return fG;
 }
 function setTextValue( tag:string, val:string ):void {
-    val = LIB.noCode(val || '') //.unescapeJSON();
+    val = LIB.noCode(val || ''); //.unescapeJSON();
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
     if (el && el.nodeName && el.nodeName.toLowerCase() == 'div') {

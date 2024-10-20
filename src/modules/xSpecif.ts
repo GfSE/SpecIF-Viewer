@@ -866,7 +866,7 @@ class CSpecIF implements SpecIF {
 							if (val) {
 								if (dT.enumeration) {
 									// @ts-ignore
-									return val.id ? val : {id:val};  // val.id for versions 1.2 and later
+									return val.id ? val : { id: val };  // for versions 1.2 and later, val is an object with property 'id'
 								};
 
 								switch (dT.type) {
@@ -950,9 +950,10 @@ class CSpecIF implements SpecIF {
 						// in SpecIF <v1.1 enumerations are implictly of base-type xs:string:
 						if (dT.enumeration) {
 							// in SpecIF <1.1 multiple enumeration ids were in a comma-separated string;
-							// starting v1.1 they are separate list items:
+							// starting v1.1 they are separate list items,
+							// starting v1.2 they are a list of objects with a property 'id':
 							let vL: string[] = LIB.cleanValue(prp.value).split(',');
-							return vL.map( (v: string) => { return v.trim() });
+							return vL.map((v: string) => { return { id: v.trim() } });
 						};
 
 						let vL = Array.isArray(prp.value) ?
