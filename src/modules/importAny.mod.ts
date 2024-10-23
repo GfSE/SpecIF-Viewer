@@ -71,14 +71,14 @@ moduleManager.construct({
 			label:'BPMN',
 			extensions: [".bpmn"],
 			help: i18n.MsgImportBpmn
-		}, {
+	/*	}, {
 			id: 'sysml',
 			name: 'ioSysml',
 			desc: 'System Modeling Language',
 			label: 'UML/SysML',
 			extensions: [".mdzip"],
 		//	extensions: [".xml", ".xmi", ".model"],
-			help: "Experimental: Import an XMI file from Cameo v19.0."
+			help: "Experimental: Import an XMI file from Cameo v19.0." */
 		}, {
 			id: 'reqif',
 			name: 'ioReqif',

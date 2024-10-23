@@ -46,8 +46,8 @@ function SpecifApp():IApp {
 				name: 'ioArchimate'
 			}, {
 				name: 'ioBpmn'
-			}, {
-				name: 'ioSysml'
+		/*	}, {
+				name: 'ioSysml' */
 			}, {
 				name: 'ioReqif'
 			}, {
