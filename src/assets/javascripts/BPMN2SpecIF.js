@@ -7,7 +7,7 @@
 	(C)copyright adesso SE (http://adesso.de) and enso managers gmbh (http://www.enso-managers.de)
 	Author: Robert.Kanitz@adesso.de and se@enso-managers.de
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues) 
 */
 
 function BPMN2Specif( xmlString, options ) {

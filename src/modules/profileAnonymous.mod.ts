@@ -3,8 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
-    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*  Log into a special account CONFIG.userNameAnonymous/CONFIG.passwordAnonymous.  The server must have a corresponding user, of course.
 	The adminstrators must take care that only roles and content are made available to this user which may be accessed publicly.

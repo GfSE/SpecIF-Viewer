@@ -471,10 +471,10 @@ interface SpecifDataType {
     enumeration?: SpecifEnumeratedValues;
     /**
      * 
-     * @type {boolean}
+     * @type {SpecifKeys}
      * @memberof SpecifDataType
      */
-    multiple?: boolean;
+    sequence?: SpecifKeys;
     /**
      * 
      * @type {SpecifDateTime}
@@ -500,7 +500,8 @@ enum XsDataType {
     AnyURI = <any> 'xs:anyURI',
     DateTime = <any> 'xs:dateTime',
     Duration = <any> 'xs:duration',
-    String = <any> 'xs:string'
+    String = <any> 'xs:string',
+    ComplexType = <any>'xs:complexType'
 }
 
 /**
@@ -1276,10 +1277,13 @@ enum SpecifTextFormat {
 }
 
 /**
- * First option for properties with dataType 'xs:string', second option for all others. Note that SpecIF represents *all* values including number and boolean as string.
+ * First option for properties with dataType 'xs:string', second option for all others.
+ * Third option are pointers to an enumerated value of the dataType.
+ * Forth option are values of a complex dataType.
+ * Note that SpecIF represents *all* values including number and boolean as string.
  * @export
  */
-type SpecifValue = SpecifMultiLanguageText | string | { id: SpecifId }
+type SpecifValue = SpecifMultiLanguageText | string | { id: SpecifId } | SpecifValues
 
 /**
  * If 'multiple' of the propertyClass is undefined or false, the array must contain one item. If the value is unknown, omit the whole property. By default, the class' value applies.

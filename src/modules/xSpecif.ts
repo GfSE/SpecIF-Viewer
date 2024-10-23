@@ -3,8 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
-    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 class CSpecifItemNames {
@@ -145,6 +144,13 @@ class CSpecIF implements SpecIF {
 	//	console.warn("Version " + spD.specifVersion + " is not supported.");
 		return false;
 	}
+	private isOntology(specifData: any) {
+		return (
+			specifData.id.includes("Ontology")
+			&& Array.isArray(specifData.title) && specifData.title[0] && specifData.title[0]['text']
+			&& specifData.title[0]['text'].includes("Ontology")
+		);
+	};
 	set(spD: any, opts: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
@@ -176,8 +182,8 @@ class CSpecIF implements SpecIF {
 		)
 	} 
 	get(opts?: any): Promise<SpecIF> {
-		if (opts && opts.v10)
-			return this.toExt_v10(opts);
+	//	if (opts && opts.v10)
+	//		return this.toExt_v10(opts);
 		return this.toExt(opts);
 	}
 	private check(spD: SpecIF, opts: any): Promise<SpecIF> {
@@ -288,13 +294,6 @@ class CSpecIF implements SpecIF {
 			}
 		);
 	}
-	private isOntology(specifData: any) {
-		return (
-			specifData.id.includes("Ontology")
-			&& Array.isArray(specifData.title) && specifData.title[0] && specifData.title[0]['text']
-			&& specifData.title[0]['text'].includes("Ontology")
-		);
-	};
 	private toInt(spD: any, opts: any):resultMsg {
 	//	if (!this.isValid(spD)) return;
 
@@ -416,6 +415,10 @@ class CSpecIF implements SpecIF {
 				case XsDataType.String:
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
+					break;
+				case XsDataType.ComplexType:
+					// Starting with v1.2 a complex dataType has a sequence of elements:
+					oE.sequence = iE.sequence;
 			};
 
 			// Look for enumerated values;
@@ -473,6 +476,7 @@ class CSpecIF implements SpecIF {
 			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
 			if (dT) {
 				if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
+				// @ts-ignore - dT.multiple does exist with <v1.2
 				else if (dT.multiple) oE.multiple = true;
 			}
 			else {
@@ -861,82 +865,92 @@ class CSpecIF implements SpecIF {
 				// It is SpecIF v1.1 or later;
 				// for all items in the value list of property prp:
 				return prp.values
-					.map(
-						(val:SpecifValue) => {
-							if (val) {
-								if (dT.enumeration) {
-									// @ts-ignore
-									return val.id ? val : { id: val };  // for versions 1.2 and later, val is an object with property 'id'
+				.map(
+					makeValue
+				)
+				.filter(
+					(p: any) => !!p
+				);
+
+				function makeValue(val: SpecifValue): SpecifValue | undefined {
+					if (val) {
+						if (dT.enumeration) {
+							// @ts-ignore
+							return val.id ? val : { id: val };  // for versions 1.2 and later, val is an object with property 'id'
+						};
+
+						switch (dT.type) {
+							// we are using the transformed dataTypes, but the base dataTypes are still original;
+							case XsDataType.String:
+								// Values of type xs:string are permitted by the schema, but not by the constraints.
+								// To make the import more robust, string values are accepted and transformed to a multiLanguageText:
+								if (typeof (val) == 'string') {
+									if (val.length < 1) return // undefined
+									console.warn("With SpecIF v1.1 and later, a property of type '" + XsDataType.String + "' should be a multi-language text.");
+									val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
 								};
 
-								switch (dT.type) {
-									// we are using the transformed dataTypes, but the base dataTypes are still original;
-									case XsDataType.String:
-										// Values of type xs:string are permitted by the schema, but not by the constraints.
-										// To make the import more robust, string values are accepted and transformed to a multiLanguageText:
-										if (typeof (val) == 'string') {
-											if (val.length<1) return // undefined
-											console.warn("With SpecIF v1.1 and later, a property of type '" + XsDataType.String + "' should be a multi-language text.");
-											val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
-										};
+								/*	fmt = fmt
+										|| app.ontology.getTermValue("propertyClass", pC.title, "SpecIF:TextFormat")
+										|| CONFIG.excludedFromFormatting.includes(pC.title) ? "plain" : val[0].format
+										|| "plain";   --> doesn't work for some reason, result is always 'plain'.
+									if (!fmt)
+										fmt = app.ontology.propertyClassIsFormatted(pC.title);
+									if (!fmt)
+										// @ts-ignore
+										fmt = CONFIG.excludedFromFormatting.includes(pC.title) ? SpecifTextFormat.Plain : val[0].format;
+									if (!fmt)
+										fmt = SpecifTextFormat.Plain; */
 
-									/*	fmt = fmt
-											|| app.ontology.getTermValue("propertyClass", pC.title, "SpecIF:TextFormat")
-											|| CONFIG.excludedFromFormatting.includes(pC.title) ? "plain" : val[0].format
-											|| "plain";   --> doesn't work for some reason, result is always 'plain'.
-										if (!fmt)
-											fmt = app.ontology.propertyClassIsFormatted(pC.title);
-										if (!fmt)
-											// @ts-ignore
-											fmt = CONFIG.excludedFromFormatting.includes(pC.title) ? SpecifTextFormat.Plain : val[0].format;
-										if (!fmt)
-											fmt = SpecifTextFormat.Plain; */
-
-										// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
-										if (LIB.multiLanguageValueHasContent(val) )
-											// @ts-ignore
-											return val.map(
-													(singleLang: SpecifLanguageText) => {
-														// - Sometimes a Windows path is given ('\') -> transform it to web-style ('/');
-														// - don't import the format for values - it is defined in the propertyClass: 
-												/*		singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
-												//		singleLang.format = fmt;
-														return singleLang; */
-														let sl:any = { text: LIB.uriBack2slash(LIB.cleanValue(singleLang.text)) };
-														if (singleLang.language) sl.language = singleLang.language;
-														return sl;
-													}
-												)
-												.filter(
-													(sl: SpecifLanguageText) => !!sl.text
-												)
-										else
-											return; // undefined
-									case XsDataType.DateTime:
-										if(typeof(val)=='string')
-											return makeISODate(LIB.cleanValue(val))
-										else
-											throw "Value of property "+prp.id+" with class "+prp['class'].id+" must be a string.";
-									case XsDataType.Boolean:
-										if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
-											return "true";
-										if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
-											return "false";
-										console.warn('Unknown boolean value '+ LIB.cleanValue(val) + ' skipped.');
-										break;
-									default:
-										// According to the schema, all property values are represented by a string
-										// and internally they are stored as string as well to avoid inaccuracies
-										// by multiple transformations:
-										return LIB.cleanValue(val);
-								}
-							}
-						//	return;  // undefined --> no element in the returned array
+								// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
+								if (LIB.multiLanguageValueHasContent(val))
+									// @ts-ignore
+									return val.map(
+										(singleLang: SpecifLanguageText) => {
+											// - Sometimes a Windows path is given ('\') -> transform it to web-style ('/');
+											// - don't import the format for values - it is defined in the propertyClass: 
+											/*		singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+											//		singleLang.format = fmt;
+													return singleLang; */
+											let sl: any = { text: LIB.uriBack2slash(LIB.cleanValue(singleLang.text)) };
+											if (singleLang.language) sl.language = singleLang.language;
+											return sl;
+										}
+									)
+										.filter(
+											(sl: SpecifLanguageText) => !!sl.text
+										)
+								else
+									return; // undefined
+							case XsDataType.DateTime:
+								if (typeof (val) == 'string')
+									return makeISODate(LIB.cleanValue(val))
+								else
+									throw Error("Value of property " + prp.id + " with class " + prp['class'].id + " must be a string.");
+							case XsDataType.Boolean:
+								if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
+									return "true";
+								if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
+									return "false";
+								console.warn('Unknown boolean value ' + LIB.cleanValue(val) + ' skipped.');
+								break;
+							case XsDataType.ComplexType:
+								if (Array.isArray(val) && dT.sequence.length == val.length)
+									return val.map(
+										// no need to transform or repair any older value:
+										LIB.cleanValue
+									);
+								else
+									throw Error("Importing the value of a complexType: Number of values is not equal to the dataType's sequence length.");
+							default:
+								// According to the schema, all property values are represented by a string
+								// and internally they are stored as string as well to avoid inaccuracies
+								// by multiple transformations:
+								return LIB.cleanValue(val);
 						}
-					)
-					.filter(
-						(p:any) => !!p 
-					)
+					}
+					//	return;  // undefined --> no element in the returned array
+				}
 			};
 			if (LIB.isString(prp.value) || LIB.isMultiLanguageValue(prp.value)) {
 				// it is SpecIF < v1.1:
@@ -1211,6 +1225,10 @@ class CSpecIF implements SpecIF {
 							break;
 						case XsDataType.String:
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
+							break;
+						case XsDataType.ComplexType:
+							// Starting with v1.2 a complex dataType has a sequence of elements:
+							oE.sequence = iE.sequence;
 					};
 					// Look for enumerated values;
 					// every dataType except xs:boolean may have enumerated values:
@@ -1658,6 +1676,13 @@ class CSpecIF implements SpecIF {
 				}
 				// a data type:
 				function dT2ext(iE: SpecifDataType) {
+					
+					// If it is a complex dataType, skip it:
+					if(iE.type == XsDataType.ComplexType ) {
+						console.info("Complex dataType '"+iE.id+"' skipped, because it is not supported with SpecIF version < 1.2 ");
+						return // undefined
+					};
+
 					var oE: SpecifDataType = i2ext(iE);
 					oE.type = iE.type;
 					switch (iE.type) {
@@ -1690,6 +1715,10 @@ class CSpecIF implements SpecIF {
 				}
 				// a property class:
 				function pC2ext(iE: SpecifPropertyClass) {
+					// Skip propertyClass, if it references a non-existing dataType;
+					// for example, complexTypes are omitted, because they aren't supported with SpecIF version <1.2:
+					// ToDo
+
 					var oE: SpecifPropertyClass = i2ext(iE);
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
@@ -1735,6 +1764,10 @@ class CSpecIF implements SpecIF {
 				}
 				// a property:
 				function p2ext(iE: SpecifProperty) {
+					// Skip property, if it references a non-existing propertyClass;
+					// for example, complexTypes are omitted, because they aren't supported with SpecIF version <1.2:
+					// ToDo
+
 					if (opts.showEmptyProperties || Array.isArray(iE.values) && iE.values.length>0) {
 						// Skip certain properties;
 						// - if a hidden property is defined with value, it is suppressed only if it has this value
@@ -1989,7 +2022,7 @@ class CSpecIF implements SpecIF {
 				}
 			}
 		)
-	} */
+	}
 	private toExt_v10(opts?: any): Promise<SpecIF> {
 		// transform self.cache to SpecIF v1.0 following defined options;
 		// a clone is delivered.
@@ -2094,6 +2127,13 @@ class CSpecIF implements SpecIF {
 				}
 				// a data type:
 				function dT2ext(iE: SpecifDataType) {
+
+					// If it is a complex dataType, skip it:
+					if (iE.type == XsDataType.ComplexType) {
+						console.info("Complex dataType '" + iE.id + "' skipped, because it is not supported with SpecIF version < 1.2 ");
+						return // undefined
+					};
+
 					var oE: SpecifDataType = i2ext(iE);
 					switch (iE.type) {
 						case XsDataType.Double:
@@ -2128,6 +2168,11 @@ class CSpecIF implements SpecIF {
 				}
 				// a property class:
 				function pC2ext(iE: SpecifPropertyClass) {
+
+					// Skip propertyClass, if it references a non-existing dataType;
+					// for example, complexTypes are omitted, because they aren't supported with SpecIF version <1.2:
+					// ToDo
+
 					var oE: SpecifPropertyClass = i2ext(iE);
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
@@ -2172,6 +2217,10 @@ class CSpecIF implements SpecIF {
 				}
 				// a property:
 				function p2ext(iE: SpecifProperty) {
+					// Skip property, if it references a non-existing propertyClass;
+					// for example, complexTypes are omitted, because they aren't supported with SpecIF version <1.2:
+					// ToDo
+
 					// skip empty properties:
 					if (!iE.values || iE.values.length < 1) return;
 
@@ -2188,7 +2237,6 @@ class CSpecIF implements SpecIF {
 					var oE: SpecifProperty = {
 						class: iE['class']
 					};
-
 
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations.
@@ -2246,16 +2294,16 @@ class CSpecIF implements SpecIF {
 							// @ts-ignore - OK for v1.0
 							oE.value = opts.lookupValues ? app.ontology.localize(txt, opts) : txt;
 
-						/*	if (LIB.isHTML(txt))
-								// @ts-ignore - OK for v1.0
-								dT.type = 'xhtml'
-							else
-								// Cycle through all languageValues and check for format attribute:
-								for (var l of v) {
-									// @ts-ignore - OK for v1.0
-									if (l.format == 'xhtml') dT.type = 'xhtml';
-									break;
-								}; */
+						//	if (LIB.isHTML(txt))
+						//		// @ts-ignore - OK for v1.0
+						//		dT.type = 'xhtml'
+						//	else
+						//		// Cycle through all languageValues and check for format attribute:
+						//		for (var l of v) {
+						//			// @ts-ignore - OK for v1.0
+						//			if (l.format == 'xhtml') dT.type = 'xhtml';
+						//			break;
+						//		};
 						}
 						else {
 							// Keep all languages and possibly replace filetypes of linked images:
@@ -2335,11 +2383,11 @@ class CSpecIF implements SpecIF {
 				}
 				// a statement:
 				function s2ext(iE: SpecifStatement) {
-					/*	// Skip statements with an open end;
-						// At the end it will be checked, wether all referenced resources resp. statements are listed:
-						if (!iE.subject || iE.subject.id == CONFIG.placeholder
-							|| !iE.object || iE.object.id == CONFIG.placeholder
-						) return;  */
+					//	// Skip statements with an open end;
+					//	// At the end it will be checked, wether all referenced resources resp. statements are listed:
+					//	if (!iE.subject || iE.subject.id == CONFIG.placeholder
+					//		|| !iE.object || iE.object.id == CONFIG.placeholder
+					//	) return;
 
 					// The statements usually do use a vocabulary item (and not have an individual title),
 					// so we lookup, if so desired, e.g. when exporting to ePub:
@@ -2374,17 +2422,17 @@ class CSpecIF implements SpecIF {
 							//							console.debug('f2ext',iE,opts)
 
 							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type)) {
-								/*	var oE: SpecifFile = {
-										id: iE.id,
-										title: iE.title,
-										type: iE.type,
-										changedAt: iE.changedAt
-									};
-									if (iE.revision) oE.revision = iE.revision;
-									if (iE.changedBy) oE.changedBy = iE.changedBy;
-									if (iE.blob) oE.blob = iE.blob;
-									if (iE.dataURL) oE.dataURL = iE.dataURL;
-									resolve(oE); */
+								//	var oE: SpecifFile = {
+								//		id: iE.id,
+								//		title: iE.title,
+								//		type: iE.type,
+								//		changedAt: iE.changedAt
+								//	};
+								//	if (iE.revision) oE.revision = iE.revision;
+								//	if (iE.changedBy) oE.changedBy = iE.changedBy;
+								//	if (iE.blob) oE.blob = iE.blob;
+								//	if (iE.dataURL) oE.dataURL = iE.dataURL;
+								//	resolve(oE);
 								resolve(iE);
 							}
 							else {
@@ -2411,8 +2459,8 @@ class CSpecIF implements SpecIF {
 										});
 										break;
 									default:
-										/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
-											resolve(); */
+										//	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
+										//	resolve();
 										reject(new resultMsg( 999, "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." ))
 								}
 							}
@@ -2421,5 +2469,5 @@ class CSpecIF implements SpecIF {
 				}
 			}
 		)
-	}
+	} */
 }

@@ -3,8 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
-    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*	Naming:
 	- 'item' is any SpecIF object including classes and instances
@@ -2350,7 +2349,7 @@ class CProject implements SpecifProject {
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// input field for project name, it is pre-filled (only for certain output formats);
 			// 'zero width space' (&#x200b;) is added to make the label = div-id unique:
-			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, (fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName), { typ: 'line' }))
+			+ (['specif', /*'specif_v10',*/ 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, (fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName), { typ: 'line' }))
 			// input field for file name, it is pre-filled:
 			+ makeTextField('&#x200b;' + i18n.LblFileName, (fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName), { typ: 'line' });
 		switch (fmt) {
@@ -2429,7 +2428,7 @@ class CProject implements SpecifProject {
 				// export is available for Editor and Reviewer:
 				let formats = app.title == i18n.LblEditor ?
 						[
-							{ title: 'SpecIF v1.0', id: 'specif_v10' },
+						//	{ title: 'SpecIF v1.0', id: 'specif_v10' },
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.0', id: 'reqif' },
@@ -2577,8 +2576,8 @@ class CProject implements SpecifProject {
 				self.exporting = true; // set status to prohibit multiple entry
 
 				switch (opts.format) {
-					case 'specif_v10':
-					//	case 'rdf':
+				//	case 'specif_v10':
+				//	case 'rdf':
 					case 'turtle':
 					case 'reqif':
 					case 'specif':
@@ -2688,8 +2687,8 @@ class CProject implements SpecifProject {
 				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {
-					case 'specif_v10':
-						opts.v10 = true;
+				//	case 'specif_v10':
+				//		opts.v10 = true;
 					case 'specif':
 					case 'html':
 						// export all languages:
@@ -2786,8 +2785,8 @@ class CProject implements SpecifProject {
 
 						// Prepare the output data:
 						switch (opts.format) {
-							case 'specif_v10':
-								fName += ".v10";
+						//	case 'specif_v10':
+						//		fName += ".v10";
 								// no break
 							case 'specif':
 								fName += ".specif";

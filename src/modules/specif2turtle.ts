@@ -3,8 +3,7 @@
     (C)copyright adesso SE, enso managers gmbh (http://enso-managers.de)
     Author: ??@adesso.de, se@enso-managers.de, Berlin
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
-    .. or even better as Github issue (https://github.com/GfSE/SpecIF-RDF-Bridge/issues)
+    We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 /*
@@ -128,7 +127,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
         return baseProjectTtlString;
     };
 
-    function transformDatatypes(dataTypes: SpecifDataType[]) {
+/*    function transformDatatypes(dataTypes: SpecifDataType[]) {
         if (!isArrayWithContent(dataTypes)){
             return '';
         };
@@ -192,7 +191,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
         });
         return propertyClassesTtlString;
     };
-
+*/
     function transformResourceClasses (resourceClasses:SpecifResourceClass[]) {
         if (!isArrayWithContent(resourceClasses)){
             return '';

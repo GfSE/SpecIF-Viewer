@@ -2,8 +2,7 @@
 	Dependencies: jQuery, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
-    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*	The report descriptors for display, two examples:
 		{	title: 'Anforderung: Priorit&auml;t',
