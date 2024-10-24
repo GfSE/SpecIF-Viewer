@@ -163,7 +163,7 @@ const RE:any = {};
 
     // Reliably recognize an URI, not validate an URI:
     RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})((?:\/[^\s#?\/]*?){0,9})(\?[^\s#?]+?)?(#[^\s#]*?)?)(\s|,|:|<|\.\s|\.?$)/gm;
- /             $1: Begins with start of text or space or tag end
+//             $1: Begins with start of text or space or tag end
 //                     $2: complete link
 //                      $3: "http(s)://" or "www."
 //                                         $4: 0..n subdomains
