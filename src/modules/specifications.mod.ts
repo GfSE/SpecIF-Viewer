@@ -182,7 +182,7 @@ class CPropertyToShow implements SpecifProperty {
 					let m = $1.toLowerCase(),
 						cR: SpecifResource,
 						ti: string,
-						rC: SpecifResourceClass,
+					//	rC: SpecifResourceClass,
 						target: SpecifResource;
 
 					// Check if ti is a title of any resource:

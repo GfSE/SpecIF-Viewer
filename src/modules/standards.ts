@@ -288,7 +288,7 @@ CONFIG.excludedFromTypeFiltering = [
     CONFIG.resClassComment
 ];
 
-// A list of property classes which are excluded from text formatting, specified by title;
+/* // A list of property classes which are excluded from text formatting, specified by title;
 // Applied only to properties of type "xs:string":
 CONFIG.excludedFromFormatting = [
     CONFIG.propClassType,
@@ -296,7 +296,7 @@ CONFIG.excludedFromFormatting = [
 ]
     .concat(CONFIG.titleProperties)
     .concat(CONFIG.idProperties);
-
+*/
 // A list of model elements to be exluded from deduplication on model import or model integration,
 // specified by value of a property titled CONFIG.propClassType ...
 // .. even if they have the same or no title/name.
