@@ -284,7 +284,7 @@ moduleManager.construct({
 //								console.debug( 'evalResource a', rp );
 								rp.values.forEach((val) => {
 									// find the bar which corresponds to the property value:
-									j = LIB.indexById(self.list[i].datasets, val);
+									j = LIB.indexById(self.list[i].datasets, val.id);
 //									console.debug( 'evalResource z', ct, j );
 									if (j > -1) { incVal(self.list[i], j) } // property value found
 								})
@@ -336,7 +336,7 @@ moduleManager.construct({
 					handleError
 				);
 				pend++;
-				selPrj.readStatementsOf(nd.resource, {asSubject:true} )
+				selPrj.readStatementsOf(nd.resource, { dontCheckStatementVisibility: selPrj.aDiagramWithoutShowsStatementsForEdges(), asSubject:true} )
 				.then(
 					(staL) => {
 //						console.debug('staL', staL);
@@ -369,39 +369,31 @@ moduleManager.construct({
 			})
 		}
 		function renderReports(list:Report[]):string {
-			var rs =	'<div class="row" >';
-			let lb;
+			var rs = '<div style="background-color: #f5f5f5;"><div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 pt-1 px-3">',
+				lb;
 			list.forEach( (li:Report,i:number) =>{
-				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-top: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
-					+			'<h4>'+li.title+'</h4>'
+		//		rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-top: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
+				rs += '<div class="col my-1 px-1"><div class="card h-100"><div class="card-body">'
+					+			'<h4 class="card-title">'+li.title+'</h4>'
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
 				li.datasets.forEach( (ds:ReportDataset,s:number) =>{
-					lb = (li.category != FilterCategory.statementClass && ds.count>0)? '<a onclick="app.'+self.loadAs+'.facetClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
+					lb = (li.category != FilterCategory.statementClass && ds.count > 0)? '<a class="link-primary" onclick="app.'+self.loadAs+'.facetClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
-						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
-						+					'<td style="width:15%; padding:0.2em" class="text-right">'+ds.count+'</td>'
-						+					'<td style="padding:0.2em">'
+						+					'<td style="width:35%; white-space: nowrap">'+lb+'</td>'
+						+					'<td class="px-2" style="width:10%; text-align:right">'+ds.count+'</td>'
+						+					'<td>'
 						+						'<div style="background-color:#1a48aa; height: 0.5em; border-radius: 0.2em; width: '+barLength(li,ds)+'" />'
 						+					'</td>'
 						+				'</tr>'
 				});
 				rs +=				'</tbody>'
 					+			'</table>'
-					+		'</div>'
+					+		'</div></div></div>'
 			});
-			rs += 		'</div>';
+			rs += 		'</div></div>';
 			return rs;
 
-			function panelHeight(L: Report[]): string {
-				// Determine panel height.
-				// So far, all panels get the same size depending on the longest dataset.
-				let maxSets = 0;
-				L.forEach((p) => {
-					maxSets = Math.max(maxSets, p.datasets.length)
-				});
-				return ((1.1 + maxSets) * 1.67 + 'em')
-			}
 			function barLength(rp: Report, ds: ReportDataset): string {
 				if (rp && ds) {
 					if (ds.count <= rp.scaleMin) return '0%';
@@ -410,16 +402,6 @@ moduleManager.construct({
 				};
 				throw Error("Programming Error: Invalid report count or scale")
 			}
-		/*	function self.barColor( i1, i0 ) {
-			//	if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
-				if( i0<0 || i1<0 ) return null;
-				return ( self.list[i1].datasets[i0].color )
-			}
-			function self.barStyle( i1, i0 ) {
-			//	if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
-				if( i0<0 || i1<0 ) return null;
-				return ( 'width: '+barLength()+'; background-color: '+self.barColor()+'; height: 0.5em; border-radius: 0.2em' )
-			} */
 		}
 	};
 

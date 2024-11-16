@@ -190,8 +190,8 @@ function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): str
     entries.forEach( (e,i)=>{
         rB +=            '<label>'
             +                '<input type="radio" name="radio'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            + '<span ' + popOver(e.description) + '>'
-            +                    e.title
+            +                '<span ' + popOver(e.description) + '>'
+            +                    '&#160;' + e.title
             +                    ( e.type? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
             +                '</span>'
             +            '</label><br />'
@@ -210,6 +210,7 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
 
     switch (opts.typ) {
         case 'display':
+            // show the checkbox:
             return '<div class="attribute ' + (opts.classes || '') + '">'
                 + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
                 + '<div class="attribute-value" >'
@@ -244,10 +245,10 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
     entries.forEach( (e,i)=>{
         cB +=            '<label>'
             +                '<input type="checkbox" name="checkbox'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            + '<span ' + popOver(e.description) + '>'
-            +                       e.title
+            +                '<span ' + popOver(e.description) + '>'
+            +                       '&#160;' + e.title
             +                       (e.type ? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
-            +                   '</span>'
+            +                '</span>'
             +            '</label><br />'
     });
     cB +=            '</div>'

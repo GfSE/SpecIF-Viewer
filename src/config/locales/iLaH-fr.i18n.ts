@@ -171,7 +171,7 @@ function LanguageTextsFr() {
 	self.LblWordBeginnings = 'Seulement mots commençant par';
 	self.LblWholeWords = 'Seulement mots entiers';
 	self.LblCaseSensitive = 'Respecter majuscules et minuscules';
-	self.LblExcludeEnums = 'Ignorer énumérateurs';
+//	self.LblExcludeEnums = 'Ignorer énumérateurs';
 	self.LblNotAssigned = '(sans attribution de valeur)';
 	self.LblPrevious = 'Dernier';
 	self.LblNext = 'Prochain';

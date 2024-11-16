@@ -175,9 +175,9 @@ class CPropertyToEdit extends CPropertyToShow  {
 				// this['class'] is used to identify the property; 
 				// it is supposed to be unique in the resource's properties
 				// and at most one resource is edited in this session at any point in time.
-				+ '<div class="btn-group btn-group-sm pull-right" >'
+				+ '<div class="btn-group" style="float: right;" >'
 				//	+		( !this.pC.permissions || this.pC.permissions.upd?
-				+ '<span class="btn btn-default btn-fileinput">'
+				+ '<span class="btn btn-light btn-fileinput">'
 				+ '<span>' + i18n.IcoEdit + '</span>'
 				+ '<input id="file' + simpleHash(this['class'].id)
 				+ '" type="file" accept="' + imgExts() + '" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'

@@ -171,7 +171,7 @@ function LanguageTextsEn() {
 	self.LblWordBeginnings = 'Word beginnings only';
 	self.LblWholeWords = 'Whole words only';
 	self.LblCaseSensitive = 'Case sensitive';
-	self.LblExcludeEnums = 'Exclude enumerated values';
+//	self.LblExcludeEnums = 'Exclude enumerated values';
 	self.LblNotAssigned = '(not assigned)';
 	self.LblPrevious = 'Previous';
 	self.LblNext = 'Next';

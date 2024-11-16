@@ -218,7 +218,7 @@ class CPropertyToShow implements SpecifProperty {
 
 		function lnk(r: SpecifResource, t: string): string {
 //			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
+			return '<a class="link-primary" onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
 		}
 	}
 	renderFile(txt: string, opts?: any): string {
@@ -710,11 +710,11 @@ class CResourceToShow {
 		/*	// 2 Add elementActions:
 			switch( app.specs.selectedView() ) {
 				case '#'+CONFIG.comments:
-					rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
+					rO += 	'<div class="btn-group role="group" style="margin-top:3px; position:absolute;right:1.6em" >';
 					if( this.del )
-						rO +=	'<button onclick="app.specs.delComment(\''+this.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
+						rO +=	'<button onclick="app.specs.delComment(\''+this.id+'\')" class="btn btn-danger btn-xs" >'+i18n.IcoDelete+'</button>'
 					else
-						rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
+						rO +=	'<button disabled class="btn btn-light btn-xs" >'+i18n.IcoDelete+'</button>';
 					rO +=	'</div>'
 			//		break;
 			//	default:
@@ -1283,12 +1283,12 @@ moduleManager.construct({
 		
 		//  Add the left panel for tree or details and the up/down buttons to the DOM:
 		let h = '<div id="specLeft" class="paneLeft" style="position:relative">'
-			+ '<div id="navBtns" class="btn-group-vertical btn-group-sm" style="position:absolute;top:4px;right:12px;z-index:900">'
-			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
-			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
+			+ '<div id="navBtns" class="btn-group-vertical" role="group" style="position:absolute;top:4px;right:12px;z-index:900">'
+			+   '<button class="btn btn-secondary btn-sm" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
+			+   '<button class="btn btn-secondary btn-sm" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
 			+ '</div>'
-			+	'<div id="hierarchy" class="pane-tree" ></div>'
-			+	'<div id="details" class="pane-details" ></div>'
+			+ '<div id="hierarchy" class="pane-tree" ></div>'
+			+ '<div id="details" class="pane-details" ></div>'
 			+ '</div>';
 		/*	+ '<div id="specCtrl" class="contentCtrl" >'
 		//	+	'<div id="specNotice" class="contentNotice" ></div>'
@@ -1883,8 +1883,7 @@ moduleManager.construct({
 			for( var i=CONFIG.objToGetCount-1; nd && i>-1; i-- ) {
 				oL.push( nd.ref );  // nd.ref is the key of a resource to show
 				nL.push( nd );
-			//	nd = nd.getNextNode()   // get next visible tree node (up until jqtree v1.6.3)
-				nd = nd.getNextVisibleNode();  // starting jqtree v1.8.0
+				nd = nd.getNextVisibleNode();
 			};
 
 			return selPrj.readItems( 'resource', oL ) as Promise<SpecifResource[]>
@@ -1916,7 +1915,7 @@ moduleManager.construct({
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var rB = '<div class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
+			var rB = '<div class="btn-group" role="group" style="position:absolute;top:4px;right:4px;z-index:900">';
 //			console.debug( 'actionBtns', self.parent.tree.rootNode() );
 
 		/*	if( selRes )
@@ -1934,7 +1933,7 @@ moduleManager.construct({
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
+				rB += '<button disabled class="btn btn-light" >'+i18n.IcoAdd+'</button>';
 
 			if( !selRes )
 				// just show the create-button (nothing to update or delete):
@@ -1946,7 +1945,7 @@ moduleManager.construct({
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
 						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>'
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
+				rB += '<button disabled class="btn btn-light" >'+i18n.IcoClone+'</button>';
 
 			// Add the update and delete buttons depending on the current user's permissions for the selected resource:
 			/*	function propU() {
@@ -1962,17 +1961,17 @@ moduleManager.construct({
 			// res.pC.permissionVector.U is not of interest here.No hierarchy - related permission needed.
 			if ( selRes.hasPropertyWithUpdatePermission )
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
-				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
+				rB += '<button class="btn btn-light" onclick="' + myFullName + '.editResource(\'update\')" '
 						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoEdit+'</button>';
+				rB += '<button disabled class="btn btn-light" >'+i18n.IcoEdit+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
 		/*	if( self.cmtCre )
-				rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+				rB += '<button class="btn btn-light" onclick="'+myFullName+'.addComment()" '
 						+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 			else */
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
+				rB += '<button disabled class="btn btn-light" >'+i18n.IcoComment+'</button>';
 
 			// The delete button is shown, if the selected resource (=hierarchy entry) can be deleted.
 			// - Glossary items shall not be deleted; they are usually not userInstantiated.
@@ -1982,7 +1981,7 @@ moduleManager.construct({
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
+				rB += '<button disabled class="btn btn-light" >'+i18n.IcoDelete+'</button>';
 
 //			console.debug('actionBtns',rB+'</div>');
 			return rB+'</div>'	// return rendered buttons for display
@@ -2039,10 +2038,10 @@ moduleManager.construct({
 		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
-			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+			return '<button class="btn btn-light" onclick="'+myFullName+'.addComment()" '
 					+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
-			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
+			return '<button disabled class="btn btn-light" >'+i18n.IcoComment+'</button>'
 	}; */
 
 /* ++++++++++++++++++++++++++++++++
@@ -2228,7 +2227,7 @@ moduleManager.construct({
 				//	item: nd.ref.id
 			});
 
-		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(), asSubject: true, asObject: true })
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: selPrj.aDiagramWithoutShowsStatementsForEdges(), asSubject: true, asObject: true })
 			.then(
 				(sL: SpecifStatement[]) => {
 					// sL is the list of statements involving the selected resource.
@@ -2433,35 +2432,14 @@ moduleManager.construct({
 				return true
 			}
 		};
-		function aDiagramWithoutShowsStatementsForEdges(): boolean {
-			// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
-			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
-			// Corner case: No diagram at all returns true, also.
-			let res: SpecifResource, isNotADiagram: boolean, noDiagramFound = true;
-			// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
-			return LIB.iterateNodes(
-				cacheData.get('hierarchy', selPrj.nodes),
-				(nd: SpecifNode): boolean => {
-					// get the referenced resource:
-					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
-					// find the property defining the type:
-					// Remember whether at least one diagram has been found:
-					isNotADiagram = !CONFIG.diagramClasses.includes(LIB.classTitleOf(res['class'], cacheData.resourceClasses));
-					noDiagramFound = noDiagramFound && isNotADiagram;
-					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
-					return (isNotADiagram
-						|| LIB.hasType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
-				}
-			) || noDiagramFound
-		}
 	};
 
 	function linkBtns(): string {
 		if (!selRes) return '';
-		var rB = '<div id="linkBtns" class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
+		var rB = '<div id="linkBtns" class="btn-group" role="group" style="position:absolute;top:4px;right:4px;z-index:900">';
 
 		if (modeStaDel)
-			return rB + '<button class="btn btn-default" onclick="' + myFullName + '.toggleModeStaDel()" >' + i18n.BtnCancel + '</button></div>';
+			return rB + '<button class="btn btn-light" onclick="' + myFullName + '.toggleModeStaDel()" >' + i18n.BtnCancel + '</button></div>';
 
 		//		console.debug( 'linkBtns', self.staCre );
 
@@ -2469,13 +2447,13 @@ moduleManager.construct({
 			rB += '<button class="btn btn-success" onclick="' + myFullName + '.linkResource()" '
 				+ 'data-toggle="popover" title="' + i18n.LblAddRelation + '" >' + i18n.IcoAdd + '</button>';
 		else
-			rB += '<button disabled class="btn btn-default" >' + i18n.IcoAdd + '</button>';
+			rB += '<button disabled class="btn btn-light" >' + i18n.IcoAdd + '</button>';
 
 		if (app.title != i18n.LblReader && net.statements.length > 0 /* && (!selRes.permissions || selRes.permissions.del) */)
 			rB += '<button class="btn btn-danger ' + (modeStaDel ? 'active' : '') + '" onclick="' + myFullName + '.toggleModeStaDel()" '
 				+ 'data-toggle="popover" title="' + i18n.LblDeleteRelation + '" >' + i18n.IcoDelete + '</button>';
 		else
-			rB += '<button disabled class="btn btn-default" >' + i18n.IcoDelete + '</button>';
+			rB += '<button disabled class="btn btn-light" >' + i18n.IcoDelete + '</button>';
 
 		return rB + '</div>'	// return rendered buttons for display
 	}
@@ -2623,7 +2601,7 @@ moduleManager.construct({
 			});
 			rT += 	'</tbody></table>';
 			if( opts.fnDel ) 
-				rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
+				rT += '<div class="doneBtns"><button class="btn btn-light btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
 		} 
 		else {
 			rT += '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'

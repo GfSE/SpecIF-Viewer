@@ -235,7 +235,8 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'ioOntology', 'standards', "xSpecif"];
+//			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'ioOntology', 'standards', "xSpecif"];
+			let modL = ['helper', 'helperTree', 'mainCSS', 'ioOntology', 'standards', "xSpecif"];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -370,13 +371,13 @@ var app:IApp,
 							switch (e.selectorType) {
 								case 'btns':
 									$(e.selector).append(
-										'<button id="' + id + '" type="button" class="btn btn-default" onclick="moduleManager.show({view:\'' + ch.view + '\'})" >' + lbl + '</button>'
+										'<button id="' + id + '" type="button" class="btn btn-light" onclick="moduleManager.show({view:\'' + ch.view + '\'})" >' + lbl + '</button>'
 									);
 									break;
 							//	case 'tabs':
 								default:
 									$(e.selector).append(
-										'<li id="' + id + '" onclick="moduleManager.show({view:\'' + ch.view + '\'})"><a>' + lbl + '</a></li>'
+										'<li class="nav-item"><button class="nav-link" id="' + id + '"type = "button" role="tab" onclick="moduleManager.show({view:\'' + ch.view + '\'})">' + lbl + '</button></li>'
 									);
 							};
 						};
@@ -391,7 +392,7 @@ var app:IApp,
 							switch (e.selectorType) {
 								case 'btns':
 									$(e.selector).append(
-										'<button id="' + id + '" type="button" class="btn btn-default" onclick="' + ch.action + '" >' + lbl + '</button>'
+										'<button id="' + id + '" type="button" class="btn btn-light" onclick="' + ch.action + '" >' + lbl + '</button>'
 									);
 									break;
 								default:
@@ -561,23 +562,21 @@ var app:IApp,
 		function ldM(mod:string):boolean {
 			switch (mod) {
 				// 3rd party:
-			//	case "font":				getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
-				case "font":				getCss("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css"); setReady(mod); return true;
-				case "bootstrap":			getCss("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css");
-											getCss("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css");
+			//	case "font":				getStyle("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+				case "font":				getStyle("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css"); setReady(mod); return true;
+				case "bootstrap":			getStyle("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css");
+											getScript("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"); return true;
+			/*	case "bootstrap":			getStyle("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css");
+											getStyle("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css");
 											getScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'); return true;
-				case "bootstrapDialog":		getCss("https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css");
+				case "bootstrapDialog":		getStyle("https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css");
 											getScript('https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js'); return true;
-
+			*/
 			/*	// temporary solution with fix for buttonLeft=false:
-				case "tree":				getCss(loadPath + 'assets/stylesheets/jqtree-buttonleft.css'); */
-				case "tree":				getCss("https://cdn.jsdelivr.net/npm/jqtree@1.8.4/jqtree.css");
-											getScript('https://cdn.jsdelivr.net/npm/jqtree@1.8.4/tree.jquery.js'); return true;
-											/* jqtree 1.8.4 is available, but is blocked
-											Die Ressource von "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.4/jqtree.css" wurde wegen eines MIME - Typ - Konfliktes("text/html") blockiert(X - Content - Type - Options: nosniff).
-											Die Ressource von "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.4/tree.jquery.js" wurde wegen eines MIME - Typ - Konfliktes("text/html") blockiert(X - Content - Type - Options: nosniff).
-											see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options?utm_source=mozilla&utm_medium=firefox-console-errors&utm_campaign=default
-											*/
+				case "tree":				getStyle(loadPath + 'assets/stylesheets/jqtree-buttonleft.css'); */
+				case "tree":				getStyle("https://cdn.jsdelivr.net/npm/jqtree@1.8.7/jqtree.css");
+											getScript('https://cdn.jsdelivr.net/npm/jqtree@1.8.7/tree.jquery.js'); return true;
+									//		see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options?utm_source=mozilla&utm_medium=firefox-console-errors&utm_campaign=default
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
@@ -599,21 +598,20 @@ var app:IApp,
 										//	getScript('https://cdn.jsdelivr.net/npm/vis-network@9.1.9/peer/umd/vis-network.min.js');
 											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-				case "dataTable": 			getCss( loadPath+'assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+				case "dataTable": 			getStyle( loadPath+'assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 											getScript( loadPath+'assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				// see: https://medium.com/@logosnikita/how-i-chose-markdown-parser-97190a59fa5d --> markdown-it works fine
 				// and: https://css-tricks.com/choosing-right-markdown-parser/ --> investigates special features
-				case "markdown":		//	getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js')
-											getScript('https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js')
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js')
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;
 			//	case "xml2js":				getScript('https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js'); return true;
 
 				// libraries:
-				case "mainCSS":				getCss(loadPath + 'assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "mainCSS":				getStyle(loadPath + 'assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
 				case "types":				getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
@@ -716,9 +714,9 @@ var app:IApp,
 		function bust(url: string): string {
 			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "");
         }
-		function getCss( url:string ) {
+		function getStyle( url:string ) {
 			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
-			// 'setReady' is not called, because 'getCss' is almost always called in conjunction 
+			// 'setReady' is not called, because 'getStyle' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'; 
 			// thus call 'setReady' explicitly, if not in conjunction with 'getScript'.
 		}

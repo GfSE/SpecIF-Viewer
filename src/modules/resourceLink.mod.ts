@@ -162,11 +162,11 @@ moduleManager.construct({
 					//	message: (thisDlg)=>{
 						message: () =>{
 							var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="card card-options" style="margin-bottom:0">'
 								+ makeRadioField(i18n.LblStatementClass, staClasses, { handle: myFullName + '.filterClicked()' })
 								+ makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
 								+ '</div></div>'
-								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="card card-options" style="margin-bottom:0">'
 								// add just the container; the candidate list will be added by filterClicked():
 								+ '<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" >'
 								+ '</div></div>'

@@ -12,6 +12,14 @@ interface ITransform extends IModule {
 	toSpecif(buf: ArrayBuffer): JQueryDeferred<SpecIF>;
 	abort(): void;
 }
+class CStateImport {
+	cacheLoaded: Boolean;
+	allValid: Boolean;
+	constructor() {
+		this.cacheLoaded = false;
+		this.allValid = false;
+	}
+}
 
 moduleManager.construct({
 	name: 'importAny'
@@ -120,17 +128,15 @@ moduleManager.construct({
 
 	self.projectName = '';  // user input for project name
 	self.format = undefined;
-	var showFileSelect:State,
-		importMode = {id:'replace'},
-		myFullName = 'app.'+self.loadAs,
-		urlP:any,				// the latest URL parameters
-		urlOntology = ( window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+	var showFileSelect: State,
+		importMode = { id: 'replace' },
+		myFullName = 'app.' + self.loadAs,
+		urlP: any,				// the latest URL parameters
+		urlOntology = (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
 			CONFIG.ontologyURL
 			: '../../SpecIF/vocabulary/Ontology.specif'  // local 
 		),
-		importing = false,
-		cacheLoaded = false,
-		allValid = false;
+		importing = false;
  
 	self.clear = function():void {
 		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
@@ -165,7 +171,7 @@ moduleManager.construct({
 				+	'<div class="attribute-value" >'
 				+		'<div id="formatSelector" class="btn-group" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
-				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput" style="margin: 0 0 0.8em 0" ></div>'
+				+		'<div id="fileSelectBtn" class="btn btn-light btn-fileinput" style="margin: 0 0 0.8em 0" ></div>'
 				+   '</div>'
 			+	'</div>'
 			+	'<form id="formNames" class="form-horizontal" role="form"></form>'
@@ -176,7 +182,7 @@ moduleManager.construct({
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 
-							btns += '<button id="'+b.id+'Btn" onclick="'+myFullName+'.importLocally(\''+b.id+'\')" data-toggle="popover" title="'+b.title+'" class="btn btn-primary">'+b.label+'</button>'
+							btns += '<button id="' + b.id + 'Btn" onclick="' + myFullName + '.importLocally(\'' + b.id + '\')" data-toggle="popover" title="' + b.title +'" type="button" class="btn btn-primary text-nowrap">'+b.label+'</button>'
 						});
 						return btns
 					}()
@@ -186,9 +192,9 @@ moduleManager.construct({
 			+	'<div>'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div class="pull-right" >'
-				+			'<button id="cancelBtn" onclick="'+myFullName+'.abort()" class="btn btn-danger btn-xs">'+i18n.BtnCancelImport+'</button>'
-				+		'</div>'
+	/*			+		'<div style="float: right;" >'
+			+ '<button id="cancelBtn" onclick="' + myFullName +'.abort()" type="button" class="btn btn-danger btn-sm">'+i18n.BtnCancelImport+'</button>'
+				+		'</div>' */
 				+		'<div id="progress" class="progress" >'
 				+			'<div class="progress-bar progress-bar-primary" ></div>'
 				+		'</div>'
@@ -318,10 +324,10 @@ moduleManager.construct({
 //				console.debug('isReady',s.id,self.format);
 			//	app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
-					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
+					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" type="button" class="btn btn-light'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				}
 				else {
-					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
+					str += '<button disabled type="button" class="btn btn-light" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				};
 			};
 		});
@@ -369,22 +375,24 @@ moduleManager.construct({
 		self.enableActions();
 	};
 
-	function checkState():void {
+	function getState():CStateImport {
 		// in this case only the project name must have a length>0:
-		let pnl = getTextLength(i18n.LblProjectName)>0;
+		let state = new CStateImport(),  
+			pnl = getTextLength(i18n.LblProjectName) > 0;
 		// it may happen that this module is initialized (and thus this routine executed), before app.projects is loaded:
-		cacheLoaded = typeof(app.projects)=='object' && typeof(app.projects.selected)=='object' && app.projects.selected.isLoaded();	
-		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
-		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
+		state.cacheLoaded = typeof(app.projects)=='object' && typeof(app.projects.selected)=='object' && app.projects.selected.isLoaded();	
+		state.allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
+		setTextState(i18n.LblProjectName, pnl ? 'has-success' : 'has-error');
+		return state;
 	};
 	self.enableActions = function():void {
 		// enable/disable the import button depending on the input state of all fields;
 		
-		checkState();
+		let state = getState();
 		try {
 		//	document.getElementById("cloneBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
+			document.getElementById("createBtn").disabled = !state.allValid || state.cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
@@ -392,7 +400,7 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("replaceBtn").disabled = !allValid || !cacheLoaded;
+			document.getElementById("replaceBtn").disabled = !state.allValid || !state.cacheLoaded;
 		}
 		catch (e) {
 			console.error("importAny: enabling actions has failed ("+e+").");
@@ -401,12 +409,12 @@ moduleManager.construct({
 	function setImporting( st:boolean ):void {
 		importing = st;
 		app.busy.set( st );
-		checkState();
+		let state = getState();
 		try {
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("fileSelectBtn").disabled = st;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
+			document.getElementById("createBtn").disabled = st || !state.allValid || state.cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
@@ -414,9 +422,9 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("replaceBtn").disabled = st || !allValid || !cacheLoaded;
-			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("cancelBtn").disabled = !st;
+			document.getElementById("replaceBtn").disabled = st || !state.allValid || !state.cacheLoaded;
+		/*	// @ts-ignore - .disabled is an accessible attribute
+			document.getElementById("cancelBtn").disabled = !st; */
 		}
 		catch (e) {
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
@@ -662,10 +670,10 @@ moduleManager.construct({
 			}
 		);
 	}
-	self.abort = function():void {
+/*	self.abort = function():void {
 		console.info('abort pressed');
 		app[self.format.name].abort();
 		app.projects.selected.abort();
-	};
+	}; */
 	return self;
 });

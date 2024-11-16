@@ -171,7 +171,7 @@ function LanguageTextsDe() {
 	self.LblWordBeginnings = 'Nur Wortanfänge berücksichtigen';
 	self.LblWholeWords = 'Nur ganze Worte berücksichtigen';
 	self.LblCaseSensitive = 'Groß/Kleinschreibung beachten';
-	self.LblExcludeEnums = 'Nur Textfelder durchsuchen';
+//	self.LblExcludeEnums = 'Nur Textfelder durchsuchen';
 	self.LblNotAssigned = '(ohne zugewiesenen Wert)';
 	self.LblPrevious = 'Voriges';
 	self.LblNext = 'Nächstes';

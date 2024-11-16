@@ -4,10 +4,8 @@
     "\\src",
     "\\src\\assets",
     "\\src\\assets\\javascripts",
-    "\\src\\config",
-    "\\src\\modules",
-    "\\src\\types"
+    "\\src\\assets\\stylesheets",
+    "\\src\\modules"
   ],
-  "SelectedNode": "\\src\\config\\moduleManager.ts",
   "PreviewInSolutionExplorer": false
 }

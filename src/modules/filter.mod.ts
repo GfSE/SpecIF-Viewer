@@ -163,7 +163,7 @@ moduleManager.construct({
 			+ '</div>'
 			+ '<div id="filterCtrl" class="contentCtrl" >'
 			+ '<div class="btn-group" >'
-			+ '<button class="btn btn-default" onclick="app.' + self.loadAs + '.resetClicked()" >' + i18n.BtnFilterReset + '</button>'
+			+ '<button class="btn btn-light" onclick="app.' + self.loadAs + '.resetClicked()" >' + i18n.BtnFilterReset + '</button>'
 			+ '</div>'
 			+ '<div id="filterNotice" class="notice-default contentNotice" ></div>'
 			//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
@@ -228,8 +228,8 @@ moduleManager.construct({
 		self.parent.showLeft.set(false);
 		let fps = '';
 		for (var f of self.filters) {
-			fps += '<div class="panel panel-default panel-filter" >'
-				+ '<h4>' + f.title + '</h4>';
+			fps += '<div class="card" style="margin:0.2rem 0 0 0" ><div class="card-body" >'
+				+ '<h4 class="card-title">' + f.title + '</h4>';
 			switch (f.category) {
 				case FilterCategory.textSearch:
 					fps += renderTextFilterSettings(f);
@@ -238,7 +238,7 @@ moduleManager.construct({
 				case FilterCategory.enumValue:
 					fps += renderEnumFilterSettings(f);
 			};
-			fps += '</div>';
+			fps += '</div></div>';
 		};
 		$('#primaryFilters').html(fps);
 		setFocus(i18n.LblStringMatch);
@@ -712,7 +712,6 @@ moduleManager.construct({
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
 				addTextSearchFilter( settings.filters[idx]);
-			// do not include a text search filter if there are settings.filters without a respective entry
 		}
 		else {
 			// b) include a default text search if there is no settings.filters

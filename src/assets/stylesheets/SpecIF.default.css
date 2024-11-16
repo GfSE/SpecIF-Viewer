@@ -184,31 +184,36 @@ div.content-other {
 #secondaryFilters {
 	font-size: 90%;
 }
-#secondaryFilters div.panel-filter {
+#secondaryFilters div.card-filter {
 	display: inline-block;
 	vertical-align: top;
 } */
-div.pane-tree ,
 div.pane-filter {
-	background-color:#f5f5f5;
-    box-sizing: border-box;
-    overflow: auto;
-	padding: 8px 2px 2px 2px;
+	background-color: #f5f5f5;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 4px;
+}
+div.pane-tree {
+	background-color: #f5f5f5;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 8px 4px 4px 4px;
 }
 div.pane-details {
 	display: none;
-	background-color:#c8def0;
+	background-color: #c8def0;
 	box-sizing: border-box;
 	overflow: auto;
-	padding: 8px 2px 2px 2px;
+	padding: 8px 4px 4px 4px;
 }
-div.panel-filter {
+div.card-filter {
 	background-color:#f5f5f5;
     box-sizing: border-box;
 	margin: 0 0 0.4em 0;
 	padding: 0.2em;
 }
-div.panel-options {
+div.card-options {
     box-sizing: border-box;
 	padding: 0.2em;
 }
@@ -334,7 +339,7 @@ td.doors-table-cell {
 	cursor: not-allowed;
 	pointer-events: none;
 }*/
-.font-sm { font-size: 90%; }
+/*.font-sm { font-size: 90%; }
 .force_word_break{ word-wrap:break-word;word-break:break-all; }
 
 .row {
@@ -382,9 +387,7 @@ mark{
 	background-image: none;
 	background-color: #1690D8;
 }
-/*.panel-title {
-  font-size: 100%;
-}*/
+*/
 .btn-fileinput {
   position: relative;
   overflow: hidden;
@@ -395,19 +398,18 @@ mark{
   right: 0;
   margin: 0;
   opacity: 0;
-  -ms-filter: 'alpha(opacity=0)';
   font-size: 100%;
   cursor: pointer;
 }
 
 /* override jqtree.css */
-.jqtree-tree .jqtree-title {
+/* .jqtree-tree .jqtree-title {
 	display: block;
 }
 .jqtree-tree .jqtree-title.jqtree-title-folder {
 	display: inline;
 }  
-/* ul.jqtree-tree .jqtree-element {
+ul.jqtree-tree .jqtree-element {
 	display: unset;    for selection buttonLeft:false 
 } */
 ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler,

@@ -456,6 +456,8 @@ class CProject implements SpecifProject {
 	// @ts-ignore - initialized by this.setMeta()
 	description?: SpecifMultiLanguageText;
 	// @ts-ignore - initialized by this.setMeta()
+	language: string;
+	// @ts-ignore - initialized by this.setMeta()
 	generator?: string;
 	// @ts-ignore - initialized by this.setMeta()
 	generatorVersion?: string;
@@ -477,8 +479,7 @@ class CProject implements SpecifProject {
 	resourceClasses: SpecifKeys = [];
 	statementClasses: SpecifKeys = [];
 	nodes: SpecifKeys = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
-	// @ts-ignore - initialized by this.setMeta()
-	language: string;
+
 	cache: CCache;
 /*	server: URL // or servers ??
  	myRole = i18n.LblRoleProjectAdmin;
@@ -1566,6 +1567,27 @@ class CProject implements SpecifProject {
 			}
 		);
 	}
+	aDiagramWithoutShowsStatementsForEdges(): boolean {
+		// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
+		// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
+		// Corner case: No diagram at all returns true, also.
+		let res: SpecifResource, isNotADiagram: boolean, noDiagramFound = true;
+		// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
+		return LIB.iterateNodes(
+			this.cache.get('hierarchy', this.nodes),
+			(nd: SpecifNode): boolean => {
+				// get the referenced resource:
+				res = this.cache.get('resource', [nd.resource])[0] as SpecifResource;
+				// find the property defining the type:
+				// Remember whether at least one diagram has been found:
+				isNotADiagram = !CONFIG.diagramClasses.includes(LIB.classTitleOf(res['class'], this.cache.resourceClasses));
+				noDiagramFound = noDiagramFound && isNotADiagram;
+				// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
+				return (isNotADiagram
+					|| LIB.hasType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, this.cache));
+			}
+		) || noDiagramFound
+	}
 
 	private hookStatements(): void {
 		// For all statements with a loose end, hook the resource
@@ -2345,7 +2367,7 @@ class CProject implements SpecifProject {
 
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
-		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
+		var pnl = '<div class="card card-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// input field for project name, it is pre-filled (only for certain output formats);
 			// 'zero width space' (&#x200b;) is added to make the label = div-id unique:
@@ -2449,7 +2471,7 @@ class CProject implements SpecifProject {
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
 				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div class="col-sm-12" style="padding: 0 4px 0 4px">'
-					+ '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
+					+ '<div class="card card-options" style="margin-bottom:4px">'
 				//	+ "<h4>"+i18n.LblFormat+"</h4>"
 					+ "<p>" + i18n.MsgExport + "</p>"
 					+ makeRadioField(
