@@ -1,6 +1,6 @@
 /*!	iLAH: Resource Filters.
 	Dependencies: jQuery, bootstrap
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */

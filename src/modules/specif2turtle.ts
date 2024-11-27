@@ -265,7 +265,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
                         // Replace identifiers of enumerated values by their value as defined in the dataType:
                         // ToDo: Check use of default values
                         // @ts-ignore
-                        prp.values = prp.values.map((v) => LIB.itemById(dT.enumeration, v).value);
+                        prp.values = prp.values.map((v) => LIB.itemById(dT.enumeration, v.id).value);
                     };
 
                     for (var v of prp.values) {

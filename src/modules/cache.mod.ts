@@ -1,6 +1,6 @@
 /*!	Cache Library for SpecIF data.
 	Dependencies: jQuery
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
@@ -489,6 +489,7 @@ class CProject implements SpecifProject {
 	del = app.title != i18n.LblReader;
 	exp: boolean = true;			// permission to export  */
 	// @ts-ignore - initialized by this.setMeta()
+	modalExport: any; // the modal to query format and options for export
 	exportParams: IExportParams;
 	exporting: boolean;		// prevent concurrent exports
 	abortFlag: boolean;
@@ -2367,7 +2368,7 @@ class CProject implements SpecifProject {
 
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
-		var pnl = '<div class="card card-options" style="margin-bottom:0">'
+		var pnl = '<div>'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// input field for project name, it is pre-filled (only for certain output formats);
 			// 'zero width space' (&#x200b;) is added to make the label = div-id unique:
@@ -2425,156 +2426,132 @@ class CProject implements SpecifProject {
 
 //		console.debug('exportFormatClicked',radioValue( i18n.LblFormat ));
 	}
-/*	exportOptionsClicked(): void {
+	getFormatAndOptionsThenExport() {
+		let self = this;
+		app.busy.set();
+		message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
+//		console.debug('options',checkboxValues( i18n.LblOptions ));
+
 		// Obtain selected options:
 		// add 'zero width space' (&#x200b;) to make the label = div-id unique:
 		let prjN = textValue('&#x200b;' + i18n.LblProjectName);
 		this.exportParams.fileName = textValue('&#x200b;' + i18n.LblFileName) || prjN || this.id;
 		if (prjN)
 			this.exportParams.projectName = prjN;
-//		console.debug('exportOptionsClicked',this.title,this.fileName);
-	} */
+
+		let options = {
+			projectName: this.exportParams.projectName,
+			fileName: this.exportParams.fileName,
+			format: radioValue(i18n.LblFormat),
+			role: '',
+			domains: []
+		};
+
+		// Retrieve further options:
+		switch (options.format) {
+			case 'html':
+				if (app.title == i18n.LblEditor) {
+					options.role = radioValue(app.ontology.localize("SpecIF:Permissions", { targetLanguage: browser.language }))
+				}
+				else
+					// in case this is an HTML to create an HTML, adopt the same role:
+					options.role = window.role || "SpecIF:Supplier";
+				break;
+			case 'specifClasses':
+				// Create a list of domains which have been checked:
+				let chkDomains = checkboxValues(i18n.LblOptions);
+				options.domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain')).filter(
+					(d: string) => chkDomains.includes(d.toJsId())
+				);
+				break;
+			default:
+				checkboxValues(i18n.LblOptions).forEach(
+					(op: string) => {
+						// @ts-ignore - indexing is valid: 
+						options[op] = true
+					}
+				);
+		};
+
+		this.exportAs(options)
+			.then(
+				//	app.busy.reset,     --> doesn't work for some reason, 'this' within reset() is undefined ...
+				() => { app.busy.reset() },
+				(xhr: resultMsg): void => {
+					self.exporting = false;
+					app.busy.reset();
+					message.show(xhr);
+				}
+			);
+		this.modalExport.hide();
+	}
+	hasOntology(): boolean {
+		// Returns true, if one of the nodes is an ontology:
+		let hL = this.cache.get("hierarchy", self.nodes) as SpecifNode[];
+		for (var h of hL) {
+			let rL = this.cache.get("resource", [h.resource]) as SpecifResource[];
+			if (rL.length > 0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], this.cache))
+				return true;
+		};
+		return false;
+	}
 	chooseFormatAndExport() {
 		if (this.exporting) return;
 
-		var self = this;
-		const exportFormatClicked = 'app.projects.selected.exportFormatClicked()';
-		// @ts-ignore - BootstrapDialog() is loaded at runtime
-		new BootstrapDialog({
-		//	title: i18n.LblExport + ": '" + LIB.languageTextOf(this.title, { targetLanguage: this.language }) + "'",
-			title: i18n.LblExport,
-			type: 'type-primary',
-		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
-			size: BootstrapDialog.SIZE_WIDE,  */
-			message: () => {
-				// export is available for Editor and Reviewer:
-				let formats = app.title == i18n.LblEditor ?
-						[
-						//	{ title: 'SpecIF v1.0', id: 'specif_v10' },
-							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
-							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
-							{ title: 'ReqIF v1.0', id: 'reqif' },
-							{ title: 'MS Excel® <em>(experimental)</em>', id: 'xlsx' },
-							//	{ title: 'RDF', id: 'rdf' },
-							{ title: 'Turtle <em>(experimental)</em>', id: 'turtle' },
-							{ title: 'ePub v2', id: 'epub' },
-							{ title: 'MS Word® (Open XML)', id: 'oxml' }
-						]
-					:
-						[
-							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
-						];
-				// add an option to generate class definitions, if there is a SpecIF ontology found in the nodes:
-				if( moduleManager.isReady('ioOntology') && hasOntology() )
-					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
+		$('#exportFormat').remove();
 
-				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
-					+ '<div class="col-sm-12" style="padding: 0 4px 0 4px">'
-					+ '<div class="card card-options" style="margin-bottom:4px">'
-				//	+ "<h4>"+i18n.LblFormat+"</h4>"
-					+ "<p>" + i18n.MsgExport + "</p>"
-					+ makeRadioField(
-						i18n.LblFormat,
-						formats,
-						{ handle: exportFormatClicked }  // options depend on format
-					)
-					+ '</div>'
-					+ '</div>'
-				//	+ '<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
-					+ '<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
-					+ this.renderExportOptions(app.title == i18n.LblEditor ?'specif':'html')   // parameter must correspond to the checked option above
-					+ '</div>'
-					+ '</div>';
-				return $(form)
-
-				function hasOntology(): boolean {
-					// Returns true, if one of the nodes is an ontology:
-					let hL = self.cache.get("hierarchy", self.nodes) as SpecifNode[];
-					for (var h of hL) {
-						let rL = self.cache.get("resource", [h.resource]) as SpecifResource[];
-						if (rL.length>0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], self.cache))
-							return true;
-					};
-					return false;
-                }
-			},
-			buttons: [
-				{
-					label: i18n.BtnCancel,
-					action: (thisDlg: any) => {
-						thisDlg.close()
-					}
-				},
-				{
-					label: i18n.BtnExport,
-					cssClass: 'btn-success',
-					action: (thisDlg: any) => {
-						// Get index of option:
-						app.busy.set();
-						message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
-//						console.debug('options',checkboxValues( i18n.LblOptions ));
-
-						// Obtain selected options:
-						// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-						let prjN = textValue('&#x200b;' + i18n.LblProjectName);
-						this.exportParams.fileName = textValue('&#x200b;' + i18n.LblFileName) || prjN || this.id;
-						if (prjN)
-							this.exportParams.projectName = prjN;
-
-						let options = {
-							projectName: this.exportParams.projectName,
-							fileName: this.exportParams.fileName,
-							format: radioValue(i18n.LblFormat),
-							role: '',
-							domains: []
-						};
-
-						// Retrieve further options:
-						switch (options.format) {
-							case 'html':
-								if (app.title == i18n.LblEditor) {
-									options.role = radioValue(app.ontology.localize("SpecIF:Permissions", { targetLanguage: browser.language }))
-								}
-								else
-									// in case this is an HTML to create an HTML, adopt the same role:
-									options.role = window.role || "SpecIF:Supplier";
-								break;
-							case 'specifClasses':
-								// Create a list of domains which have been checked:
-								let chkDomains = checkboxValues(i18n.LblOptions);
-								options.domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain')).filter(
-									(d: string) => chkDomains.includes(d.toJsId())
-								);
-								break;
-							default:
-								checkboxValues(i18n.LblOptions).forEach(
-									(op: string) => {
-										// @ts-ignore - indexing is valid: 
-										options[op] = true
-									}
-								);
-						};
-
-						this.exportAs(options)
-						.then(
-						//	app.busy.reset,     --> doesn't work for some reason, 'this' within reset() is undefined ...
-							() =>{ app.busy.reset() },
-							handleError
-						);
-						thisDlg.close();
-					}
-				}
+		// export is available for Editor and Reviewer:
+		const formats = app.title == i18n.LblEditor ?
+			[
+				//	{ title: 'SpecIF v1.0', id: 'specif_v10' },
+				{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
+				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
+				{ title: 'ReqIF v1.0', id: 'reqif' },
+				{ title: 'MS Excel® <em>(experimental)</em>', id: 'xlsx' },
+				//	{ title: 'RDF', id: 'rdf' },
+				{ title: 'Turtle <em>(experimental)</em>', id: 'turtle' },
+				{ title: 'ePub v2', id: 'epub' },
+				{ title: 'MS Word® (Open XML)', id: 'oxml' }
 			]
-		})
-		.open();
-		return;
+			:
+			[
+				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
+			];
+		// add an option to generate class definitions, if there is a SpecIF ontology found in the nodes:
+		if (moduleManager.isReady('ioOntology') && this.hasOntology())
+			formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
 
-		function handleError(xhr: resultMsg): void {
-			self.exporting = false;
-			app.busy.reset();
-			message.show(xhr);
-		}
+		// modal template for export format:
+		let form = $(  
+			'<div class="modal fade" id="exportFormat" tabindex="-1" >'
+		+		'<div class="modal-dialog modal-lg" >'
+		+			'<div class="modal-content" >'
+		+				'<div class="modal-header" >'
+		+					'<h5 class="modal-title" >'+i18n.LblExport+'</h5>'
+		+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
+		+				'</div>'
+		+				'<div class="modal-body" >'
+		+	makeRadioField(
+				i18n.LblFormat,
+				formats,
+				{ handle: 'app.projects.selected.exportFormatClicked()' }  // options depend on format
+			)
+		+					'<div id="expOptions" class="mt-1">'
+		+	this.renderExportOptions(app.title == i18n.LblEditor ? 'specif' : 'html')   // parameter must correspond to the checked option above
+		+					'</div>'
+		+				'</div>'
+		+				'<div class="modal-footer" >'
+		+					'<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >' + i18n.BtnCancel +'</button>'
+		+					'<button type="button" class="btn btn-success" onclick="app.projects.selected.getFormatAndOptionsThenExport()">' + i18n.BtnExport +'</button>'
+		+				'</div>'
+		+			'</div>'
+		+		'</div>'
+		+	'</div>');
+		// @ts-ignore - bootstrap is loaded at runtime:
+	//	this.modalExport = bootstrap.Modal.getOrCreateInstance(form);
+		this.modalExport = new bootstrap.Modal(form);
+		this.modalExport.show();
+	//	return;
 	}
 	private exportAs(opts?: any): Promise<void> {
 		var self = this;
@@ -3982,7 +3959,7 @@ moduleManager.construct({
 	/*	autoLoadId = undefined;  // stop any autoLoad chain
 		autoLoadCb = undefined;  */
 
-		return true
+		return true;
 	};
 	self.create = (dta: SpecIF, opts: any): JQueryDeferred<void> => {
 		// in this implementation, delete existing projects to save memory space:

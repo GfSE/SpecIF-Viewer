@@ -3,7 +3,7 @@
 	- Extract both model-elements and semantic relations in SpecIF Format
 	- Model elements with same type and title are NOT consolidated by this transformation
 	
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues) 

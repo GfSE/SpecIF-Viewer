@@ -1,6 +1,6 @@
 ﻿/*!	RDF import and export
 	Dependencies: 
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)

@@ -1,7 +1,8 @@
 function toEpub( data, opts ) {
 	"use strict";
 	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
-	// Copyright: adesso AG (http://adesso.de)
+	// (C)copyright enso managers gmbh(http://enso-managers.de)
+	// Author: se@enso-managers.de, Berlin
 	// License: Apache 2.0 (http://www.apache.org/licenses/)
 	// Dependencies: 
 	// - jszip ( https://github.com/Stuk/jszip ), 
@@ -9,6 +10,7 @@ function toEpub( data, opts ) {
 	// ePub Tutorials: 
 	// - https://www.ibm.com/developerworks/xml/tutorials/x-epubtut/index.html
 	// - http://www.jedisaber.com/eBooks/formatsource.shtml
+    // We appreciate any correction, comment or contribution as Github issue(https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	// ToDo: 
 	// - Embed font with sufficient UTF - 8 coverage: http://www.dpc-consulting.org/epub-praxis-fonts-einbinden-und-verwenden/

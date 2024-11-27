@@ -1,6 +1,6 @@
 /*!	Show SpecIF data
 	Dependencies: jQuery, jqTree, bootstrap
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
@@ -203,8 +203,11 @@ class CPropertyToShow implements SpecifProperty {
 					});
 					// replace it with a link in case of a match:
 					// @ts-ignore - target may be undefined, indeed:
-					if (target)
-						return lnk(target, $1)+$2;
+					if (target) {
+					//	return lnk(target, $1)+$2;
+					//	console.debug('lnk',target,$1,'app['+CONFIG.objectList+'].relatedItemClicked(\''+target.id+'\')');
+						return '<a class="link-primary" onclick="app[CONFIG.objectList].relatedItemClicked(\'' + target.id + '\')">' + $1 + '</a>' + $2;
+					};
 					// The dynamic link has NOT been matched/replaced, so remove the titleLink pattern and mark it:
 					return '<span style="color:#D82020">' + $1 + '</span>'+$2
 				}
@@ -216,10 +219,10 @@ class CPropertyToShow implements SpecifProperty {
 		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
 		return str;
 
-		function lnk(r: SpecifResource, t: string): string {
+	/*	function lnk(r: SpecifResource, t: string): string {
 //			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
 			return '<a class="link-primary" onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
-		}
+		} */
 	}
 	renderFile(txt: string, opts?: any): string {
 	/*	Formerly fileRef.toGUI()

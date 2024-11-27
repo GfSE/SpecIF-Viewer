@@ -1,6 +1,6 @@
 /*!	SpecIF: Link Resources.
 	Dependencies: jQuery, bootstrap
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
@@ -151,11 +151,11 @@ moduleManager.construct({
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
-					// @ts-ignore - BootstrapDialog() is loaded at runtime
+
+				/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
 					new BootstrapDialog({
 						title: i18n.MsgCreateStatement,
 						type: 'type-primary',
-						// @ts-ignore - BootstrapDialog() is loaded at runtime
 						size: BootstrapDialog.SIZE_WIDE,
 						// initialize the dialog:
 						onshown: ()=>{ app[myName].filterClicked() },
@@ -208,7 +208,7 @@ moduleManager.construct({
 							}  
 						}]
 					})
-					.open()	
+					.open()	*/
 				}
 			}
 		}

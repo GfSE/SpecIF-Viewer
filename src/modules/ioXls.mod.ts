@@ -920,24 +920,34 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 
 	function prpValues(res: SpecifResource) {
 		// Return a list of the resource's property values
-		let prpL = [];
+		// ToDo: This has certainly been coded elsewhere, already
+		let prpL = [], pVal: string;
 		for (var pC of data.propertyClasses) {
 			let p = findPrp(res.properties, pC);
-			// @ts-ignore
-			let pVal = p ? p.values[0][0].text || p.values[0] : undefined;
-			//    console.debug('prpValues 2', p, pVal);
-			if (p && p.values.length > 1)
-				console.info("Only first property value exported to xlsx.");
+			//    console.debug('prpValues 2', pC, p);
+			if (p) {
+				if (p.values.length > 1)
+					console.info("Limitation of XLS export: Only first property value is included.");
 
-			// lookup if it is an enumerated value:
-			let dT = LIB.itemByKey(data.dataTypes, pC.dataType);
-			if (pVal && dT && dT.enumeration) {
-				let v = LIB.itemById(dT.enumeration, pVal);
-			//	pVal = typeOf(v.value)=='string'? v.value : v.value[0]['text'];
-				pVal = LIB.isMultiLanguageValue(v.value) ? v.value[0]['text'] : v.value;
+				let dT = LIB.itemByKey(data.dataTypes, pC.dataType);
+				if (dT) {
+					if (dT.enumeration) {
+						let v = LIB.itemById(dT.enumeration, p.values[0].id);
+						//	pVal = typeOf(v.value)=='string'? v.value : v.value[0]['text'];
+						pVal = LIB.isMultiLanguageValue(v.value) ? v.value[0]['text'] : v.value;
+					}
+					else if (dT.type == XsDataType.String) {
+						if (p.values[0].length > 1)
+							console.info("Limitation of XLS export: Only first language value is included.");
+
+						pVal = p.values[0][0]['text']
+					}
+					else {
+						pVal = p.values[0]
+					};
+					prpL.push(pVal);
+				};
 			};
-
-			prpL.push(pVal);
 		};
 		return prpL;
 		function findPrp(prpL:SpecifProperty[], pC:SpecifPropertyClass) {

@@ -11,7 +11,7 @@
 <body style="overflow:auto;">
 	<div class="container">
 	<div class="row">
-		<div class="col-lg" >
+		<div class="col-lg">
 			<h1 id="aboutTitle">About SpecIF Apps</h1>
 			<p>A family of apps for your web-browser to integrate, edit, transform and review system specifications:</p>
 			<ul>
@@ -21,6 +21,7 @@
 			</ul>
 			<p>You may consult the <a href="https://gfse.github.io/SpecIF-Pages/Manuals/01_Quick-Start-Guide_EN.html" target="_blank">Quick Start Guide.</a></p>
 			<p>If you experience unexpected or faulty behavior of the software, please open a <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">new issue</a>.</p>
+			<p>Version: App v<span id="appVersion"></span> supporting Specif v0.9.3 to v<span id="specifVersion"></span>.</p>
 			<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>
 			<h2>Introduction</h2>
 			<p>SpecIF is the 'Specification Integration Facility'. It combines partial specifications from different tools in a semantic net for</p>
@@ -367,5 +368,18 @@
 		</div>
 	</div>
 	</div>
+	<script type="text/javascript">
+        // see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
+        function getScript(url) {
+            var el = document.createElement('script');
+			el.onload = function () {
+                document.getElementById('appVersion').innerHTML = CONFIG.appVersion;
+                document.getElementById('specifVersion').innerHTML = CONFIG.specifVersion;
+            };
+            el.src = url;
+            document.body.appendChild(el)
+        }
+        getScript('./config/definitions.js?' + Date.now().toString()); // with cache-busting
+	</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 ﻿/*!    SpecIF: Generate Specif classes from the Ontology.
     Dependencies: -
-    (C)copyright enso managers gmbh (http://www.enso-managers.de)
+    (C)copyright enso managers gmbh (http://enso-managers.de)
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
     Author: se@enso-managers.de, Berlin
     We appreciate any correction, comment or contribution as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
@@ -100,7 +100,7 @@ class COntology {
         this.data.nodes = (dta.nodes).filter(
             (n: SpecifNode) => {
                 let r = LIB.itemByKey(dta.resources, n.resource);
-                return this.valueByTitle(r, CONFIG.propClassType) == "W3C:Ontology";
+                return this.valueByTitle(r, CONFIG.propClassType) == CONFIG.resClassOntology;
             }
         );
         if (dta.nodes.length < 1) {
