@@ -145,6 +145,7 @@ function LanguageTextsEn() {
 	self.LblSpecType = "Type";
 	self.LblResourceClass = 'Resource-class';
 	self.LblStatementClass = 'Statement-class';
+	self.LblResource = 'Resource';
 //	self.LblRelGroupTypes = 'Relationgroup-Types';
 //	self.LblRelGroupType = 'Relationgroup-Type';
 	self.LblSpecificationTypes = 'Outline-types';
@@ -295,8 +296,6 @@ function LanguageTextsEn() {
 //	self.FnRemove =
 	self.FnDelete = self.IcoDelete;
 
-//	self.SpecIF_Authorization = "Berechtigung";
-
 // Messages:
 	self.MsgIntro = 'Are you new here? Read a short <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction</a>, if you like.';
 	self.MsgConfirm = 'Please confirm:';
@@ -363,6 +362,7 @@ function LanguageTextsEn() {
 	self.MsgImgWidth = "Image width [px]";
 	self.MsgSelectResClass = "Choose a "+	self.LblResourceClass;
 	self.MsgSelectStaClass = "Choose a "+	self.LblStatementClass;
+	self.MsgSelectResource = "Select a " + self.LblResource;
 	self.MsgNoEligibleRelTypes = "No statement-type defined for this resource-type.";
 	self.MsgClickToNavigate = "Double-click a resource to navigate:";
 	self.MsgClickToDeleteRel = "Double-click a resource to delete the respective statement:";

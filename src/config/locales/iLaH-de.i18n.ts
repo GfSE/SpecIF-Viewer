@@ -145,7 +145,8 @@ function LanguageTextsDe() {
 	self.LblSpecType = 'Typ';
 	self.LblResourceClass = 'Ressource-Klasse';
 	self.LblStatementClass = 'Aussage-Klasse';
-//	self.LblRelGroupTypes = 'Aussagegruppen-Typen';
+	self.LblResource = 'Ressource';
+	//	self.LblRelGroupTypes = 'Aussagegruppen-Typen';
 //	self.LblRelGroupType = 'Aussagegruppen-Typ';
 	self.LblSpecificationTypes = 'Gliederungs-Typen';
 	self.hierarchyType = 
@@ -361,6 +362,7 @@ function LanguageTextsDe() {
 	self.MsgImgWidth = "Bildbreite [px]";
 	self.MsgSelectResClass = 	self.LblResourceClass+" auswählen";
 	self.MsgSelectStaClass = 	self.LblStatementClass+" auswählen";
+	self.MsgSelectResource = "Eine " + self.LblResource + " auswählen";
 	self.MsgNoEligibleRelTypes = "Keine Relation-Klassen für diesen Ressource-Typ definiert.";
 	self.MsgClickToNavigate = "Eine Ressource doppelt klicken, um dorthin zu navigieren:";
 	self.MsgClickToDeleteRel = "Eine Ressource doppelt klicken, um die betreffende Relation zu löschen:";

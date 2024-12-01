@@ -2419,18 +2419,87 @@ class CProject implements SpecifProject {
 //		console.debug('renderExportOptions',fmt,pnl);
 		return pnl;
 	}
+	hasOntology(): boolean {
+		// Returns true, if one of the nodes is an ontology:
+		let hL = this.cache.get("hierarchy", self.nodes) as SpecifNode[];
+		for (var h of hL) {
+			let rL = this.cache.get("resource", [h.resource]) as SpecifResource[];
+			if (rL.length > 0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], this.cache))
+				return true;
+		};
+		return false;
+	}
+	chooseFormatThenExport() {
+		// Export phase 1: Choose format and options via modal dialog and upon pressing the export button, start the export operation
+		if (this.exporting) return;
+
+		$('#exportFormat').remove();
+
+		// export is available for Editor and Reviewer:
+		const formats = app.title == i18n.LblEditor ?
+			[
+				//	{ title: 'SpecIF v1.0', id: 'specif_v10' },
+				{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
+				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
+				{ title: 'ReqIF v1.0', id: 'reqif' },
+				{ title: 'MS Excel® <em>(experimental)</em>', id: 'xlsx' },
+				//	{ title: 'RDF', id: 'rdf' },
+				{ title: 'Turtle <em>(experimental)</em>', id: 'turtle' },
+				{ title: 'ePub v2', id: 'epub' },
+				{ title: 'MS Word® (Open XML)', id: 'oxml' }
+			]
+			:
+			[
+				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
+			];
+		// add an option to generate class definitions, if there is a SpecIF ontology found in the nodes:
+		if (moduleManager.isReady('ioOntology') && this.hasOntology())
+			formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
+
+		// modal template for export format:
+		let form = $(  
+			'<div class="modal fade" id="exportFormat" tabindex="-1" >'
+		+		'<div class="modal-dialog modal-lg" >'
+		+			'<div class="modal-content" >'
+		+				'<div class="modal-header" >'
+		+					'<h5 class="modal-title" >'+i18n.LblExport+'</h5>'
+		+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
+		+				'</div>'
+		+				'<div class="modal-body" >'
+		+	makeRadioField(
+				i18n.LblFormat,
+				formats,
+				{ handle: 'app.projects.selected.exportFormatClicked()' }  // options depend on format
+			)
+		+					'<div id="expOptions" class="mt-1">'
+		+	this.renderExportOptions(app.title == i18n.LblEditor ? 'specif' : 'html')   // parameter must correspond to the checked option above
+		+					'</div>'
+		+				'</div>'
+		+				'<div class="modal-footer" >'
+		+					'<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >' + i18n.BtnCancel +'</button>'
+		+					'<button type="button" class="btn btn-success" onclick="app.projects.selected.getFormatAndOptionsThenExport()">' + i18n.BtnExport +'</button>'
+		+				'</div>'
+		+			'</div>'
+		+		'</div>'
+		+	'</div>');
+	//	this.modalExport = bootstrap.Modal.getOrCreateInstance(form);
+		// @ts-ignore - bootstrap is loaded at runtime:
+		this.modalExport = new bootstrap.Modal(form);
+		this.modalExport.show();
+	//	return;
+	}
 	exportFormatClicked(): void {
-		// Display options depending on selected format:
+		// When the export modal dialog is open, the options change depending on the selected format:
 		// ToDo: In case of ReqIF OOXML and ePub, let the user choose the language, if there are more than one:
 		document.getElementById("expOptions").innerHTML = this.renderExportOptions(radioValue(i18n.LblFormat));
-
-//		console.debug('exportFormatClicked',radioValue( i18n.LblFormat ));
+		//	console.debug('exportFormatClicked',radioValue( i18n.LblFormat ));
 	}
 	getFormatAndOptionsThenExport() {
+		// Export phase 2: As soon as the respective button is pressed, get format and options from the modal dialog and start export operation
 		let self = this;
 		app.busy.set();
 		message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
-//		console.debug('options',checkboxValues( i18n.LblOptions ));
+		//		console.debug('options',checkboxValues( i18n.LblOptions ));
 
 		// Obtain selected options:
 		// add 'zero width space' (&#x200b;) to make the label = div-id unique:
@@ -2485,75 +2554,8 @@ class CProject implements SpecifProject {
 			);
 		this.modalExport.hide();
 	}
-	hasOntology(): boolean {
-		// Returns true, if one of the nodes is an ontology:
-		let hL = this.cache.get("hierarchy", self.nodes) as SpecifNode[];
-		for (var h of hL) {
-			let rL = this.cache.get("resource", [h.resource]) as SpecifResource[];
-			if (rL.length > 0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], this.cache))
-				return true;
-		};
-		return false;
-	}
-	chooseFormatAndExport() {
-		if (this.exporting) return;
-
-		$('#exportFormat').remove();
-
-		// export is available for Editor and Reviewer:
-		const formats = app.title == i18n.LblEditor ?
-			[
-				//	{ title: 'SpecIF v1.0', id: 'specif_v10' },
-				{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
-				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
-				{ title: 'ReqIF v1.0', id: 'reqif' },
-				{ title: 'MS Excel® <em>(experimental)</em>', id: 'xlsx' },
-				//	{ title: 'RDF', id: 'rdf' },
-				{ title: 'Turtle <em>(experimental)</em>', id: 'turtle' },
-				{ title: 'ePub v2', id: 'epub' },
-				{ title: 'MS Word® (Open XML)', id: 'oxml' }
-			]
-			:
-			[
-				{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
-			];
-		// add an option to generate class definitions, if there is a SpecIF ontology found in the nodes:
-		if (moduleManager.isReady('ioOntology') && this.hasOntology())
-			formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
-
-		// modal template for export format:
-		let form = $(  
-			'<div class="modal fade" id="exportFormat" tabindex="-1" >'
-		+		'<div class="modal-dialog modal-lg" >'
-		+			'<div class="modal-content" >'
-		+				'<div class="modal-header" >'
-		+					'<h5 class="modal-title" >'+i18n.LblExport+'</h5>'
-		+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
-		+				'</div>'
-		+				'<div class="modal-body" >'
-		+	makeRadioField(
-				i18n.LblFormat,
-				formats,
-				{ handle: 'app.projects.selected.exportFormatClicked()' }  // options depend on format
-			)
-		+					'<div id="expOptions" class="mt-1">'
-		+	this.renderExportOptions(app.title == i18n.LblEditor ? 'specif' : 'html')   // parameter must correspond to the checked option above
-		+					'</div>'
-		+				'</div>'
-		+				'<div class="modal-footer" >'
-		+					'<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >' + i18n.BtnCancel +'</button>'
-		+					'<button type="button" class="btn btn-success" onclick="app.projects.selected.getFormatAndOptionsThenExport()">' + i18n.BtnExport +'</button>'
-		+				'</div>'
-		+			'</div>'
-		+		'</div>'
-		+	'</div>');
-		// @ts-ignore - bootstrap is loaded at runtime:
-	//	this.modalExport = bootstrap.Modal.getOrCreateInstance(form);
-		this.modalExport = new bootstrap.Modal(form);
-		this.modalExport.show();
-	//	return;
-	}
 	private exportAs(opts?: any): Promise<void> {
+		// Export phase 3: Once format and options have been chosen, the export operation is executed here
 		var self = this;
 
 		if (!opts) opts = {};
@@ -2590,7 +2592,6 @@ class CProject implements SpecifProject {
 						publish(opts);
 						break;
 					default:
-						// !
 						let msg = "Programming error: Invalid format specified on export."
 					//	reject(new resultMsg(999, msg));
 						throw Error(msg);

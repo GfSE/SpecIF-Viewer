@@ -145,6 +145,7 @@ function LanguageTextsFr() {
 	self.LblSpecType = "Type";
 	self.LblResourceClass = "Classe de ressource";
 	self.LblStatementClass = "Classe d'affirmation";
+	self.LblResource = 'Resource';
 //	self.LblRelGroupTypes = "Types de groupe d'affirmations";
 //	self.LblRelGroupType = "Type de groupe d'affirmation";
 	self.LblSpecificationTypes = "Types d'arborescence";
@@ -361,6 +362,7 @@ function LanguageTextsFr() {
 	self.MsgImgWidth = "Largeur de l'image [px]";
 	self.MsgSelectResClass = "Choisissez une "+	self.LblResourceClass;
 	self.MsgSelectStaClass = "Choisissez une "+	self.LblStatementClass;
+	self.MsgSelectResource = "Choisissez une " + self.LblResource;
 	self.MsgNoEligibleRelTypes = "Aucune affirmation défini pour ce type de ressource.";
 	self.MsgClickToNavigate = "Double-cliquer une ressource pour y naviguer:";
 	self.MsgClickToDeleteRel = "Double-cliquer une ressource pour supprimer l'affirmation respective:";

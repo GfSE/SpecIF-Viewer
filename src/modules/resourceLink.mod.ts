@@ -17,7 +17,8 @@ moduleManager.construct({
 		selPrj: CProject,
 		cData: CCache,			// the cached data
 		selRes:SpecifResource,	// the currently selected resource
-		opts:any;				// the processing options
+		opts:any,				// the processing options
+		modalAddLink: any;		// the modal to query format and options for export
 
 	self.eligibleSCL =[];		// all eligible statementClasses
 	self.selResStatements=[];	// all statements of the selected resource
@@ -140,8 +141,10 @@ moduleManager.construct({
 				if( --pend<1 ) {
 					// all parallel requests are done,
 					// store a clone and get the title to display:
-					let staClasses = LIB.forAll( 
-							self.eligibleSCL,
+
+					$('#addLink').remove();
+
+					let staClasses = self.eligibleSCL.map(
 							(sC: SpecifStatementClass) => {
 								return {
 									title: LIB.titleOf(sC, { lookupTitles: true, targetLanguage: selPrj.language }),
@@ -152,63 +155,45 @@ moduleManager.construct({
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
 
-				/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
-					new BootstrapDialog({
-						title: i18n.MsgCreateStatement,
-						type: 'type-primary',
-						size: BootstrapDialog.SIZE_WIDE,
-						// initialize the dialog:
-						onshown: ()=>{ app[myName].filterClicked() },
-					//	message: (thisDlg)=>{
-						message: () =>{
-							var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="card card-options" style="margin-bottom:0">'
-								+ makeRadioField(i18n.LblStatementClass, staClasses, { handle: myFullName + '.filterClicked()' })
-								+ makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
-								+ '</div></div>'
-								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="card card-options" style="margin-bottom:0">'
-								// add just the container; the candidate list will be added by filterClicked():
-								+ '<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" >'
-								+ '</div></div>'
-								+ '</div>';
-							return $( form )
-						},
-						buttons: [{
-							label: i18n.BtnCancel,
-							action: (thisDlg: any)=>{
-								thisDlg.close() 
-							}
-						}, {
-							id: 'btn-modal-saveResourceAsSubject',
-							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsSource,
-							cssClass: 'btn-success', 
-							action: (thisDlg: any)=>{
-								self.saveStatement({secondAs:'subject'})
-								.then(
-									()=>{
-										self.parent.doRefresh({forced:true})
-									},
-									LIB.stdError
-								);
-								thisDlg.close()
-							}  
-						},{ 	
-							id: 'btn-modal-saveResourceAsObject',
-							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsTarget,
-							cssClass: 'btn-success', 
-							action: (thisDlg: any)=>{
-								self.saveStatement({secondAs:'object'})
-								.then(
-									()=>{
-										self.parent.doRefresh({forced:true})
-									},
-									LIB.stdError
-								);
-								thisDlg.close()
-							}  
-						}]
-					})
-					.open()	*/
+					// modal template for export format:
+					$('body').append(  
+						'<div class="modal fade" id="addLink" tabindex="-1" >'
+					+		'<div class="modal-dialog modal-xl" >'
+					+			'<div class="modal-content">'
+					+				'<div class="modal-header" >'
+					+					'<h5 class="modal-title" >'+i18n.MsgCreateStatement+'</h5>'
+					+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
+					+				'</div>'
+					+				'<div class="modal-body" >'
+
+					+					 '<div class="row">'
+					+						'<div class="col-xl-6">'
+					+							makeRadioField(i18n.LblStatementClass, staClasses, { handle: myFullName + '.filterClicked()' })
+					+							makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
+					+						'</div>'
+					+						'<div class="col-xl-6">'
+					+							'<div><em>'+i18n.MsgSelectResource+':</em></div>'
+												// add just the container; the candidate list will be added by filterClicked():
+					+							'<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" ></div>'
+					+						'</div>'
+					+					'</div>'
+
+					+				'</div>'
+					+				'<div class="modal-footer" >'
+					+					'<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >'+i18n.BtnCancel+'</button>'
+					+					'<button type="button" id="btn-modal-saveResourceAsSubject" class="btn btn-success" onclick="'+myFullName+'.saveClicked(\'subject\')">'+i18n.IcoAdd+'&#160;'+i18n.LblSaveRelationAsSource+'</button>'
+					+					'<button type="button" id="btn-modal-saveResourceAsObject" class="btn btn-success" onclick="'+myFullName+'.saveClicked(\'object\')">'+i18n.IcoAdd+'&#160;'+i18n.LblSaveRelationAsTarget+'</button>'
+					+				'</div>'
+					+			'</div>'
+					+		'</div>'
+					+	'</div>'
+					);
+					const addLink = document.getElementById('addLink');
+					addLink.addEventListener('shown.bs.modal', app[myName].filterClicked );
+					// @ts-ignore - bootstrap is loaded at runtime:
+					modalAddLink = new bootstrap.Modal(addLink);
+					modalAddLink.show();
+					//	return;
 				}
 			}
 		}
@@ -332,5 +317,21 @@ moduleManager.construct({
 			[sta]
 		);
 	};
+	self.saveClicked = (dir: string) => {
+		self.saveStatement({ secondAs: dir })
+			.then(
+				() => {
+					self.parent.doRefresh({ forced: true })
+				},
+				LIB.stdError
+			);
+		modalAddLink.hide();
+	};
+/*	self.saveAsSubjectClicked = () => {
+		return self.saveClicked('subject');
+	}
+	self.saveAsObjectClicked = () => {
+		return self.saveClicked('object');
+	} */
 	return self
 })
