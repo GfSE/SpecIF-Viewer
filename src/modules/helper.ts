@@ -38,11 +38,12 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     let fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0)? ' oninput="' + opts.handle + '"' : '',
         sH = simpleHash(tag),
         fG: string,
+        cl = (typeof (opts.classes) == 'string' && opts.classes.length > 0) ? ' '+opts.classes : '',
         aC: string;
     if (opts.typ && ['line', 'area'].includes(opts.typ) )
-        fG = '<div id="'+sH+'" class="form-group form-active" >'    // input field
+        fG = '<div id="'+sH+'" class="form-group form-active'+cl+'" >'    // input field
     else
-        fG = '<div class="attribute" >';                // display field
+        fG = '<div class="attribute' + cl +'" >';                // display field
 
     switch( opts.tagPos ) {
         case 'none':

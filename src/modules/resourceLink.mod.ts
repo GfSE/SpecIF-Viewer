@@ -169,12 +169,13 @@ moduleManager.construct({
 					+					 '<div class="row">'
 					+						'<div class="col-xl-6">'
 					+							makeRadioField(i18n.LblStatementClass, staClasses, { handle: myFullName + '.filterClicked()' })
-					+							makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
+					+							makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()', classes: 'mt-1' })
 					+						'</div>'
 					+						'<div class="col-xl-6">'
-					+							'<div><em>'+i18n.MsgSelectResource+':</em></div>'
+					+							'<div class="mt-1"><em>'+i18n.MsgSelectResource+':</em></div>'
 												// add just the container; the candidate list will be added by filterClicked():
-					+							'<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" ></div>'
+												// ToDo: The max-hight is wrong, when both columns are stacked in case of a narrow screen.
+					+							'<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 250) + 'px; overflow:auto" ></div>'
 					+						'</div>'
 					+					'</div>'
 
