@@ -155,7 +155,7 @@ moduleManager.construct({
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
 
-					// modal template for export format:
+					// modal template for selecting a statementClass and a resource to link:
 					$('body').append(  
 						'<div class="modal fade" id="addLink" tabindex="-1" >'
 					+		'<div class="modal-dialog modal-xl" >'

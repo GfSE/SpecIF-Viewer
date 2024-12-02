@@ -1786,8 +1786,9 @@ moduleManager.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.' + myName,
 		selPrj: CProject,
-	//	cacheData: CCache,		// the cached project data
-		selRes: CResourceToShow;	// the currently selected resource
+		//	cacheData: CCache,		// the cached project data
+		selRes: CResourceToShow,	// the currently selected resource
+		modalDelNode: any;
 
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -1981,7 +1982,7 @@ moduleManager.construct({
 			// - The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 			if (selRes.rC.permissionVector.D && selRes.isUserInstantiated())
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
-				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
+				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.confirmDeletion()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
 				rB += '<button disabled class="btn btn-light" >'+i18n.IcoDelete+'</button>';
@@ -2066,11 +2067,43 @@ moduleManager.construct({
 			throw Error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.")
 		}
 	}; 
-	self.deleteNode = ():void =>{
+	self.confirmDeletion = ():void =>{
 		// Delete the selected node and its children.
 		// The resources are dereferenced, or optionally deleted, themselves.
 		// @ts-ignore - BootstrapDialog() is loaded at runtime
-		new BootstrapDialog({
+
+		const modalId = "delNode";
+		$('#' + modalId).remove();
+
+		// modal template for selecting a statementClass and a resource to link:
+		$('body').append(
+			'<div class="modal fade" id="' + modalId + '" tabindex="-1" >'
+		+		'<div class="modal-dialog" >'
+		+			'<div class="modal-content">'
+		+				'<div class="modal-header bg-danger text-white" >'
+		+					'<h5 class="modal-title" >' + i18n.MsgConfirm+'</h5>'
+		+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
+		+				'</div>'
+		+				'<div class="modal-body" >'
+
+		+					i18n.lookup( 'MsgConfirmObjectDeletion', self.parent.tree.selectedNode.name )
+
+		+				'</div>'
+		+				'<div class="modal-footer" >'
+		+					'<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >'+i18n.BtnCancel+'</button>'
+		+					'<button type="button" class="btn btn-danger" onclick="'+myFullName+'.deleteSelectedNode()">'+i18n.BtnDeleteObjectRef+'</button>'
+		+				'</div>'
+		+			'</div>'
+		+		'</div>'
+		+	'</div>'
+		);
+		const delNode = document.getElementById(modalId);
+		// @ts-ignore - bootstrap is loaded at runtime:
+		modalDelNode = new bootstrap.Modal(delNode);
+		modalDelNode.show();
+		//	return;
+
+	/*	new BootstrapDialog({
 			title: i18n.MsgConfirm,
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			type: BootstrapDialog.TYPE_DANGER,
@@ -2086,21 +2119,21 @@ moduleManager.construct({
 					delNd( self.parent.tree.selectedNode );
 					thisDlg.close()
 				}
-		/*	},{
-				label: i18n.BtnDeleteObject,
-				// This button is enabled, if the user has permission to delete the referenced resource,
-				// ?? and if the resource has no further references in any tree:
-				cssClass: 'btn-danger' +(enableDel(self.parent.tree.selectedNode.ref)?'':' disabled'), 
-				action: function (thisDlg) {
-					// the selected resource's instantiation must be "user" 
+		//	},{
+		//		label: i18n.BtnDeleteObject,
+		//		// This button is enabled, if the user has permission to delete the referenced resource,
+		//		// ?? and if the resource has no further references in any tree:
+		//		cssClass: 'btn-danger' +(enableDel(self.parent.tree.selectedNode.ref)?'':' disabled'), 
+		//		action: function (thisDlg) {
+		//			// the selected resource's instantiation must be "user" 
 //					console.debug( "Deleting resource '"+self.parent.tree.selectedNode.name+"'." );
-					delNd( self.parent.tree.selectedNode );
+		//			delNd( self.parent.tree.selectedNode );
 			//		delRes( self.parent.tree.selectedNode.ref );
-					thisDlg.close();
-				} */
+		//			thisDlg.close();
+		//		}
 			}]
 		})
-		.open();
+		.open(); 
 		return;
 		
 		function delNd(nd: jqTreeNode): void {
@@ -2108,7 +2141,7 @@ moduleManager.construct({
 			console.info("Deleting tree object '" + nd.name + "'.");
 
 			// 1. Step away from tbe node to delete:
-//			console.debug('deleteNode',nd,nd.getNextSibling());
+//			console.debug('confirmDeletion',nd,nd.getNextSibling());
 			self.parent.tree.selectNode(nd.getNextSibling());
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
@@ -2119,7 +2152,7 @@ moduleManager.construct({
 					self.parent.reworkTree,
 					LIB.stdError
 				);
-		}
+		} */
 	/*	function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
@@ -2154,6 +2187,25 @@ moduleManager.construct({
 				);
 		} */
 	};
+	self.deleteSelectedNode = (): void =>{
+		// Delete the hierarchy node and all it's children.
+		const nd = self.parent.tree.selectedNode;
+		console.info("Deleting tree object '" + nd.name + "'.");
+
+		// 1. Step away from tbe node to delete:
+		//			console.debug('deleteSelectedNode',nd,nd.getNextSibling());
+		self.parent.tree.selectNode(nd.getNextSibling());
+
+		// 2. Delete the hierarchy entry with all its children in cache and server:
+		app.projects.selected.deleteItems('node', [LIB.makeKey(nd)])
+			.then(
+				// If a diagram has been deleted, build a new glossary with elements 
+				// which are shown by any of the remaining diagrams:
+				self.parent.reworkTree,
+				LIB.stdError
+			);
+		modalDelNode.hide();
+	}
 /*	self.deleteResource = ()=>{
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
