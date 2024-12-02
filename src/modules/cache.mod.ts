@@ -2461,7 +2461,7 @@ class CProject implements SpecifProject {
 			'<div class="modal fade" id="exportFormat" tabindex="-1" >'
 		+		'<div class="modal-dialog modal-lg" >'
 		+			'<div class="modal-content" >'
-		+				'<div class="modal-header" >'
+		+				'<div class="modal-header bg-success text-white" >'
 		+					'<h5 class="modal-title" >'+i18n.LblExport+'</h5>'
 		+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
 		+				'</div>'

@@ -142,7 +142,8 @@ moduleManager.construct({
 					// all parallel requests are done,
 					// store a clone and get the title to display:
 
-					$('#addLink').remove();
+					const modalId = "addLink";
+					$('#' + modalId).remove();
 
 					let staClasses = self.eligibleSCL.map(
 							(sC: SpecifStatementClass) => {
@@ -157,10 +158,10 @@ moduleManager.construct({
 
 					// modal template for selecting a statementClass and a resource to link:
 					$('body').append(  
-						'<div class="modal fade" id="addLink" tabindex="-1" >'
+						'<div class="modal fade" id="' + modalId + '" tabindex="-1" >'
 					+		'<div class="modal-dialog modal-xl" >'
 					+			'<div class="modal-content">'
-					+				'<div class="modal-header" >'
+					+				'<div class="modal-header bg-success text-white" >'
 					+					'<h5 class="modal-title" >'+i18n.MsgCreateStatement+'</h5>'
 					+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
 					+				'</div>'
@@ -189,7 +190,7 @@ moduleManager.construct({
 					+		'</div>'
 					+	'</div>'
 					);
-					const addLink = document.getElementById('addLink');
+					const addLink = document.getElementById(modalId);
 					addLink.addEventListener('shown.bs.modal', app[myName].filterClicked );
 					// @ts-ignore - bootstrap is loaded at runtime:
 					modalAddLink = new bootstrap.Modal(addLink);

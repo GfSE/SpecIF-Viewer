@@ -2075,7 +2075,7 @@ moduleManager.construct({
 		const modalId = "delNode";
 		$('#' + modalId).remove();
 
-		// modal template for selecting a statementClass and a resource to link:
+		// modal template confirm deletion of a node:
 		$('body').append(
 			'<div class="modal fade" id="' + modalId + '" tabindex="-1" >'
 		+		'<div class="modal-dialog" >'
@@ -2102,57 +2102,6 @@ moduleManager.construct({
 		modalDelNode = new bootstrap.Modal(delNode);
 		modalDelNode.show();
 		//	return;
-
-	/*	new BootstrapDialog({
-			title: i18n.MsgConfirm,
-			// @ts-ignore - BootstrapDialog() is loaded at runtime
-			type: BootstrapDialog.TYPE_DANGER,
-			message: i18n.lookup( 'MsgConfirmObjectDeletion', self.parent.tree.selectedNode.name ),
-			buttons: [{
-				label: i18n.BtnCancel,
-				action: (thisDlg: any)=>{
-					thisDlg.close();
-				}
-			},{
-				label: i18n.BtnDeleteObjectRef,
-				action: (thisDlg: any)=>{
-					delNd( self.parent.tree.selectedNode );
-					thisDlg.close()
-				}
-		//	},{
-		//		label: i18n.BtnDeleteObject,
-		//		// This button is enabled, if the user has permission to delete the referenced resource,
-		//		// ?? and if the resource has no further references in any tree:
-		//		cssClass: 'btn-danger' +(enableDel(self.parent.tree.selectedNode.ref)?'':' disabled'), 
-		//		action: function (thisDlg) {
-		//			// the selected resource's instantiation must be "user" 
-//					console.debug( "Deleting resource '"+self.parent.tree.selectedNode.name+"'." );
-		//			delNd( self.parent.tree.selectedNode );
-			//		delRes( self.parent.tree.selectedNode.ref );
-		//			thisDlg.close();
-		//		}
-			}]
-		})
-		.open(); 
-		return;
-		
-		function delNd(nd: jqTreeNode): void {
-			// Delete the hierarchy node and all it's children. 
-			console.info("Deleting tree object '" + nd.name + "'.");
-
-			// 1. Step away from tbe node to delete:
-//			console.debug('confirmDeletion',nd,nd.getNextSibling());
-			self.parent.tree.selectNode(nd.getNextSibling());
-
-			// 2. Delete the hierarchy entry with all its children in cache and server:
-			app.projects.selected.deleteItems('node', [LIB.makeKey(nd)])
-				.then(
-					// If a diagram has been deleted, build a new glossary with elements 
-					// which are shown by any of the remaining diagrams:
-					self.parent.reworkTree,
-					LIB.stdError
-				);
-		} */
 	/*	function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
