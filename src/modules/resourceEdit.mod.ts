@@ -685,15 +685,18 @@ moduleManager.construct({
 								+		'</div>'
 								+	'</div>'
 								);
-								const selectRC = document.getElementById(modalId),
-									selRCclose = document.getElementById('selRCclose'),
-									selRCcancel = document.getElementById('selRCcancel'),
-									selRCnext = document.getElementById('selRCnext');
-
+								const selectRC = document.getElementById(modalId);
 								selectRC.addEventListener('hidePrevented.bs.modal', rej);  // click outside static modal, see https://getbootstrap.com/docs/5.0/components/modal/#events
-								selRCclose.addEventListener('click', rej);
-								selRCcancel.addEventListener('click', rej);
-								selRCnext.addEventListener('click', res);
+								[
+									{ id: 'selRCclose', action: rej },
+									{ id: 'selRCcancel', action: rej },
+									{ id: 'selRCnext', action: res }
+								].forEach(
+									(b) => {
+										document.getElementById(b.id)
+											.addEventListener('click', b.action );
+									}
+								);
 
 								// @ts-ignore - bootstrap is loaded at runtime:
 								modalSelectRC = new bootstrap.Modal(selectRC);
