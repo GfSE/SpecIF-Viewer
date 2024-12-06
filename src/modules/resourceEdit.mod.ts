@@ -167,7 +167,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 
 //		console.debug('editDiagram',this);
 		if (this.pC.permissionVector.U) {
-			return '<div class="form-group form-active" >'
+			return '<div class="form-group form-active mt-1" >'
 				+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
 				+ '<div class="attribute-value">'
 
@@ -194,9 +194,9 @@ class CPropertyToEdit extends CPropertyToShow  {
 				+ '</div>'
 		}
 		else {
-			return '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
-				+ '<div class="attribute-value">'
-				+ this.renderImg(opts)
+			return '<div class="mt-1">'
+				+	'<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
+				+	'<div class="attribute-value">' + this.renderImg(opts) + '</div>'
 				+ '</div>'
         }
 	}
@@ -312,6 +312,9 @@ class CResourceToEdit {
 	newFiles: CFileWithContent[];			// collect uploaded files
 //	changedAt: string;
 //	changedBy?: string;
+
+	modalEditR: any;
+
 	constructor(el: SpecifResource) {
 	/*	// @ts-ignore - index is ok:
 		for (var a in el) this[a] = el[a]; */
@@ -337,11 +340,11 @@ class CResourceToEdit {
 		this.newFiles = [];
 	}
 	editForm(opts: any): void {
-	// Edit/update the resources' properties with a modal dialog:
-//	console.debug( 'editResource', r2edit, simpleClone(cData.resourceClasses) );
+		// Edit/update the resources' properties with a modal dialog:
 		if (this.properties.length > 0) {
 
-			let localOpts = {
+			let self = this,
+				localOpts = {
 					lookupTitles: true,
 					targetLanguage: this.language
 				},
@@ -349,28 +352,63 @@ class CResourceToEdit {
 					dialogForm: this.dialogForm,
 				}, opts);
 
-			// @ts-ignore - BootstrapDialog() is loaded at runtime
-			new BootstrapDialog({
-				title: opts.dialogTitle,
-				type: 'type-primary',
-				// @ts-ignore - BootstrapDialog() is loaded at runtime
-				size: BootstrapDialog.SIZE_WIDE,
-				// initialize the dialog;
-				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-				onshown: () => { setFocus(app.ontology.localize(CONFIG.propClassTitle,localOpts)); this.check() },
-			//	message: (thisDlg)=>{
-				message: () => {
-					// @ts-ignore - object $('#app') is only theoretically undefined ...
-					var form = '<div style="max-height:' + ($('#app').outerHeight(true) - 190) + 'px; overflow:auto" >';
-					this.properties.forEach(
-						(p) => { form += p.editField(editOpts); }
-					);
-					form += '</div>';
-					return $(form);
-				},
-				buttons: opts.msgBtns
-			})
-			.open()
+			const modalId = "editR";
+			$('#' + modalId).remove();
+
+			// modal template to select the resourceClass for resource to create;
+			// this modal is static and an event handler for clicking outside the modal is attached further down:
+			$('body').append(
+				'<div id="' + modalId + '" class="modal fade" tabindex="-1" >'
+			+		'<div class="modal-dialog modal-xl" >'
+			+			'<div class="modal-content">'
+			+				'<div class="modal-header '+(opts.mode=='update'?'bg-primary':'bg-success')+' text-white" >'
+			+					'<h5 class="modal-title" >'+opts.dialogTitle+'</h5>'
+			+					'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" > </button>'
+			+				'</div>'
+			+				'<div class="modal-body" >'
+
+								// @ts-ignore - object $('#app') is only theoretically undefined ...
+			+					'<div style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" >'
+
+			+						function () {
+										let form = '';
+										self.properties.forEach(
+											(p) => { form += p.editField(editOpts); }
+										);
+										return form;
+									}()
+
+			+					'</div>'
+
+			+				'</div>'
+			+				'<div class="modal-footer" >'
+
+			+						function () {
+										let btns = '';
+										opts.msgBtns.forEach(
+											(b) => { btns += '<button type="button" id="'+b.id+'" class="btn '+b.cssClass+'">' + b.label + '</button>'; }
+										);
+										return btns;
+									}()
+
+			+				'</div>'
+			+			'</div>'
+			+		'</div>'
+			+	'</div>'
+			);
+			const editR = document.getElementById(modalId);
+
+			editR.addEventListener('shown.bs.modal', () => { setFocus(app.ontology.localize(CONFIG.propClassTitle, localOpts)); self.check() });
+			opts.msgBtns.forEach(
+				(b) => {
+					document.getElementById(b.id)
+						.addEventListener('click', () => { b.action(self.modalEditR) });
+				}
+			);
+
+			// @ts-ignore - bootstrap is loaded at runtime:
+			this.modalEditR = new bootstrap.Modal(editR);
+			this.modalEditR.show();
 		}
 	}
 	check(): void {
@@ -378,11 +416,11 @@ class CResourceToEdit {
 		// check all input fields:
 		let ok = this.dialogForm.check();
 		// enable save buttons, if all input fields have acceptable content:
-		Array.from(document.getElementsByClassName('btn-modal-save'),
+		Array.from(document.getElementsByClassName('btn-editR-save'),
 			// @ts-ignore - 'disable' does exist and the assignment does work
 			(btn) => { btn.disabled = !ok; }
 		)
-//		console.debug('input made',document.getElementsByClassName('btn-modal-save'));
+//		console.debug('input made',document.getElementsByClassName('btn-editR-save'));
 	};
 	updateDiagram(cId: string) {
 		// @ts-ignore - .files is in fact accessible
@@ -426,7 +464,7 @@ class CResourceToEdit {
 		// ToDo: Check whether all files are in fact referenced by a property.
 		return this.newFiles
     }
-	getEditedProperties(): SpecifProperty[] {
+	getProperties(): SpecifProperty[] {
 		// Get all property values from the form:
 		let editedProps: SpecifProperty[] = LIB.forAll(
 			this.properties,
@@ -436,7 +474,6 @@ class CResourceToEdit {
 		);
 //		console.debug('editedProps', editedProps)
 		return editedProps;
-
 	}
 }
 
@@ -445,6 +482,8 @@ moduleManager.construct({
 	name: CONFIG.resourceEdit
 }, (self: IModule) => {
 	"use strict";
+
+	var modalSelectRC: any;
 
 	self.init = (): boolean => {
 //		console.debug('resourceEdit.init')
@@ -459,46 +498,47 @@ moduleManager.construct({
 		cancel: {
 			id: 'btn-modal-cancel',
 			label: i18n.BtnCancel,
-			action: (thisDlg: any) => {
+			cssClass: 'btn-secondary',
+			action: (thisModal: any) => {
 //				console.debug('action cancelled');
 				self.parent.doRefresh({ forced: true });  // re-install event-handlers on SVG-elements
-				thisDlg.close();
+				thisModal.hide();
 			}
 		},
 		update: {
 			id: 'btn-modal-update',
 			label: i18n.BtnUpdateObject,
-			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg: any) => {
+			cssClass: 'btn-primary btn-editR-save',  // 'btn-editR-save' to enable and disable saving
+			action: (thisModal: any) => {
 				save('update');
-				thisDlg.close();
+				thisModal.hide();
 			}
 		},
 		insert: {
 			id: 'btn-modal-insert',
 			label: i18n.BtnInsert,
-			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg: any) => {
+			cssClass: 'btn-success btn-editR-save',
+			action: (thisModal: any) => {
 				save('insert');
-				thisDlg.close();
+				thisModal.hide();
 			}
 		},
 		insertAfter: {
 			id: 'btn-modal-insertAfter',
 			label: i18n.BtnInsertSuccessor,
-			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg: any) => {
+			cssClass: 'btn-success btn-editR-save',
+			action: (thisModal: any) => {
 				save('insertAfter');
-				thisDlg.close();
+				thisModal.hide();
 			}
 		},
 		insertBelow: {
 			id: 'btn-modal-insertBelow',
 			label: i18n.BtnInsertChild,
-			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg: any) => {
+			cssClass: 'btn-success btn-editR-save',
+			action: (thisModal: any) => {
 				save('insertBelow');
-				thisDlg.close();
+				thisModal.hide();
 			}
 		}
 	};
@@ -508,7 +548,8 @@ moduleManager.construct({
 
 		self.clear();
 		self.localOpts = Object.assign({
-				myFullName: 'app.' + self.loadAs + '.toEdit'   // myName = self.loadAs
+				myFullName: 'app.' + self.loadAs + '.toEdit',   // myName = self.loadAs
+				mode: opts.mode
 			}, opts);
 
 		if (self.parent.tree.selectedNode)
@@ -540,7 +581,7 @@ moduleManager.construct({
 								msgBtns.cancel,
 								msgBtns.insert
 							];
-						finalize();
+						editRes();
 					}
 				)
 				.catch( LIB.stdError ); 
@@ -556,12 +597,12 @@ moduleManager.construct({
 						self.newRes = rL[0];
 						if (self.localOpts.mode == 'clone') {
 							self.newRes.id = LIB.genID(CONFIG.prefixR);
-							self.localOpts.dialogTitle = i18n.MsgCloneResource,
-								self.localOpts.msgBtns = [
-									msgBtns.cancel,
-									msgBtns.insertAfter,
-									msgBtns.insertBelow
-								]
+							self.localOpts.dialogTitle = i18n.MsgCloneResource;
+							self.localOpts.msgBtns = [
+								msgBtns.cancel,
+								msgBtns.insertAfter,
+								msgBtns.insertBelow
+							];
 						}
 						else {
 							if ( rL[0].revision )
@@ -571,16 +612,16 @@ moduleManager.construct({
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.update
-							]
+							];
 						};
-						finalize();
+						editRes();
 					}
 				)
 				.catch(LIB.stdError);
 		};
 		return;
 
-		function finalize(): void {
+		function editRes(): void {
 			self.toEdit = new CResourceToEdit(self.newRes);
 			self.toEdit.editForm(self.localOpts);
         }
@@ -589,46 +630,78 @@ moduleManager.construct({
 			return new Promise((resolve, reject) => {
 				app.projects.selected.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId:SpecifId) => { return LIB.makeKey(rCId) }))
 				.then( 
-					(rCL:SpecifResourceClass[])=>{
-						if( rCL.length>0 ) {
+					(rCL: SpecifResourceClass[]) => {
+						function res() {
+							resolve(LIB.itemById(rCL, radioValue(i18n.LblResourceClass)));
+							modalSelectRC.hide();
+						}
+						function rej() {
+							reject({ status: 0, statusText: 'Create Resource cancelled by the user' });
+							modalSelectRC.hide();
+						}
+
+						let resClasses: IBox[];
+						if (rCL.length > 0) {
 							// Get the resourceClass titles to display:
-							let resClasses = LIB.forAll(rCL, (rC: SpecifResourceClass) => { rC.title = LIB.titleOf(rC, { lookupTitles: true, targetLanguage: app.projects.selected.language }); return rC });
+							resClasses = rCL.map(
+								(rC: SpecifResourceClass) => {
+								//	rC.title = LIB.titleOf(rC, { lookupTitles: true, targetLanguage: app.projects.selected.language });
+								//	return rC
+									return {
+										id: rC.id,
+										title: LIB.titleOf(rC, { lookupTitles: true, targetLanguage: app.projects.selected.language }),
+										description: rC.description
+									};
+								}
+							);
 							if( resClasses.length>1 ) {
-								// open a modal dialog to let the user select the class for the resource to create:
+								// Open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
 //								console.debug('#2',simpleClone(cData.resourceClasses));
-								// @ts-ignore - BootstrapDialog() is loaded at runtime
-								new BootstrapDialog({
-									title: i18n.MsgSelectResClass,
-									type: 'type-primary',
-								//	size: BootstrapDialog.SIZE_WIDE,
-								//	message: (thisDlg)=>{
-									message: () => {
-										var form = '<form id="attrInput" role="form" >'
-												+ makeRadioField( i18n.LblResourceClass, resClasses )
-												+ '</form>';
-										return $( form );
-									},
-									buttons: [{
-											label: i18n.BtnCancel,
-											action: (thisDlg: any)=>{
-												reject({status:0,statusText:'Create Resource cancelled by the user'});
-												thisDlg.close();
-											}
-										},{ 	
-											label: i18n.LblNextStep,
-											cssClass: 'btn-success', 
-											action: (thisDlg: any)=>{
-												resolve( LIB.itemById( resClasses, radioValue( i18n.LblResourceClass )));
-												thisDlg.close();
-											}  
-										}]
-								})
-								.open();
+
+								const modalId = "selectRC";
+								$('#' + modalId).remove();
+
+								// modal template to select the resourceClass for resource to create;
+								// this modal is static and an event handler for clicking outside the modal is attached further down:
+								$('body').append(
+									'<div id="' + modalId + '" class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" >'
+								+		'<div class="modal-dialog" >'
+								+			'<div class="modal-content">'
+								+				'<div class="modal-header bg-success text-white" >'
+								+					'<h5 class="modal-title" >'+i18n.MsgSelectResClass+'</h5>'
+								+					'<button id="selRCclose" type="button" class="btn-close" aria-label="Close" > </button>'
+								+				'</div>'
+								+				'<div class="modal-body" >'
+
+								+					makeRadioField(i18n.LblResourceClass, resClasses)
+
+								+				'</div>'
+								+				'<div class="modal-footer" >'
+								+					'<button id="selRCcancel" type="button" class="btn btn-secondary">'+i18n.BtnCancel+'</button>'
+								+					'<button id="selRCnext" type="button" class="btn btn-success">'+i18n.LblNextStep+'</button>'
+								+				'</div>'
+								+			'</div>'
+								+		'</div>'
+								+	'</div>'
+								);
+								const selectRC = document.getElementById(modalId),
+									selRCclose = document.getElementById('selRCclose'),
+									selRCcancel = document.getElementById('selRCcancel'),
+									selRCnext = document.getElementById('selRCnext');
+
+								selectRC.addEventListener('hidePrevented.bs.modal', rej);  // click outside static modal, see https://getbootstrap.com/docs/5.0/components/modal/#events
+								selRCclose.addEventListener('click', rej);
+								selRCcancel.addEventListener('click', rej);
+								selRCnext.addEventListener('click', res);
+
+								// @ts-ignore - bootstrap is loaded at runtime:
+								modalSelectRC = new bootstrap.Modal(selectRC);
+								modalSelectRC.show();
 							}
 							else {
 								// exactly one class, so we can continue immediately:
-								resolve( resClasses[0] );
+								resolve( rCL[0] );
 							}
 						}
 						else {
@@ -658,7 +731,7 @@ moduleManager.construct({
 			chD = new Date().toISOString();
 
 		// Replace all properties - only those with update permission are returned:
-		self.toEdit.getEditedProperties().forEach(
+		self.toEdit.getProperties().forEach(
 			(nP: SpecifProperty) => {
 				let i = LIB.indexBy(self.newRes.properties, 'class', nP['class']);
 				if (i > -1) self.newRes.properties.splice(i, 1, nP)

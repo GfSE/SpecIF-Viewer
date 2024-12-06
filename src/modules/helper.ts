@@ -41,9 +41,9 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
         cl = (typeof (opts.classes) == 'string' && opts.classes.length > 0) ? ' '+opts.classes : '',
         aC: string;
     if (opts.typ && ['line', 'area'].includes(opts.typ) )
-        fG = '<div id="'+sH+'" class="form-group form-active'+cl+'" >'    // input field
+        fG = '<div id="'+sH+'" class="form-group form-active mt-1'+cl+'" >'    // input field
     else
-        fG = '<div class="attribute' + cl +'" >';                // display field
+        fG = '<div class="attribute mt-1' + cl +'" >';                // display field
 
     switch( opts.tagPos ) {
         case 'none':
@@ -94,20 +94,20 @@ function setFocus( tag:string ):void {
     if( el ) el.focus()
 }
 function setTextState( tag:string, state:string ):boolean {
-    if( ['has-success','has-error'].indexOf(state)<0 ) throw Error("Invalid state '"+state+"'");
-    let el = $('#' + simpleHash(tag));
+    if( ['is-valid','is-invalid'].indexOf(state)<0 ) throw Error("Invalid state '"+state+"'");
+    let el = $('#field' + simpleHash(tag));
     if( !el ) return false;
-    if( el.hasClass('has-error') ) {
-        if( state=='has-success' ) {
-            el.removeClass('has-error').addClass('has-success');
+    if( el.hasClass('is-invalid') ) {
+        if( state=='is-valid' ) {
+            el.removeClass('is-invalid').addClass('is-valid');
             return true;
         }
         else
             return false;    // no change
     };
-    if( el.hasClass('has-success') ) {
-        if( state=='has-error' ) {
-            el.removeClass('has-success').addClass('has-error');
+    if( el.hasClass('is-valid') ) {
+        if( state=='is-invalid' ) {
+            el.removeClass('is-valid').addClass('is-invalid');
             return true;
         }
         else
@@ -166,7 +166,7 @@ function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): str
     // radiobuttons to edit the value:
     if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
     if (typeof (opts.classes) != 'string') opts.classes = 'form-active';
-    let rB = '<div class="form-group ' + (opts.classes || '') + '">',
+    let rB = '<div class="form-group mt-1 ' + (opts.classes || '') + '">',
         fn = ( typeof(opts.handle)=='string' && opts.handle.length>0 )?    ' onclick="'+opts.handle+'"' : '';
     switch( opts.tagPos ) {
         case 'none': 
@@ -229,7 +229,7 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
     // checkbox to edit the values:
     if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
     if (typeof (opts.classes) != 'string') opts.classes = 'form-active';
-    let cB = '<div class="form-group ' + (opts.classes || '') + '">',
+    let cB = '<div class="form-group mt-1 ' + (opts.classes || '') + '">',
         fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0) ? ' onclick="' + opts.handle + '"' : '';
     switch( opts.tagPos ) {
         case 'none': 
@@ -275,18 +275,18 @@ function makeBooleanField( tag:string, val:boolean, opts?: IFieldOptions ):strin
         fn = ' onclick="' + opts.handle + '"';
     switch (opts.typ) {
         case 'display':
-            return '<div class="attribute">'
-                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
-                + '<div class="attribute-value">' + (val ? 'true' : 'false') + '</div>'
+            return '<div class="attribute mt-1">'
+                +   '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                +   '<div class="attribute-value">' + (val ? 'true' : 'false') + '</div>'
                 + '</div>';
         default:
-            return '<div class="form-group form-active">'
-                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
-                + '<div class="attribute-value checkbox" >'
-                + '<label>'
-                + '<input type="checkbox" name="boolean' + simpleHash(tag) + '"' + (val ? ' checked' : '') + fn + ' />'
-                + '</label><br />'
-                + '</div>'
+            return '<div class="form-group form-active mt-1">'
+                +   '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                +   '<div class="attribute-value checkbox" >'
+                +       '<label>'
+                +           '<input type="checkbox" name="boolean' + simpleHash(tag) + '"' + (val ? ' checked' : '') + fn + ' />'
+                +       '</label><br />'
+                +   '</div>'
                 + '</div>'
     }
 }
@@ -350,7 +350,7 @@ class CCheckDialogInput {
                     ok = val.length < 1 || LIB.isIsoDateTime(val);
                 // no need to check enumeration
             };
-            setTextState(cPs.label, ok ? 'has-success' : 'has-error');
+            setTextState(cPs.label, ok ? 'is-valid' : 'is-invalid');
             allOk = allOk && ok;
 //            console.debug( 'CCheckDialogInput.check: ', cPs, val );
         });

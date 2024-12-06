@@ -178,7 +178,7 @@ moduleManager.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="modeSelector" class="btn-group" style="margin: 0 0 0.4em 0" >'
+				+		'<div id="modeSelector" class="btn-group mt-1" style="margin: 0 0 0.4em 0" >'
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 
@@ -382,7 +382,7 @@ moduleManager.construct({
 		// it may happen that this module is initialized (and thus this routine executed), before app.projects is loaded:
 		state.cacheLoaded = typeof(app.projects)=='object' && typeof(app.projects.selected)=='object' && app.projects.selected.isLoaded();	
 		state.allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
-		setTextState(i18n.LblProjectName, pnl ? 'has-success' : 'has-error');
+		setTextState(i18n.LblProjectName, pnl ? 'is-valid' : 'is-invalid');
 		return state;
 	};
 	self.enableActions = function():void {

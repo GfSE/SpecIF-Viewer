@@ -1286,9 +1286,9 @@ moduleManager.construct({
 		
 		//  Add the left panel for tree or details and the up/down buttons to the DOM:
 		let h = '<div id="specLeft" class="paneLeft" style="position:relative">'
-			+ '<div id="navBtns" class="btn-group-vertical" role="group" style="position:absolute;top:4px;right:12px;z-index:900">'
-			+   '<button class="btn btn-secondary btn-sm" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
-			+   '<button class="btn btn-secondary btn-sm" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
+			+ '<div id="navBtns" class="btn-group-vertical btn-group-sm" role="group" style="position:absolute;top:4px;right:12px;z-index:900">'
+			+   '<button class="btn btn-light" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
+			+   '<button class="btn btn-light" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
 			+ '</div>'
 			+ '<div id="hierarchy" class="pane-tree" ></div>'
 			+ '<div id="details" class="pane-details" ></div>'
@@ -1965,17 +1965,17 @@ moduleManager.construct({
 			// res.pC.permissionVector.U is not of interest here.No hierarchy - related permission needed.
 			if ( selRes.hasPropertyWithUpdatePermission )
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
-				rB += '<button class="btn btn-light" onclick="' + myFullName + '.editResource(\'update\')" '
+				rB += '<button class="btn btn-primary" onclick="' + myFullName + '.editResource(\'update\')" '
 						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
-				rB += '<button disabled class="btn btn-light" >'+i18n.IcoEdit+'</button>';
+				rB += '<button disabled class="btn btn-primary" >'+i18n.IcoEdit+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
 		/*	if( self.cmtCre )
 				rB += '<button class="btn btn-light" onclick="'+myFullName+'.addComment()" '
 						+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 			else */
-				rB += '<button disabled class="btn btn-light" >'+i18n.IcoComment+'</button>';
+				rB += '<button disabled class="btn btn-primary" >'+i18n.IcoComment+'</button>';
 
 			// The delete button is shown, if the selected resource (=hierarchy entry) can be deleted.
 			// - Glossary items shall not be deleted; they are usually not userInstantiated.
@@ -2070,12 +2070,11 @@ moduleManager.construct({
 	self.confirmDeletion = ():void =>{
 		// Delete the selected node and its children.
 		// The resources are dereferenced, or optionally deleted, themselves.
-		// @ts-ignore - BootstrapDialog() is loaded at runtime
 
 		const modalId = "delNode";
 		$('#' + modalId).remove();
 
-		// modal template confirm deletion of a node:
+		// modal template to confirm deletion of a node:
 		$('body').append(
 			'<div class="modal fade" id="' + modalId + '" tabindex="-1" >'
 		+		'<div class="modal-dialog" >'
@@ -2451,13 +2450,13 @@ moduleManager.construct({
 			rB += '<button class="btn btn-success" onclick="' + myFullName + '.linkResource()" '
 				+ 'data-toggle="popover" title="' + i18n.LblAddRelation + '" >' + i18n.IcoAdd + '</button>';
 		else
-			rB += '<button disabled class="btn btn-light" >' + i18n.IcoAdd + '</button>';
+			rB += '<button disabled class="btn btn-success" >' + i18n.IcoAdd + '</button>';
 
 		if (app.title != i18n.LblReader && net.statements.length > 0 /* && (!selRes.permissions || selRes.permissions.del) */)
 			rB += '<button class="btn btn-danger ' + (modeStaDel ? 'active' : '') + '" onclick="' + myFullName + '.toggleModeStaDel()" '
 				+ 'data-toggle="popover" title="' + i18n.LblDeleteRelation + '" >' + i18n.IcoDelete + '</button>';
 		else
-			rB += '<button disabled class="btn btn-light" >' + i18n.IcoDelete + '</button>';
+			rB += '<button disabled class="btn btn-danger" >' + i18n.IcoDelete + '</button>';
 
 		return rB + '</div>'	// return rendered buttons for display
 	}

@@ -158,7 +158,7 @@ moduleManager.construct({
 
 					// modal template for selecting a statementClass and a resource to link:
 					$('body').append(  
-						'<div class="modal fade" id="' + modalId + '" tabindex="-1" >'
+						'<div id="' + modalId + '" class="modal fade" tabindex="-1" >'
 					+		'<div class="modal-dialog modal-xl" >'
 					+			'<div class="modal-content">'
 					+				'<div class="modal-header bg-success text-white" >'
