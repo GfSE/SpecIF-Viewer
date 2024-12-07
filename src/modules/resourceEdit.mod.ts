@@ -355,8 +355,7 @@ class CResourceToEdit {
 			const modalId = "editR";
 			$('#' + modalId).remove();
 
-			// modal template to select the resourceClass for resource to create;
-			// this modal is static and an event handler for clicking outside the modal is attached further down:
+			// Modal template to edit the properties of the selected resource:
 			$('body').append(
 				'<div id="' + modalId + '" class="modal fade" tabindex="-1" >'
 			+		'<div class="modal-dialog modal-xl" >'
@@ -397,8 +396,9 @@ class CResourceToEdit {
 			+	'</div>'
 			);
 			const editR = document.getElementById(modalId);
-
+			// Event handler to check the property values after opening the modal dialog:
 			editR.addEventListener('shown.bs.modal', () => { setFocus(app.ontology.localize(CONFIG.propClassTitle, localOpts)); self.check() });
+			// Event handlers for each of the buttons defined by the calling routine (depending on the editing mode create/clone/update):
 			opts.msgBtns.forEach(
 				(b) => {
 					document.getElementById(b.id)
@@ -662,8 +662,9 @@ moduleManager.construct({
 								const modalId = "selectRC";
 								$('#' + modalId).remove();
 
-								// modal template to select the resourceClass for resource to create;
-								// this modal is static and an event handler for clicking outside the modal is attached further down:
+								// Modal template to select the resourceClass for resource to create;
+								// being inside a promise, this modal needs an explicit event handler for all user reactions,
+								// this modal is therefore static and an event handler for clicking outside the modal is attached further down:
 								$('body').append(
 									'<div id="' + modalId + '" class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" >'
 								+		'<div class="modal-dialog" >'
@@ -686,6 +687,7 @@ moduleManager.construct({
 								+	'</div>'
 								);
 								const selectRC = document.getElementById(modalId);
+								// Add explicit event handlers for all user reactions: 
 								selectRC.addEventListener('hidePrevented.bs.modal', rej);  // click outside static modal, see https://getbootstrap.com/docs/5.0/components/modal/#events
 								[
 									{ id: 'selRCclose', action: rej },
