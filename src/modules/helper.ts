@@ -493,7 +493,7 @@ LIB.stdError = (xhr: resultMsg, cb?:Function): void =>{
         };
         // now, msg is definitively of type 'string'.
 
-        if( !opts.severity || ['success', 'info', 'warning', 'error', 'danger'].indexOf(opts.severity)<0 ) // severities as known by bootstrap plus "error"
+        if( !opts.severity || ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'danger'].indexOf(opts.severity)<0 ) // severities as known by bootstrap plus "error"
             opts.severity = 'warning';
         if( opts.severity == 'error' ) 
             opts.severity = 'danger';

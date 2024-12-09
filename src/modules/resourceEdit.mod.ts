@@ -385,7 +385,7 @@ class CResourceToEdit {
 			+						function () {
 										let btns = '';
 										opts.msgBtns.forEach(
-											(b) => { btns += '<button type="button" id="'+b.id+'" class="btn '+b.cssClass+'">' + b.label + '</button>'; }
+											(b:any) => { btns += '<button type="button" id="'+b.id+'" class="btn '+b.cssClass+'">' + b.label + '</button>'; }
 										);
 										return btns;
 									}()
@@ -400,7 +400,7 @@ class CResourceToEdit {
 			editR.addEventListener('shown.bs.modal', () => { setFocus(app.ontology.localize(CONFIG.propClassTitle, localOpts)); self.check() });
 			// Event handlers for each of the buttons defined by the calling routine (depending on the editing mode create/clone/update):
 			opts.msgBtns.forEach(
-				(b) => {
+				(b:any) => {
 					document.getElementById(b.id)
 						.addEventListener('click', () => { b.action(self.modalEditR) });
 				}

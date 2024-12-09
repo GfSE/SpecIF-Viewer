@@ -133,7 +133,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				selPrj.cache.get("resourceClass", selPrj.resourceClasses)
+				selPrj.cache.get("resourceClass", selPrj.resourceClasses)  // classes are always cached
 				.forEach(
 					(rC) => {
 						// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
@@ -164,7 +164,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				selPrj.cache.get("statementClass", selPrj.statementClasses)
+				selPrj.cache.get("statementClass", selPrj.statementClasses)  // classes are always cached
 				.forEach(
 					(sC) => {
 						// Add a counter for each statementClass
@@ -205,7 +205,8 @@ moduleManager.construct({
 					return dL;
 				}
 
-				// Add a report with a counter per enumerated property of all resource types:
+				// Add a report with a counter per enumerated property of all resource types;
+				// classes are always cached:
 				let pC, dT;
 			//	selPrj.cache.get("resourceClass", selPrj.resourceClasses).forEach(
 				LIB.getExtendedClasses(selPrj.cache.get("resourceClass", "all"), selPrj.resourceClasses).forEach(
