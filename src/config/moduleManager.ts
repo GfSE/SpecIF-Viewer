@@ -295,11 +295,10 @@ var app:IApp,
 //		console.info( "Deregister: "+mod+" ("+self.registered.length+")" );
 	};  */
 	self.load = ( tr:IModule, opts:any ):void =>{
-		// tr is a hierarchy of modules, where the top element represents the application itself;
-		// only modules with a specified 'name' will be loaded:
-			// load the modules in hierarchy tr
-			// specified by a name string or an object with property 'name';
-			// tr can be a single element, a list or a tree.
+		// tr is a hierarchy of modules, where the top element represents the application itself:
+		// - load the modules in hierarchy tr
+		// - specified by a name string or an object with property 'name';
+		// - tr can be a single element, a list or a tree.
 		self.tree = tr;
 //		console.debug('loadH',h,opts);
 		if (opts && typeof (opts.done) == "function")
@@ -308,16 +307,15 @@ var app:IApp,
 		return;
 
 		function ld(e: IModule): void {
-			// else, the module is described by an object with a property 'name':
-			// append the view to the parent view, where
+			// 1. Append the view to the parent view, where
 			// - the visibility of the view shall be controlled by the parent's ViewControl
 			if (e.view && e.parent) {
 				let c = e.viewClass ? 'class="' + e.viewClass + '" ' : '',
-					d = '<div id="' + e.view.substring(1) + '" ' + c + ' style="display:none;"></div>';
+					d = '<div id="' + e.view.substring(1) + '" ' + c + 'style="display:none;"></div>';
 //				console.debug('l.view',e,c,d);
 				$(e.parent.view).append(d);
 			};
-			// load a module in case of elements with a name:
+			// 2. Load a module in case it has a name:
 			// (lazy loading is not yet implemented)
 			if (e.name /* && !e.lazy */) {
 				loadModule(e);
@@ -401,7 +399,7 @@ var app:IApp,
 						};
 					});
 				};
-				// finally load all the children, as well:
+				// finally load the children's children, as well:
 				e.children.forEach((c) => {
 					c.parent = e;
 					ld(c);
@@ -767,7 +765,7 @@ var app:IApp,
 		// Execute 'callWhenReady()', if/when the last registered module is ready.
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
-			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
+			console.info( mod+" loaded module "+self.ready.length+" of "+self.registered.length );
 		}
 		else {
 			throw Error("Module '"+mod+"' cannot be set 'ready' more than once");
@@ -846,10 +844,10 @@ function doResize(): void {
 	$('.contentWide').outerHeight(pH);
 	$('.pane-tree').outerHeight(pH);
 	$('.pane-details').outerHeight(pH);
-	$('.pane-filter').outerHeight(pH);
+//	$('.pane-filter').outerHeight(pH);
 
 	// adjust the vertical position of the contentActions:
-	$('.contentCtrl').css("top", hH);
+//	$('.contentCtrl').css("top", hH);
 
 	// hack to adjust the iframe on the about page;
 	// no idea why there is a space after the iframe causing a scroll-bar for the enclosing div:

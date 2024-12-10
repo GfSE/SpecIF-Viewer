@@ -1170,8 +1170,10 @@ LIB.addClassesTo = (term: string, dta: SpecIF): SpecifClass | undefined => {
         if (idx > -1)
             item = dta[Ln][idx];
     };
+    // @ts-ignore - yes, item can be undefined:
     if (!item)
         console.error('No class found for term ' + term + '.');
+    // @ts-ignore - yes, item can be undefined:
     return item;
 };
 LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {

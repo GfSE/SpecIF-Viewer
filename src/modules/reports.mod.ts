@@ -61,6 +61,9 @@ moduleManager.construct({
 	self.init = function() {
 //		console.debug('reports.init');
 		self.list = []
+
+		// The rendering of reports is done further down in finalize() and renderReports();
+		// it is directly attached to the modules content placeholder named self.view ...
 	};
 	self.clear = function() {
 		self.list = [];
@@ -370,7 +373,7 @@ moduleManager.construct({
 			})
 		}
 		function renderReports(list:Report[]):string {
-			var rs = '<div style="background-color: #f5f5f5;"><div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 pt-1 px-3">',
+			var rs = '<div class="container-fluid background-select"><div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 pt-1 px-3">',
 				lb;
 			list.forEach( (li:Report,i:number) =>{
 		//		rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-top: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'

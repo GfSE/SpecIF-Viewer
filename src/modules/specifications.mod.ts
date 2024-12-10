@@ -684,8 +684,8 @@ class CResourceToShow {
 				opts
 			);
 
-		var rO = '<div class="listEntry">'
-			+ '<div class="content-main">';
+		var rO = '<div class="row listEntry">'
+			+ '<div class="col-xl-8">';  // two columns 8:4 starting with xl and stacked below
 
 		// 1 Fill the main column:
 		// 1.1 The title:
@@ -707,8 +707,9 @@ class CResourceToShow {
 				rO += this.renderAttr('', prp.get(optsDesc))
 			}
 		});
-		rO += '</div>'  // end of content-main
-			+ '<div class="content-other">';
+		rO += '</div>'  // end of main column (previously called 'content-main')
+			+ '<div class="col-xl">';  // two columns 8:4 starting with xl and stacked below
+		//    + '<div class="col-xl-4 d-none d-md-block">';  // no right column at all for md and smaller
 
 		/*	// 2 Add elementActions:
 			switch( app.specs.selectedView() ) {
@@ -737,7 +738,7 @@ class CResourceToShow {
 	/*	// 3.3 The change info depending on selectedView:
 		rO += this.renderChangeInfo();  */
 
-		rO += '</div>'	// end of content-other
+		rO += '</div>'	// end of attribute column (previously called 'content-other')
 			+ '</div>';  // end of listEntry
 
 		return rO  // return rendered resource for display
@@ -1845,8 +1846,8 @@ moduleManager.construct({
 			renderNextResources,
 			(err)=>{
 				if( err.status==744 ) {
-					// A previously selected node is not any more available 
-					// with the latest revision of the project:
+					// A previously selected node is not any more available; 
+					// try again with the latest revision of the project:
 					self.parent.tree.selectFirstNode();
 					getNextResources()
 					.then(

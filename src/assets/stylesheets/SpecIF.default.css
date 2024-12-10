@@ -66,6 +66,12 @@ h4 {
 h5, h6, p, ul, ol {
 	margin: 0 0 0.3em;
 }
+.background-select {
+	background-color: #f5f5f5;
+}
+.font-size-90 {
+	font-size: 90%;
+}
 .notice-default {
 	font-style:italic;
 }
@@ -90,7 +96,16 @@ div.pageActions {
     float: right;
 	margin-right: 16px;
 }
-div.contentCtrl {
+div.contentNotice {
+	display: inline-block;
+	box-sizing: border-box;
+	padding-left: 8px;
+}
+div.contentActions {
+	display: inline-block;
+	float: right;
+}
+/* div.contentCtrl {
 	position: fixed;
 	top: 120px;
 	display: inline-block;
@@ -99,16 +114,7 @@ div.contentCtrl {
 	width: 100%;
 	z-index: 900;
 }
-div.contentNotice {
-	display: inline-block;
-    box-sizing: border-box;
-	padding-left: 8px;
-}
-div.contentActions {
-	display: inline-block;
-	float: right;
-}
-/* div.doneBtns {
+div.doneBtns {
 	float: right;
 	padding: 0 15px 0 0;  /* 15px like Bootstrap form
 } */
@@ -129,17 +135,17 @@ div.content {   /* width is 75% with wide screen, 100% otherwise */
     overflow: auto;
     padding: 0 0 0 4px;
 }
-/* main column for title and description: */
+/* main column for title and description:
 div.content-main {
 	clear: both;
     width: 100%;
     box-sizing: border-box;
     padding: 0;
-}
+} */
+/* column on the right for additional properties:
+div.content-other,  */
 /* selector on the left: */
-div.paneLeft,
-/* column on the right for additional properties: */
-div.content-other {
+div .paneLeft {
 	display: none;
 }
 @media (min-width: 768px) {
@@ -154,15 +160,12 @@ div.content-other {
     box-sizing: border-box;
     padding: 0 8px 0 0;
   }
-  div.contentCtrl {
-	width: 75%;
-  }
   div.content {
 	display: inline-block;
 	vertical-align: top;
     width: 75%;
   }
-  div.content-main {
+/*  div.content-main {
 	display: inline-block;
 	margin-right: -4px;
 	vertical-align: top;
@@ -176,6 +179,9 @@ div.content-other {
 	width: 33%;
     overflow-x: hidden;
   }
+  div.contentCtrl {
+	width: 75%;
+  } */
 }
 /* div.primaryFilters {
     box-sizing: border-box;
@@ -197,13 +203,13 @@ div.card-filter {
 div.card-options {
 	box-sizing: border-box;
 	padding: 0.2em;
-} */
+}
 div.pane-filter {
 	background-color: #f5f5f5;
 	box-sizing: border-box;
 	overflow: auto;
 	padding: 4px;
-}
+} */
 div.pane-tree {
 	background-color: #f5f5f5;
 	box-sizing: border-box;

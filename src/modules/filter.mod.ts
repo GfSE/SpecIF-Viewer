@@ -156,19 +156,21 @@ moduleManager.construct({
 		self.filters = [];
 		self.secondaryFilters = undefined;
 
-		// The left panel on this page (only for this view):
-		let h = '<div id="filterLeft" class="paneLeft">'
-			//		+		'<div id="clicklist" class="pane-tree" ></div>'
-			+ '<div id="primaryFilters" class="pane-filter" ></div>'
+		// The main layout of this view;
+		// filters and hitlist are filled further down:
+		let h = '<div class="container-fluid"><div class="row">'
+			+ '<div id="primaryFilters" class="col-lg-3 background-select font-size-90"></div>'
+			+ '<div class="col-lg">'
+			+	'<div id="filterCtrl" class="mt-1">'
+			+		'<div class="btn-group" >'
+			+			'<button class="btn btn-light" onclick="' + myFullName + '.resetClicked()" >' + i18n.BtnFilterReset + '</button>'
+			+		'</div>'
+			+		'<div id="filterNotice" class="notice-default contentNotice" ></div>'
+		//	+		'<div id="filterActions" class="btn-group contentActions" ></div>'
+			+	'</div>'
+			+	'<div id="hitlist"></div>'
 			+ '</div>'
-			+ '<div id="filterCtrl" class="contentCtrl" >'
-			+ '<div class="btn-group" >'
-			+ '<button class="btn btn-light" onclick="app.' + self.loadAs + '.resetClicked()" >' + i18n.BtnFilterReset + '</button>'
-			+ '</div>'
-			+ '<div id="filterNotice" class="notice-default contentNotice" ></div>'
-			//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
-			+ '</div>'
-			+ '<div id="hitlist" class="content" style="padding-top:44px"></div>';
+			+ '</div></div>';
 		$(self.view).html(h);
 		return true;
 	};
