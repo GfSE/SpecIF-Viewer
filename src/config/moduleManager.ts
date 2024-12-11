@@ -844,7 +844,6 @@ function doResize(): void {
 	$('.contentWide').outerHeight(pH);
 	$('.pane-tree').outerHeight(pH);
 	$('.pane-details').outerHeight(pH);
-//	$('.pane-filter').outerHeight(pH);
 
 	// adjust the vertical position of the contentActions:
 //	$('.contentCtrl').css("top", hH);

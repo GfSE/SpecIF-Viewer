@@ -88,7 +88,7 @@ moduleManager.construct({
 	self.show = function(options:any) {
 //		console.debug('reports.show');
 		selPrj = app.projects.selected;
-		self.parent.showLeft.reset();  // no panel to the left
+		self.parent.showLeft.reset();  // no tree to the left
 
 		// Language options have been selected at project level:
 		let opts = Object.assign(

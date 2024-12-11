@@ -227,7 +227,7 @@ moduleManager.construct({
 			});
 
 		// Show the panels with filter settings to the left:
-		self.parent.showLeft.set(false);
+		self.parent.showLeft.reset();  // no tree to the left
 		let fps = '';
 		for (var f of self.filters) {
 			fps += '<div class="card" style="margin:0.2rem 0 0 0" ><div class="card-body" >'

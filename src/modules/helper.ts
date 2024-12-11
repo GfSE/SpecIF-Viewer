@@ -837,6 +837,14 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
         if (opts.lookupValues) v = app.ontology.localize(v,opts);
         return opts.stripHTML ? v.stripHTML() : v
     };
+    // If it is not a multiLanguageValue, however an array, it must be a complex data type.
+    // ToDo: Here, the values are just appended ... need to be formatted somehow, if there is a multilevel complex dataType.
+    if (Array.isArray(val)) {
+        let oE = '';
+        for (var v of val)
+            oE = oE + (oE.length > 0 ? ', ' : '') + LIB.displayValueOf(v, opts);
+        return oE;
+    };
     return val as string
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {

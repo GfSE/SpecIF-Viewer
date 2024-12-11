@@ -1285,14 +1285,15 @@ moduleManager.construct({
 		// initialize the module:
 //		console.debug( 'specs.init', self );
 		
-		//  Add the left panel for tree or details and the up/down buttons to the DOM:
+		// Add the left panel for tree or details and the up/down buttons to the DOM;
+		// This is used for both the document (objectList) and the relation view:
 		let h = '<div id="specLeft" class="paneLeft" style="position:relative">'
-			+ '<div id="navBtns" class="btn-group-vertical btn-group-sm" role="group" style="position:absolute;top:4px;right:12px;z-index:900">'
-			+   '<button class="btn btn-light" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
-			+   '<button class="btn btn-light" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
-			+ '</div>'
-			+ '<div id="hierarchy" class="pane-tree" ></div>'
-			+ '<div id="details" class="pane-details" ></div>'
+			+	'<div id="navBtns" class="btn-group-vertical btn-group-sm" role="group" style="position:absolute;top:4px;right:12px;z-index:900">'
+			+		'<button class="btn btn-light" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
+			+		'<button class="btn btn-light" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
+			+	'</div>'
+			+	'<div id="hierarchy" class="pane-tree" ></div>'
+			+	'<div id="details" class="pane-details" ></div>'
 			+ '</div>';
 		/*	+ '<div id="specCtrl" class="contentCtrl" >'
 		//	+	'<div id="specNotice" class="contentNotice" ></div>'
