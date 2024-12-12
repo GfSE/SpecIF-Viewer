@@ -1739,20 +1739,6 @@ class CProject implements SpecifProject {
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[n], [CONFIG.propClassType], dta)[0])) < 0
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[r], [CONFIG.propClassType], dta)[0])) < 0
 				) {
-				/*	This is a nice idea, but doesn't work with the inner/outer looping ...
-					// Are equal, so substitute the older by the newer item:
-//					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, [CONFIG.propClassType], dta ) );
-					if (lst[n].changedAt > lst[r].changedAt) {
-						this.substituteR(dta, lst[n] as SpecifResource, lst[r] as SpecifResource );
-						console.info("Resource with id=" + lst[r].id + " and class=" + (lst[r] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[n].id);
-						this.deleteItems('resource', [LIB.keyOf(lst[r])]);
-					}
-					else {
-						this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource );
-						console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
-						this.deleteItems('resource', [LIB.keyOf(lst[n])]);
-					};  */
-
 					removeDuplicate('resource', this.substituteR.bind(this), lst[r], lst[n]);
 					// skip the remaining iterations of the inner loop:
 					break
@@ -2421,7 +2407,7 @@ class CProject implements SpecifProject {
 	}
 	hasOntology(): boolean {
 		// Returns true, if one of the nodes is an ontology:
-		let hL = this.cache.get("hierarchy", self.nodes) as SpecifNode[];
+		let hL = this.cache.get("hierarchy", this.nodes) as SpecifNode[];
 		for (var h of hL) {
 			let rL = this.cache.get("resource", [h.resource]) as SpecifResource[];
 			if (rL.length > 0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], this.cache))

@@ -402,28 +402,9 @@ moduleManager.construct({
 						// @ts-ignore . in this case it is defined
 						for (var o of f.options) {
 							if (o.checked && rp.enumIdL.includes(o.id)) return true;
-					/*		if (!o.checked) continue;
-							// try to match for every checked option (logical OR):
-							for (v of rp.enumIdL) {
-//								console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
-								if (o.id == v) return true;
-							}; */
-
-					/*		if (rp.values.length > 0) {
-								// - if any selected id in the options list is contained in the property values list:
-								for (v of rp.values) {
-//									console.debug( 'match', f.options[j].title, rp.valueIDs[z] );
-									if (o.id == LIB.displayValueOf(v)) return true;
-								};
-							}
-							else {
-								// the resource property has no value:
-								if (o.id == CONFIG.notAssigned) return true;
-								if (o.id.length < 1) return true;
-							};  */
 						};
-					//		break;
-					//	default:
+				//		break;
+				//	default:
 				};
 				// no match has been found:
 				return false;

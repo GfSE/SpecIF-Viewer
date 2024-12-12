@@ -204,7 +204,7 @@ div.attribute-condensed > div.attribute-value > p {
 div.attribute-condensed > div.attribute-value > ul,
 div.attribute-condensed > div.attribute-value > ol {
 	margin-bottom: 0;
-	padding-left: 12px;
+	padding-left: 0.6em;
 }
 /* use total width to display the content: */
 div.attribute-wide {

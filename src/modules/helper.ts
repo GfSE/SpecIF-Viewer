@@ -814,7 +814,7 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifLanguage
         return;
 
     // As a final resourt take the first element in the original list of values:
-    return val[0]
+    return val[0];
 }
 LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
     // Return the text in the specified target language .. or in the first value in the list by default.
@@ -827,7 +827,7 @@ LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLang
 }
 LIB.selectTargetLanguage = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | undefined => {
     // if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
-    return LIB.makeMultiLanguageValue(LIB.languageTextOf(val, opts), opts)
+    return LIB.makeMultiLanguageValue(LIB.languageTextOf(val, opts), opts);
 }
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     // for display, any vocabulary term is translated to the selected language;
@@ -835,17 +835,17 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     if (LIB.isMultiLanguageValue(val)) {
         let v = LIB.languageTextOf(val, opts);
         if (opts.lookupValues) v = app.ontology.localize(v,opts);
-        return opts.stripHTML ? v.stripHTML() : v
+        return opts.stripHTML ? v.stripHTML() : v;
     };
     // If it is not a multiLanguageValue, however an array, it must be a complex data type.
     // ToDo: Here, the values are just appended ... need to be formatted somehow, if there is a multilevel complex dataType.
     if (Array.isArray(val)) {
-        let oE = '';
+        let str = '';
         for (var v of val)
-            oE = oE + (oE.length > 0 ? ', ' : '') + LIB.displayValueOf(v, opts);
-        return oE;
+            str += (str.length > 0 ? ', ' : '') + LIB.displayValueOf(v, opts);
+        return str;
     };
-    return val as string
+    return val as string;
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
     // Return the values of all resource's (or statement's) properties with a title listed in pNs;

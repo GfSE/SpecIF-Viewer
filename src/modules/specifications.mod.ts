@@ -85,7 +85,6 @@ class CPropertyToShow implements SpecifProperty {
 					(v: any, i: number) => {
 						lV = LIB.languageTextOf(v, opts);
 						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? app.ontology.localize(lV,opts) : lV );
-					//	str += (i < 1 ? '' : ', ') + lV;
 					});
 				// remove any leading whiteSpace:
 				return str.replace(/^\s+/, "");
@@ -109,7 +108,7 @@ class CPropertyToShow implements SpecifProperty {
 				clickableElements: false,
 				linkifyURLs: false,
 				renderFiles: false,
-				// some environments escape the tags on export, e.g. camunda / in|flux:
+				// some tools escape the tags on export, e.g. camunda / in|flux:
 				unescapeHTMLTags: false,
 				// markup to HTML:
 				makeHTML: false
@@ -205,7 +204,6 @@ class CPropertyToShow implements SpecifProperty {
 					// @ts-ignore - target may be undefined, indeed:
 					if (target) {
 					//	return lnk(target, $1)+$2;
-					//	console.debug('lnk',target,$1,'app['+CONFIG.objectList+'].relatedItemClicked(\''+target.id+'\')');
 						return '<a class="link-primary" onclick="app[CONFIG.objectList].relatedItemClicked(\'' + target.id + '\')">' + $1 + '</a>' + $2;
 					};
 					// The dynamic link has NOT been matched/replaced, so remove the titleLink pattern and mark it:
@@ -604,23 +602,24 @@ class CResourceToShow {
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	isEqual(res: SpecifResource): boolean {
-		return res && this.id == res.id && this.changedAt == res.changedAt
+		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
 	isUserInstantiated(): boolean {
 		return (!Array.isArray(this.rC.instantiation)
-			|| this.rC.instantiation.includes(SpecifInstantiation.User))
+			|| this.rC.instantiation.includes(SpecifInstantiation.User));
 	}
-	private renderAttr(lbl: string, val: string, cssCl?: string): string {
-		// Show an attribute or SpecifProperty value with or without label:
-		cssCl = cssCl ? ' ' + cssCl : '';
+	private renderAttr(lbl: string, val: string, opts?: any): string {
+		// Show an attribute or SpecifProperty value with or without label;
+		// this is a boiled-down alternative of makeTextField for display only:
+		let cl = opts&&opts.condensed? "attribute-condensed" : "attribute"
 
-		return '<div class="attribute' + cssCl + '">'
+		return '<div class="' + cl + '">'
 				// assemble a label:value pair resp. a wide value field for display:
 				+ (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >'
 						: '<div class="attribute-wide" >')
 				+ val
 				+ '</div>'
-				+ '</div>'
+				+ '</div>';
 	}
 	private renderTitle(opts?: any): string {
 //		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
@@ -646,11 +645,11 @@ class CResourceToShow {
 		var chI = '';
 		switch (app.specs.selectedView()) {
 			case '#' + CONFIG.objectRevisions:
-				chI = this.renderAttr(i18n.LblRevision, this.revision, 'attribute-condensed');
+				chI = this.renderAttr(i18n.LblRevision, this.revision, {condensed:true});
 				// no break
 			case '#' + CONFIG.comments:
-				chI += this.renderAttr(i18n.LblModifiedAt, LIB.localDateTime(this.changedAt), 'attribute-condensed')
-					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
+				chI += this.renderAttr(i18n.LblModifiedAt, LIB.localDateTime(this.changedAt), {condensed:true})
+					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, {condensed:true});
 			//	default: no change info!			
 		};
 		return chI
@@ -689,17 +688,13 @@ class CResourceToShow {
 
 		// 1 Fill the main column:
 		// 1.1 The title:
-		switch (app.specs.selectedView()) {
-			case '#' + CONFIG.objectFilter:
-			case '#' + CONFIG.objectList:
-				// move item to the top, if the title is clicked:
-				rO += '<div onclick="app.specs.itemClicked(\'' + this.id + '\')">'
-					+ this.renderTitle(opts)
-					+ '</div>';
-				break;
-			default:
-				rO += this.renderTitle(opts);
-		};
+		if(clickable)
+			// move item to the top, if the title is clicked:
+			rO += '<div onclick="app.specs.itemClicked(\'' + this.id + '\')">'
+				+ this.renderTitle(opts)
+				+ '</div>';
+		else
+			rO += this.renderTitle(opts);
 
 		// 1.2 The description properties:
 		this.descriptions.forEach((prp: CPropertyToShow): void => {
@@ -727,12 +722,12 @@ class CResourceToShow {
 
 		// 3 Fill a separate column to the right
 		// 3.1 The resource class:
-		rO += this.renderAttr(app.ontology.localize('SpecIF:Resource', opts), LIB.titleOf(this.rC, opts), 'attribute-condensed');
+		rO += this.renderAttr(app.ontology.localize('SpecIF:Resource', opts), LIB.titleOf(this.rC, opts), { condensed: true });
 
 		// 3.2 The remaining properties:
 		this.other.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
-				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
+				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), { condensed: true });
 			}
 		});
 	/*	// 3.3 The change info depending on selectedView:
