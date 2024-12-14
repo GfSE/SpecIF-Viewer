@@ -7,6 +7,10 @@ SpecIF is the 'Specification Integration Facility'. It's purpose is to combine p
 
 Please have a look at the [SpecIF Homepage](https://specif.de) for further information.
 
+<hr>
+<span style="color: red;">DEVELOPMENT IS DICONTINUED UNTIL FURTHER NOTICE.</span> Please contact Oskar v. Dungern.
+<hr>
+
 ## Features
 - Import 'specif' and 'specif.zip' file with schema and consistency check
 - Import 'reqif' and 'reqifz' file
