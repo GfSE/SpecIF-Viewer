@@ -60,23 +60,24 @@ moduleManager.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			extensions: [".specif", ".specifz", ".specif.zip"],
-			help: i18n.MsgImportSpecif,
-			opts: { mediaTypeOf: LIB.attachment2mediaType, doCheck: ['statementClass.subjectClasses', 'statementClass.objectClasses'] }
+			opts: { mediaTypeOf: LIB.attachment2mediaType, doCheck: ['statementClass.subjectClasses', 'statementClass.objectClasses'] },
+			help: i18n.MsgImportSpecif
 		},{
 			id:'archimate',
 			name:'ioArchimate',	
 			desc:'ArchiMate Open Exchange',
 			label:'ArchiMate®',
 			extensions: [".xml"],
+			opts: { mediaTypeOf: LIB.attachment2mediaType },
 //			help: i18n.MsgImportArchimate,
-			help: "Experimental: Import an ArchiMate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: { mediaTypeOf: LIB.attachment2mediaType } 
+			help: "Experimental: Import an ArchiMate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function."
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
 			desc:'Business Process',
 			label:'BPMN',
 			extensions: [".bpmn"],
+			opts: { ingest: ["source"] },
 			help: i18n.MsgImportBpmn
 		}, {
 			id: 'sysml',
@@ -92,24 +93,24 @@ moduleManager.construct({
 			desc: 'Requirement Interchange Format',
 			label: 'ReqIF',
 			extensions: [".reqif", ".reqifz"],
-			help: i18n.MsgImportReqif,
-			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
+			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] },
+			help: i18n.MsgImportReqif
 		},{
 			id:'xls',
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
 			extensions: [".xlsx", ".xls", ".csv"],
-			help: i18n.MsgImportXls,
-			opts: { dontCheck: ["statement.object"] }
+			opts: { dontCheck: ["statement.object"] },
+			help: i18n.MsgImportXls
 	/*	},{
 			id: 'ddp',
 			name: 'ioDdpSchema',
 			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
 			label: 'DDP',
 			extensions: [".xsd"],
-			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
-			opts: { mediaTypeOf: LIB.attachment2mediaType }
+			opts: { mediaTypeOf: LIB.attachment2mediaType },
+			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd)."
 		}, {
 			id: 'rdf',
 			name: 'ioRdf',

@@ -472,16 +472,16 @@ class CSpecIF implements SpecIF {
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			oE.dataType = LIB.makeKey(iE.dataType.id || iE.dataType);
 
-			// in future only with propertyClasses:
+			// startig with v1.2 only propertyClasses will have the 'multiple' attribute:
 			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
 			if (dT) {
 				if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
 				// @ts-ignore - dT.multiple does exist with <v1.2
 				else if (dT.multiple) oE.multiple = true;
 			}
-			else {
+			else
 				throw "The dataType " + oE.dataType.id + " for propertyClass " + oE.id + " has not been found.";
-			};
+
 			if (iE.required) oE.required = true;
 
 			// The default values:
@@ -913,6 +913,20 @@ class CSpecIF implements SpecIF {
 											//		singleLang.format = fmt;
 													return singleLang; */
 											let sl: any = { text: LIB.uriBack2slash(LIB.cleanValue(singleLang.text)) };
+										/*		ti: string;
+
+											// Is the property formatted? - look up the ontology:
+											if (prp.title)
+												// prp is a propertyClass and val a default value:
+												ti = LIB.displayValueOf(prp.title, { targetLanguage: 'default' });
+											else {
+												// prp is a property and val a property value:
+												let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, prp['class']);
+												ti = LIB.displayValueOf(pC.title, { targetLanguage: 'default' });
+											};
+											if (app.ontology.propertyClassIsFormatted(ti)) sl.format = SpecifTextFormat.Xhtml;
+										*/
+
 											if (singleLang.language) sl.language = singleLang.language;
 											return sl;
 										}
@@ -1513,6 +1527,7 @@ class CSpecIF implements SpecIF {
 								// Transform to an image:
 								// Remember to also replace any referencing links in property values!
 								switch (iE.type) {
+								/*	Now transformation is done during import ...
 									case 'application/bpmn+xml':
 										// Read and render BPMN as SVG:
 										LIB.blob2text(iE, (txt: string) => {
@@ -1531,7 +1546,7 @@ class CSpecIF implements SpecIF {
 												reject
 											)
 										});
-										break;
+										break; */
 									default:
 										console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
 										resolve({

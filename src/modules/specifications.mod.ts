@@ -614,12 +614,12 @@ class CResourceToShow {
 		let cl = opts&&opts.condensed? "attribute-condensed" : "attribute"
 
 		return '<div class="' + cl + '">'
-				// assemble a label:value pair resp. a wide value field for display:
-				+ (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >'
+			// assemble a label:value pair resp. a wide value field for display:
+			+	(lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >'
 						: '<div class="attribute-wide" >')
-				+ val
-				+ '</div>'
-				+ '</div>';
+			+		val
+			+	'</div>'
+			+ '</div>';
 	}
 	private renderTitle(opts?: any): string {
 //		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
@@ -644,10 +644,10 @@ class CResourceToShow {
 	//	if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
 		var chI = '';
 		switch (app.specs.selectedView()) {
-			case '#' + CONFIG.objectRevisions:
+			case CONFIG.objectRevisions:
 				chI = this.renderAttr(i18n.LblRevision, this.revision, {condensed:true});
 				// no break
-			case '#' + CONFIG.comments:
+			case CONFIG.comments:
 				chI += this.renderAttr(i18n.LblModifiedAt, LIB.localDateTime(this.changedAt), {condensed:true})
 					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, {condensed:true});
 			//	default: no change info!			
@@ -660,7 +660,7 @@ class CResourceToShow {
 			return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
 
 		// Create HTML for a list entry:
-		const clickable = ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView()),
+		const clickable = [CONFIG.objectList, CONFIG.objectDetails].includes(app.specs.selectedView()),
 			opts = {
 				clickableElements: clickable,
 				linkifyURLs: clickable,
@@ -688,7 +688,7 @@ class CResourceToShow {
 
 		// 1 Fill the main column:
 		// 1.1 The title:
-		if(clickable)
+		if ([CONFIG.objectList, CONFIG.objectFilter].includes(app.specs.selectedView()))
 			// move item to the top, if the title is clicked:
 			rO += '<div onclick="app.specs.itemClicked(\'' + this.id + '\')">'
 				+ this.renderTitle(opts)
@@ -708,7 +708,7 @@ class CResourceToShow {
 
 		/*	// 2 Add elementActions:
 			switch( app.specs.selectedView() ) {
-				case '#'+CONFIG.comments:
+				case CONFIG.comments:
 					rO += 	'<div class="btn-group role="group" style="margin-top:3px; position:absolute;right:1.6em" >';
 					if( this.del )
 						rO +=	'<button onclick="app.specs.delComment(\''+this.id+'\')" class="btn btn-danger btn-xs" >'+i18n.IcoDelete+'</button>'
@@ -983,9 +983,9 @@ class CFileWithContent implements SpecifFile {
 			case 'image/svg+xml':
 				this.showSvg(opts);
 				break;
-			case 'application/bpmn+xml':
+		/*	case 'application/bpmn+xml':
 				this.showBpmn(opts);
-				break;
+				break; */
 			default:
 				console.warn('Cannot show diagram ' + this.title + ' of unknown type: ', this.type)
 		}
@@ -1227,7 +1227,7 @@ class CFileWithContent implements SpecifFile {
 			}
 		}
 	}
-	private showBpmn(opts: any): void {
+/*	private showBpmn(opts: any): void {
 		// Read and render BPMN:
 		LIB.blob2text(this, (t: string, fTi: string) => {
 			bpmn2svg(t)
@@ -1243,7 +1243,7 @@ class CFileWithContent implements SpecifFile {
 					}
 				);
 		}, opts.timelag)
-	}
+	} */
 }
 
 interface ISpecs extends IModule {
@@ -1265,7 +1265,7 @@ moduleManager.construct({
 
 	self.selectedView = ():string =>{
 //		console.debug('selectedView',self.ViewControl.selected.view);
-		return self.ViewControl.selected.view
+		return self.ViewControl.selected.view.substring(1);	// without '#'
 	};
 	self.emptyTab = ( tab:string ):void =>{
 		app.busy.reset();
@@ -1320,14 +1320,14 @@ moduleManager.construct({
 					():void =>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.open');
-						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
+						if( self.selectedView()==CONFIG.objectList ) self.refresh()
 					},
 				'close':
 					// when a node is closed, but not when a closed node receives a close command
 					():void =>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.close');
-						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
+						if( self.selectedView()==CONFIG.objectList ) self.refresh()
 					},
 				'move':
 					(event:any):void =>{
@@ -1654,7 +1654,7 @@ moduleManager.construct({
 	Functions called by GUI events 
 */
 	self.itemClicked = ( rId:string ):void =>{
-		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].includes( self.selectedView() ) ) return;
+		if( [CONFIG.objectRevisions, CONFIG.comments].includes( self.selectedView() ) ) return;
 //		console.debug('#0',rId);
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
@@ -1681,7 +1681,7 @@ moduleManager.construct({
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
 		//	} */
 		};
-		if( self.selectedView() != '#'+CONFIG.objectList ) 
+		if( self.selectedView() != CONFIG.objectList ) 
 			moduleManager.show({ view: '#'+CONFIG.objectList })
 	};
 /*	self.addComment = ()=>{
@@ -2036,7 +2036,7 @@ moduleManager.construct({
 		}
 	};
 /*	self.cmtBtns = ()=>{
-		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
+		if( !self.selectedView()==CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
 			return '<button class="btn btn-light" onclick="'+myFullName+'.addComment()" '

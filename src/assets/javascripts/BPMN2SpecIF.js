@@ -22,14 +22,14 @@ function BPMN2Specif( xmlString, options ) {
 		idResourceClassFolder = "RC-Folder";
 	//	idStatementClassAccesses = "SC-accesses";
 
-	if (typeof (options) != 'object' || !options.fileName) return null;
+	if (typeof (options) != 'object' || !options.imgName) return null;
 
 	let opts = Object.assign(
 		{
-			fileDate: new Date().toISOString(),
+			modified: new Date().toISOString(),
 			titleLength: 96,
 			textLength: 8192,
-			mimeType: "application/bpmn+xml",
+			imgMime: "application/bpmn+xml",
 			strNamespace: "bpmn:",
 			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
 			strRoleType: "SpecIF:Role",
@@ -82,29 +82,21 @@ function BPMN2Specif( xmlString, options ) {
 	model["$schema"] = "https://specif.de/v1.0/schema.json";
 	// 1. Additional attributes such as title and description:
 	// A collaboration may have a documentation, but we haven't come across a name:
-	model.title = truncStr(opts.title || opts.fileName.split(".")[0] || Cs[0].nodeName + ' "' + model.id + '"', opts.titleLength, 'Name of model');
+	model.title = truncStr(opts.title || opts.imgName.split(".")[0] || Cs[0].nodeName + ' "' + model.id + '"', opts.titleLength, 'Name of model');
 	// model.description?
 	model.dataTypes = DataTypes();
 	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
 	model.statementClasses = StatementClasses();
 	model.statements = [];
-
-	// Include the original BPMN file itself:
-	model.files = [{
-		id: 'F-'+simpleHash(opts.fileName),
-		title: opts.fileName,
-		blob: new Blob([xmlString], {type: opts.mimeType}),
-		type: opts.mimeType,
-		changedAt: opts.fileDate
-	}];
+	model.files = [];
 
 	const
 	//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
 	//	hId = 'BPMN-outline-' + apx,
-		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
+		diagRef = '<object data="'+opts.imgName+'" type="'+opts.imgMime+'" >'+opts.imgName+'</object>';
 
 	// 1. Add the folders:
 	model.resources = Folders();
@@ -124,7 +116,7 @@ function BPMN2Specif( xmlString, options ) {
 			class: "PC-Notation",
 			value: opts.strNotation
 		}],
-		changedAt: opts.fileDate
+		changedAt: opts.modified
 	});
 
 	// ToDo: Choose carefully between using tagName or nodeName,
@@ -142,7 +134,7 @@ function BPMN2Specif( xmlString, options ) {
 	//	if (el.nodeName.includes("documentation")) {
 		switch (tag) {
 			case "documentation":
-				// 3.1 The documentation of the collaboration (model):
+				// 3.1 The documentation of the collaboration (model diagram):
 				res = itemById(model.resources, diagramId);
 				if (res && el.innerHTML) {
 					res.properties.push({
@@ -184,7 +176,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace + tag
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				});
 				return;
 	//	};
@@ -207,7 +199,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace + tag
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				};
 				break;
 	//	}
@@ -229,7 +221,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace + tag
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				};
 				// b. We assume that the sourceRef and targetRef will be found later on.
 				// c. The writing relation (statement):
@@ -242,7 +234,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace + "dataOutputAssociation"
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				});
 				// d. The reading relation (statement):
 				// ToDo: Is the signalling characteristic well covered? It is not just reading!
@@ -255,7 +247,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace + "dataInputAssociation"
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				});
 				break;
 	//	}
@@ -328,7 +320,7 @@ function BPMN2Specif( xmlString, options ) {
 									class: "PC-Type",
 									value: opts.strRoleType
 								}],
-								changedAt: opts.fileDate
+								changedAt: opts.modified
 							};
 							// store the containment relation for the lane:
 							storeContainsStatement(pId, ndId, diagramId)
@@ -337,7 +329,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: 'SC-contains',
 								subject: pId,	// the process
 								object: ndId,	// the lane
-								changedAt: opts.fileDate
+								changedAt: opts.modified
 							}); */
 							Array.from(nd.childNodes, (nd) => {
 								if (nd.nodeName.includes('documentation')) {
@@ -420,7 +412,7 @@ function BPMN2Specif( xmlString, options ) {
 									class: "PC-Type",
 									value: opts.strNamespace+tag
 								}],
-								changedAt: opts.fileDate
+								changedAt: opts.modified
 							};
 						// add a property, if there is content:
 						if( desc ) {
@@ -466,7 +458,7 @@ function BPMN2Specif( xmlString, options ) {
 												class: "PC-Type",
 												value: opts.strNamespace+"dataInputAssociation"
 											}],
-											changedAt: opts.fileDate
+											changedAt: opts.modified
 										})
 									}
 									else {
@@ -494,7 +486,7 @@ function BPMN2Specif( xmlString, options ) {
 												class: "PC-Type",
 												value: opts.strNamespace+"dataOutputAssociation"
 											}],
-											changedAt: opts.fileDate
+											changedAt: opts.modified
 										})
 									}
 									else {
@@ -554,7 +546,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
-							changedAt: opts.fileDate
+							changedAt: opts.modified
 						};
 						if( desc ) {
 							r.properties.unshift({
@@ -595,7 +587,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
-							changedAt: opts.fileDate
+							changedAt: opts.modified
 						});
 						// only add a property, if there is content:
 						if( desc ) {
@@ -693,7 +685,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
-							changedAt: opts.fileDate
+							changedAt: opts.modified
 						});
 						break;
 					case 'textAnnotation':
@@ -717,7 +709,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: 'SC-contains',
 								subject: c.subject,
 								object: id,
-								changedAt: opts.fileDate
+								changedAt: opts.modified
 							}) */
 						}
 					);
@@ -730,7 +722,7 @@ function BPMN2Specif( xmlString, options ) {
 								class: 'SC-contains',
 								subject: participant.id,
 								object: id,
-								changedAt: opts.fileDate
+								changedAt: opts.modified
 							}) */
 				}
 			})
@@ -769,7 +761,7 @@ function BPMN2Specif( xmlString, options ) {
 					class: "PC-Type",
 					value: opts.strConditionType
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			};
 			// Add a description to the last element, if there is additional information:
 			if( seqF.subject.title ) 
@@ -790,7 +782,7 @@ function BPMN2Specif( xmlString, options ) {
 					class: "PC-Type",
 					value: opts.strConditionType
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			});
 			// c. store the trigger relation:
 			model.statements.push({
@@ -803,7 +795,7 @@ function BPMN2Specif( xmlString, options ) {
 					class: "PC-Type",
 					value: opts.strConditionType
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			});
 			return
 		};
@@ -823,7 +815,7 @@ function BPMN2Specif( xmlString, options ) {
 					class: "PC-Type",
 					value: opts.strNamespace+tag
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			});
 			return
 		};
@@ -838,7 +830,7 @@ function BPMN2Specif( xmlString, options ) {
 					class: "PC-Type",
 					value: opts.strNamespace+tag
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			});
 			return
 		};
@@ -853,7 +845,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Type",
 						value: opts.strNamespace+tag
 					}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 		});
 	});
 
@@ -876,7 +868,7 @@ function BPMN2Specif( xmlString, options ) {
 						class: "PC-Description",
 						value: truncStr(txt.innerHTML, opts.textLength, 'Annotation with id '+id)
 					}],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				});
 				// memorize all text annotations to include them in the hierarchy:
 				annL.push(id)
@@ -896,7 +888,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "SC-refersTo",
 				subject: su.id,
 				object: ob.id,
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			})
 		else
 			console.warn("BPMN Import: Skipping association "+id+", because either the source or more probably the target is missing")
@@ -933,7 +925,7 @@ function BPMN2Specif( xmlString, options ) {
 			}
 		);
 //	console.debug('shapes',shapes);
-	// 8.2 Then check for shapes contained in those shapes representing a 'group':
+	// 8.2 Then check for shapes graphically contained in all shapes representing a 'group':
 	for (var sh of shapes) {
 		// outer loop:
 		if (sh.type == 'group') {
@@ -969,7 +961,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "SC-shows",
 				subject: diagramId,
 				object: s.id,
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			})
 	});
 	model.resources.forEach( (r)=>{
@@ -980,7 +972,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "SC-shows",
 				subject: diagramId,
 				object: r.id,
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			})
 		}
 	});
@@ -998,7 +990,7 @@ function BPMN2Specif( xmlString, options ) {
 			class: "PC-Type",
 			value: opts.resClassOutline
 		}],
-		changedAt: opts.fileDate
+		changedAt: opts.modified
 	}); */
 
 	// 11. The hierarchy with pointers to all resources;
@@ -1010,33 +1002,35 @@ function BPMN2Specif( xmlString, options ) {
 				resource: "FolderProcesses-" + apx,
 				nodes: [{
 					id: "N-" + diagramId,
-					resource: diagramId,
+					resource: diagramId,   // the model diagram
 					nodes: [],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 		/*	},{
+				// The folders per fundamental model element:
 				id: genID("N-"),
 				resource: "FolderGlossary-" + apx,
 				nodes: [{
 					id: genID("N-"),
 					resource: "FolderAct-" + apx,
 					nodes: [],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				},{
 					id: genID("N-"),
 					resource: "FolderSta-" + apx,
 					nodes: [],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				},{
 					id: genID("N-"),
 					resource: "FolderEvt-" + apx,
 					nodes: [],
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				}],
-				changedAt: opts.fileDate */
+				changedAt: opts.modified */
 			}];
-		/*	// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
+		/*	... glossary will now be added on import
+			// 9.2 Add Actors, States and Events to the respective folders in alphabetical order (--> glossary):
 			if( res.length>1 )
 				res.sort( (bim, bam)=>{
 							bim = bim.title.toLowerCase();
@@ -1047,7 +1041,7 @@ function BPMN2Specif( xmlString, options ) {
 				let nd = {
 					id: genID("N-"),
 					resource: r.id,
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				};
 				// sort resources according to their type:
 				let idx = [idResourceClassActor,idResourceClassState,idResourceClassEvent].indexOf( r['class'] );
@@ -1059,7 +1053,7 @@ function BPMN2Specif( xmlString, options ) {
 				nL[0].nodes[0].nodes.push({
 					id: genID("N-"),
 					resource: a,
-					changedAt: opts.fileDate
+					changedAt: opts.modified
 				})
 			});
 			return nL;
@@ -1133,7 +1127,7 @@ function BPMN2Specif( xmlString, options ) {
 			instantiation: ['user'],
 			propertyClasses: ["PC-Name","PC-Diagram","PC-Description","PC-Type","PC-Notation"],
 			icon: "&#9635;",
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: idResourceClassActor,
 			title: "FMC:Actor",
@@ -1141,7 +1135,7 @@ function BPMN2Specif( xmlString, options ) {
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9632;",
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: idResourceClassState,
 			title: "FMC:State",
@@ -1149,7 +1143,7 @@ function BPMN2Specif( xmlString, options ) {
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9679;",
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: idResourceClassEvent,
 			title: "FMC:Event",
@@ -1157,7 +1151,7 @@ function BPMN2Specif( xmlString, options ) {
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11047;",
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: idResourceClassCollection,
 			title: "SpecIF:Collection",
@@ -1165,7 +1159,7 @@ function BPMN2Specif( xmlString, options ) {
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11034;",
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: idResourceClassFolder,
 			title: opts.strFolderType,
@@ -1173,13 +1167,13 @@ function BPMN2Specif( xmlString, options ) {
 			isHeading: true,
 			instantiation: ['auto','user'],
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
 			propertyClasses: ["PC-Name","PC-Description"],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 	/*	},{
 			id: "RC-ProcessModel",
 			title: "SpecIF:Hierarchy",
@@ -1187,7 +1181,7 @@ function BPMN2Specif( xmlString, options ) {
 			isHeading: true,
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-			changedAt: opts.fileDate  */
+			changedAt: opts.modified  */
 		}]
 	}
 	// The statement classes:
@@ -1200,7 +1194,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassDiagram],
 		//?	objectClasses: opts.modelElementClasses.concat(["SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-refewrsTo" ]),
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "SC-contains",
 			title: "SpecIF:contains",
@@ -1209,7 +1203,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: opts.modelElementClasses,
 			objectClasses: opts.modelElementClasses,
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "SC-writes",
 			title: "SpecIF:writes",
@@ -1218,7 +1212,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "SC-reads",
 			title: "SpecIF:reads",
@@ -1227,7 +1221,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 	/*	},{
 			id: idStatementClassAccesses,
 			title: "ArchiMate:accesses",
@@ -1236,7 +1230,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassActor],
 			objectClasses: [idResourceClassState],
-			changedAt: opts.fileDate 
+			changedAt: opts.modified 
 		},{
 			id: "SC-signals",
 			title: "SpecIF:signals",
@@ -1245,7 +1239,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassEvent],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "SC-triggers",
 			title: "SpecIF:triggers",
@@ -1254,7 +1248,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassEvent],
 			objectClasses: [idResourceClassActor, idResourceClassEvent],
-			changedAt: opts.fileDate */
+			changedAt: opts.modified */
 		}, {
 			id: "SC-precedes",
 			title: "SpecIF:precedes",
@@ -1263,7 +1257,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassActor, idResourceClassEvent],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		},{
 			id: "SC-refersTo",
 			title: "SpecIF:refersTo",
@@ -1272,7 +1266,7 @@ function BPMN2Specif( xmlString, options ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Note"],
 			objectClasses: [idResourceClassDiagram].concat(opts.modelElementClasses),
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		}]
 	}
 
@@ -1287,7 +1281,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "PC-Type",
 				value: opts.strBusinessProcessesType
 			}],
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		}]
 	}
 	
@@ -1345,7 +1339,7 @@ function BPMN2Specif( xmlString, options ) {
 			class: "SC-contains",
 			subject: sId,
 			object: oId,
-			changedAt: opts.fileDate
+			changedAt: opts.modified
 		});
 	/*	The shows statement is anyways added for all statements at the end of the transformation.
 	 *	if (addStatementIfNotListed({
@@ -1353,7 +1347,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "SC-contains",
 				subject: sId,
 				object: oId,
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 		})) {
 			// A 'contains' statement has been stored, so the statement itself gets a statement that it is shown:
 			model.statements.push({
@@ -1361,7 +1355,7 @@ function BPMN2Specif( xmlString, options ) {
 				class: "SC-shows",
 				subject: dId,
 				object: stId,
-				changedAt: opts.fileDate
+				changedAt: opts.modified
 			})}; */
 	}
 	// Make a very simple hash code from a string:

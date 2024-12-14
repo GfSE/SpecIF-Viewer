@@ -1278,7 +1278,6 @@ LIB.forAll = ( L:any[], fn:(el:any,idx:number)=>any ):any[] =>{
     // return a new list with the results from applying the specified function to all items of input list L;
     // differences when compared to Array.map():
     // - tolerates missing L
-    // - appends not only items, but also lists (if the supplied function returns a list)
     // - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
     if(!L) return [];
     var nL:any[] = [];

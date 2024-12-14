@@ -37,13 +37,12 @@ class CPropertyToEdit extends CPropertyToShow  {
 			// entryL is the list of entries for an input field with checkboxes or radio-buttons, 
 			// depending on whether multiple values are allowed or not:
 			// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
-			let entryL = LIB.forAll(
-				this.dT.enumeration,
+			let entryL = this.dT.enumeration.map(
 				(eV: SpecifEnumeratedValue) => {
 					// - LIB.languageTextOf returns the value in the local language ... or a vocabulary term
 					// - a returned vocabulary term is then localized using the ontology.
 					let val = this.dT.type == XsDataType.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
-					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
+					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) };
 				}
 			);
 
@@ -59,12 +58,60 @@ class CPropertyToEdit extends CPropertyToShow  {
 					ti,
 					entryL,
 					this.dispOpts()
-				)
+				);
 		};
 
-		// create an input field depending on the property's dataType;
+		// Create an input field depending on the property's dataType;
 		// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
-		switch (this.dT.type) {
+		if (this.dT.type == XsDataType.Boolean) {
+			// - no input checking needed
+			//				console.debug('xs:boolean',ti,this);
+			return makeBooleanField(
+				ti,
+				this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
+				this.dispOpts()
+			);
+		};
+		if (this.dT.type == XsDataType.String && this.pC.title == CONFIG.propClassDiagram) {
+			// it is a diagram reference (thus an XHTML-formatted text field):
+			return this.makeDiagramField(localOpts);
+		};
+		// else:
+		if (this.pC.permissionVector.U) {
+			// Add parameters to check this input field:
+			// - it is a text or other dataType;
+			// - in case of xhtml, it may contain a diagram reference, 
+			//   as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
+			//						console.debug( 'editField', LIB.languageTextOf(this.value,localOpts) );
+			if (opts && opts.dialogForm)
+				opts.dialogForm.addField(ti, this.dT);
+			return makeTextField(
+				ti,
+				this.dT.type == XsDataType.String ? this.get(localOpts).escapeHTML() : this.get(localOpts),
+				// Open
+				// - an input text-area, if it is a description property
+				// - an input line, otherwise
+				{
+					typ: this.dT.type == XsDataType.String && app.ontology.propertyClassIsText(this.pC.title) ? 'area' : 'line',
+					//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.includes(this.pC.title)) ? 'line' : 'area',
+					handle: opts.myFullName + '.check()',
+					hint: this.pC.description
+				}
+			);
+		}
+		else {
+			// No update permission - just show the property:
+			return makeTextField(
+				ti,
+				this.get(localOpts),
+				{
+					typ: 'display',
+					hint: this.pC.description
+				}
+			);
+		};
+
+/*		switch (this.dT.type) {
 			case XsDataType.Boolean:
 				// - no input checking needed
 //				console.debug('xs:boolean',ti,this);
@@ -139,7 +186,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 						}
 					)
                 }
-		}
+		} */
 	}
 	private renderImg(opts:any) {
 		// Add a container based on the propertyClass (since there is no property-id, 
@@ -336,7 +383,7 @@ class CResourceToEdit {
 		this.changedBy = el.changedBy; */
 
 		this.dialogForm = new CCheckDialogInput();
-		this.properties = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToEdit(pr,this.rC) });
+		this.properties = el.properties.map( (pr: SpecifProperty) => { return new CPropertyToEdit(pr,this.rC) });
 		this.newFiles = [];
 	}
 	editForm(opts: any): void {
@@ -627,8 +674,10 @@ moduleManager.construct({
         }
 		function selectResClass(opts: any): Promise<SpecifResourceClass> {
 			// Let the user choose the class of the resource to be created later on:
-			return new Promise((resolve, reject) => {
-				app.projects.selected.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId:SpecifId) => { return LIB.makeKey(rCId) }))
+			return new Promise(
+					(resolve, reject) => {
+						app.projects.selected.readItems('resourceClass', opts.eligibleResourceClasses.map((rCId: SpecifId) => { return LIB.makeKey(rCId) })
+				)
 				.then( 
 					(rCL: SpecifResourceClass[]) => {
 						function res() {
@@ -740,16 +789,14 @@ moduleManager.construct({
 			(nP: SpecifProperty) => {
 				let i = LIB.indexBy(self.newRes.properties, 'class', nP['class']);
 				if (i > -1) self.newRes.properties.splice(i, 1, nP)
-				else throw Error('Programming error: Edited property does not replace an existing')
+				else throw Error('Programming error: Edited property does not replace an existing');
             }
 		);
 
 		// Remove properties without value:
-		self.newRes.properties = LIB.forAll(
-			self.newRes.properties,
+		self.newRes.properties = self.newRes.properties.filter(
 			(p: SpecifProperty) => {
-				if( p.values.length>0 )
-					return p
+				return (p.values.length > 0);
             }
 		);
 
